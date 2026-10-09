@@ -184,10 +184,7 @@
 
                     <div class="lg:col-span-5">
                         <div class="w-full h-44 sm:h-52 bg-gradient-to-tr from-purple-800 to-indigo-900 rounded-2xl border border-purple-500/20 shadow-2xl flex flex-col items-center justify-center p-4 text-center overflow-hidden relative group">
-                            <img id="heroBannerImage" src="https://via.placeholder.com/600x300/6B21A8/FFFFFF?text=Wanderer+Shop+Banner" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:scale-105 transition duration-500">
-                            <div class="relative z-10 bg-slate-950/60 backdrop-blur-sm p-3 rounded-xl border border-white/10">
-                                <h3 class="text-lg font-bold text-white">Wanderer Shop Banner</h3>
-                            </div>
+                            <img id="heroBannerImage" src="https://via.placeholder.com/600x300/6B21A8/FFFFFF?text=Wanderer+Shop+Banner" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">
                         </div>
                     </div>
                 </div>
@@ -1350,7 +1347,7 @@
                 endTime: '00:30',
                 heroTitle: 'บริการเติมเกม ซื้อแอปพรีเมียม และเติมเหรียญนิยาย',
                 heroDesc: 'สะดวก รวดเร็ว ปลอดภัย 100% พร้อมระบบจัดส่งอัตโนมัติ ดูแลตลอด 24 ชั่วโมง',
-                heroBannerImg: 'https://via.placeholder.com/600x300/6B21A8/FFFFFF?text=Wanderer+Shop+Banner',
+                heroBannerImg: 'https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg',
                 lineId: '@997pfoig',
                 lineUrl: '',
                 lineEnabled: true,
@@ -3668,8 +3665,27 @@
             return inside ? 'ONLINE' : 'OFFLINE';
         }
 
+        function normalizeBannerImageUrl(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            try {
+                const parsed = new URL(raw);
+                if (parsed.hostname.includes('imagetourls.com') && parsed.searchParams.has('u')) {
+                    return decodeURIComponent(parsed.searchParams.get('u'));
+                }
+            } catch (e) {}
+            return raw;
+        }
+
         function renderShopIdentityAndStatus() {
             const settings = appState.settings || {};
+            const bannerImage = document.getElementById('heroBannerImage');
+            if (bannerImage) {
+                const bannerUrl = normalizeBannerImageUrl(settings.heroBannerImg || 'https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg');
+                if (bannerUrl) bannerImage.src = bannerUrl;
+                bannerImage.style.display = 'block';
+                bannerImage.onerror = function () { this.style.display = 'none'; };
+            }
             const status = getEffectiveStoreStatus();
 
             const statusMap = {
@@ -3741,7 +3757,7 @@
             document.getElementById('adminFacebookEnableToggle').checked = s.facebookEnabled !== false;
             document.getElementById('adminInputHeroTitle').value = s.heroTitle || '';
             document.getElementById('adminInputHeroDesc').value = s.heroDesc || '';
-            document.getElementById('adminInputBannerImg').value = s.heroBannerImg || '';
+            document.getElementById('adminInputBannerImg').value = normalizeBannerImageUrl(s.heroBannerImg || 'https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg');
             document.getElementById('adminPopupEnableToggle').checked = s.popupEnabled !== false;
             document.getElementById('adminInputPopupTitle').value = s.popupTitle || '';
             document.getElementById('adminInputPopupImages').value = Array.isArray(s.popupImages) ? s.popupImages.join(', ') : '';
@@ -3769,7 +3785,7 @@
                 facebookEnabled: document.getElementById('adminFacebookEnableToggle').checked,
                 heroTitle: document.getElementById('adminInputHeroTitle').value,
                 heroDesc: document.getElementById('adminInputHeroDesc').value,
-                heroBannerImg: document.getElementById('adminInputBannerImg').value.trim(),
+                heroBannerImg: normalizeBannerImageUrl(document.getElementById('adminInputBannerImg').value.trim()),
                 popupEnabled: document.getElementById('adminPopupEnableToggle').checked,
                 popupTitle: document.getElementById('adminInputPopupTitle').value,
                 popupImages: document.getElementById('adminInputPopupImages').value.split(',').map(i => i.trim()).filter(Boolean),
@@ -3784,7 +3800,7 @@
             const heroBannerImage = document.getElementById('heroBannerImage');
             if (heroTitle) heroTitle.innerText = appState.settings.heroTitle || '';
             if (heroDescription) heroDescription.innerText = appState.settings.heroDesc || '';
-            if (heroBannerImage && appState.settings.heroBannerImg) heroBannerImage.src = appState.settings.heroBannerImg;
+            if (heroBannerImage && appState.settings.heroBannerImg) { heroBannerImage.src = normalizeBannerImageUrl(appState.settings.heroBannerImg); heroBannerImage.style.display = 'block'; }
 
             showToast('บันทึกการตั้งค่าร้านค้า แบนเนอร์ และป๊อปอัปเรียบร้อย');
         }
@@ -4372,7 +4388,7 @@
             const heroBannerImage = document.getElementById('heroBannerImage');
             if (heroTitle) heroTitle.innerText = appState.settings.heroTitle || heroTitle.innerText;
             if (heroDescription) heroDescription.innerText = appState.settings.heroDesc || heroDescription.innerText;
-            if (heroBannerImage && appState.settings.heroBannerImg) heroBannerImage.src = appState.settings.heroBannerImg;
+            if (heroBannerImage && appState.settings.heroBannerImg) { heroBannerImage.src = normalizeBannerImageUrl(appState.settings.heroBannerImg); heroBannerImage.style.display = 'block'; }
 
             if (appState.isAdminLoggedIn) document.getElementById('adminRibbon').classList.remove('hidden');
 
