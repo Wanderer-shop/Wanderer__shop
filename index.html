@@ -1869,18 +1869,9 @@
             }, 0);
         }
 
-        function isCartLockedByStore() {
-            const status = getEffectiveStoreStatus();
-            return status === 'OFFLINE' || status === 'PAUSED';
-        }
-
-        function guardCartPurchase(actionLabel = 'สั่งซื้อ') {
-            if (!isCartLockedByStore()) return true;
-            const status = getEffectiveStoreStatus();
-            showToast(status === 'PAUSED'
-                ? 'ร้านพักส่งสินค้าอยู่ จึงยังไม่สามารถสั่งซื้อได้'
-                : 'ขณะนี้ร้านปิดอยู่ ไม่สามารถสั่งซื้อได้');
-            return false;
+        function isStoreClosedForPurchases() {
+            // ใช้สถานะร้านเดียวกับป้ายเปิด/ปิดร้าน รวมทั้งเวลาปิดอัตโนมัติ
+            return getEffectiveStoreStatus() === 'OFFLINE';
         }
 
         function isPackageAvailableForPurchase(pkg) {
@@ -1888,7 +1879,10 @@
         }
 
         function addToCart(pkgId) {
-            if (!guardCartPurchase('เพิ่มลงตะกร้า')) return;
+            if (isStoreClosedForPurchases()) {
+                showToast('ขณะนี้ร้านปิดอยู่ ยังไม่สามารถเพิ่มสินค้าลงตะกร้าได้');
+                return;
+            }
             const pkg = appState.packages.find(p => p.id === pkgId);
             if (!pkg) return;
 
@@ -1908,7 +1902,10 @@
         }
 
         function buyNow(pkgId) {
-            if (!guardCartPurchase('ซื้อทันที')) return;
+            if (isStoreClosedForPurchases()) {
+                showToast('ขณะนี้ร้านปิดอยู่ ยังไม่สามารถสั่งซื้อได้');
+                return;
+            }
             const pkg = appState.packages.find(p => p.id === pkgId);
             if (!pkg) return;
 
@@ -1933,7 +1930,6 @@
         }
 
         function changeCartQuantity(index, delta) {
-            if (Number(delta) > 0 && !guardCartPurchase('เพิ่มจำนวนสินค้า')) return;
             normalizeCart();
             const item = appState.cart[index];
             if (!item) return;
@@ -1958,27 +1954,6 @@
         function openCartDrawer() {
             normalizeCart();
             const container = document.getElementById('cartDrawerItems');
-            const locked = isCartLockedByStore();
-            const lineButton = document.querySelector('#cartDrawer button[onclick="copyLineOrderFromCart()"]');
-            const paymentButton = document.querySelector('#cartDrawer button[onclick="proceedToPaymentModal()"]');
-            const lockNoticeId = 'cartStoreLockNotice';
-            let lockNotice = document.getElementById(lockNoticeId);
-            if (locked && !lockNotice) {
-                lockNotice = document.createElement('div');
-                lockNotice.id = lockNoticeId;
-                lockNotice.className = 'mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-600';
-                lockNotice.textContent = getEffectiveStoreStatus() === 'PAUSED' ? 'ร้านกำลังพักส่งสินค้า ยังไม่สามารถสั่งซื้อได้' : 'ร้านปิดอยู่ ระบบล็อกการสั่งซื้อชั่วคราว';
-                container.parentNode.insertBefore(lockNotice, container);
-            } else if (!locked && lockNotice) {
-                lockNotice.remove();
-            }
-            [lineButton, paymentButton].forEach(btn => {
-                if (!btn) return;
-                btn.disabled = locked;
-                btn.classList.toggle('opacity-50', locked);
-                btn.classList.toggle('cursor-not-allowed', locked);
-                btn.title = locked ? 'ร้านปิดหรือพักส่งสินค้าอยู่' : '';
-            });
 
             if (appState.cart.length === 0) {
                 container.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">ไม่มีสินค้าในตะกร้า</p>';
@@ -2026,7 +2001,6 @@
         }
 
         function copyLineOrderFromCart() {
-            if (!guardCartPurchase('สั่งซื้อผ่าน LINE')) return;
             normalizeCart();
             if (appState.cart.length === 0) return alert('ไม่มีสินค้าในตะกร้า');
 
@@ -2050,8 +2024,12 @@
         }
 
         function proceedToPaymentModal() {
-            if (!guardCartPurchase('ชำระเงิน')) return;
             normalizeCart();
+            if (isStoreClosedForPurchases()) {
+                closeCartDrawer();
+                showToast('ขณะนี้ร้านปิดอยู่ ไม่สามารถดำเนินการชำระเงินได้');
+                return;
+            }
             if (appState.cart.length === 0) return alert('กรุณาเลือกสินค้าลงตะกร้าก่อนทำรายการ');
             renderCustomerRequirements();
             closeCartDrawer();
@@ -2950,6 +2928,19 @@
             showToast('บันทึกออเดอร์สำเร็จ');
         }
 
+        // เรียงลำดับหมวดหมู่สินค้าในหน้าจัดการสินค้า & แพ็กเกจ
+        function moveCategoryOrder(categoryId, direction) {
+            const fromIndex = appState.categories.findIndex(category => category.id === categoryId);
+            if (fromIndex < 0) return;
+            const toIndex = fromIndex + Number(direction || 0);
+            if (toIndex < 0 || toIndex >= appState.categories.length) return;
+            const [category] = appState.categories.splice(fromIndex, 1);
+            appState.categories.splice(toIndex, 0, category);
+            saveState();
+            renderAdminProductsTree();
+            showToast('เปลี่ยนลำดับหมวดหมู่แล้ว');
+        }
+
         // Product Tree Management
         function renderAdminProductsTree() {
             const tree = document.getElementById('adminProductsTreeView');
@@ -2959,8 +2950,10 @@
                     <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border space-y-3">
                         <div class="flex justify-between items-center border-b pb-2">
                             <h4 class="font-bold text-sm text-purple-600"><i class="fa-solid ${cat.icon}"></i> ${cat.name}</h4>
-                            <div class="space-x-1">
-                                <button onclick="openEditCategoryModal('${cat.id}')" class="text-xs text-blue-500 font-bold">แก้ไข</button>
+                            <div class="flex items-center gap-1">
+                                <button onclick="moveCategoryOrder('${cat.id}', -1)" class="px-2 py-1 rounded-lg border text-slate-600 hover:bg-purple-50 disabled:opacity-30" title="เลื่อนหมวดขึ้น" ${appState.categories.findIndex(c => c.id === cat.id) === 0 ? 'disabled' : ''}>↑</button>
+                                <button onclick="moveCategoryOrder('${cat.id}', 1)" class="px-2 py-1 rounded-lg border text-slate-600 hover:bg-purple-50 disabled:opacity-30" title="เลื่อนหมวดลง" ${appState.categories.findIndex(c => c.id === cat.id) === appState.categories.length - 1 ? 'disabled' : ''}>↓</button>
+                                <button onclick="openEditCategoryModal('${cat.id}')" class="text-xs text-blue-500 font-bold ml-1">แก้ไข</button>
                                 <button onclick="deleteCategory('${cat.id}')" class="text-xs text-red-500 font-bold">ลบ</button>
                             </div>
                         </div>
@@ -3785,7 +3778,6 @@
 
             saveState();
             renderShopIdentityAndStatus();
-            if (!document.getElementById('cartDrawer')?.classList.contains('hidden')) openCartDrawer();
 
             const heroTitle = document.getElementById('heroTitle');
             const heroDescription = document.getElementById('heroDescription');
