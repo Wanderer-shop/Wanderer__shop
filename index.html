@@ -1869,11 +1869,26 @@
             }, 0);
         }
 
+        function isCartLockedByStore() {
+            const status = getEffectiveStoreStatus();
+            return status === 'OFFLINE' || status === 'PAUSED';
+        }
+
+        function guardCartPurchase(actionLabel = 'สั่งซื้อ') {
+            if (!isCartLockedByStore()) return true;
+            const status = getEffectiveStoreStatus();
+            showToast(status === 'PAUSED'
+                ? 'ร้านพักส่งสินค้าอยู่ จึงยังไม่สามารถสั่งซื้อได้'
+                : 'ขณะนี้ร้านปิดอยู่ ไม่สามารถสั่งซื้อได้');
+            return false;
+        }
+
         function isPackageAvailableForPurchase(pkg) {
             return !!pkg && pkg.inStock !== false && pkg.status !== 'OUT_OF_STOCK';
         }
 
         function addToCart(pkgId) {
+            if (!guardCartPurchase('เพิ่มลงตะกร้า')) return;
             const pkg = appState.packages.find(p => p.id === pkgId);
             if (!pkg) return;
 
@@ -1893,6 +1908,7 @@
         }
 
         function buyNow(pkgId) {
+            if (!guardCartPurchase('ซื้อทันที')) return;
             const pkg = appState.packages.find(p => p.id === pkgId);
             if (!pkg) return;
 
@@ -1917,6 +1933,7 @@
         }
 
         function changeCartQuantity(index, delta) {
+            if (Number(delta) > 0 && !guardCartPurchase('เพิ่มจำนวนสินค้า')) return;
             normalizeCart();
             const item = appState.cart[index];
             if (!item) return;
@@ -1941,6 +1958,27 @@
         function openCartDrawer() {
             normalizeCart();
             const container = document.getElementById('cartDrawerItems');
+            const locked = isCartLockedByStore();
+            const lineButton = document.querySelector('#cartDrawer button[onclick="copyLineOrderFromCart()"]');
+            const paymentButton = document.querySelector('#cartDrawer button[onclick="proceedToPaymentModal()"]');
+            const lockNoticeId = 'cartStoreLockNotice';
+            let lockNotice = document.getElementById(lockNoticeId);
+            if (locked && !lockNotice) {
+                lockNotice = document.createElement('div');
+                lockNotice.id = lockNoticeId;
+                lockNotice.className = 'mt-3 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-bold text-red-600';
+                lockNotice.textContent = getEffectiveStoreStatus() === 'PAUSED' ? 'ร้านกำลังพักส่งสินค้า ยังไม่สามารถสั่งซื้อได้' : 'ร้านปิดอยู่ ระบบล็อกการสั่งซื้อชั่วคราว';
+                container.parentNode.insertBefore(lockNotice, container);
+            } else if (!locked && lockNotice) {
+                lockNotice.remove();
+            }
+            [lineButton, paymentButton].forEach(btn => {
+                if (!btn) return;
+                btn.disabled = locked;
+                btn.classList.toggle('opacity-50', locked);
+                btn.classList.toggle('cursor-not-allowed', locked);
+                btn.title = locked ? 'ร้านปิดหรือพักส่งสินค้าอยู่' : '';
+            });
 
             if (appState.cart.length === 0) {
                 container.innerHTML = '<p class="text-xs text-slate-400 text-center py-8">ไม่มีสินค้าในตะกร้า</p>';
@@ -1988,6 +2026,7 @@
         }
 
         function copyLineOrderFromCart() {
+            if (!guardCartPurchase('สั่งซื้อผ่าน LINE')) return;
             normalizeCart();
             if (appState.cart.length === 0) return alert('ไม่มีสินค้าในตะกร้า');
 
@@ -2011,6 +2050,7 @@
         }
 
         function proceedToPaymentModal() {
+            if (!guardCartPurchase('ชำระเงิน')) return;
             normalizeCart();
             if (appState.cart.length === 0) return alert('กรุณาเลือกสินค้าลงตะกร้าก่อนทำรายการ');
             renderCustomerRequirements();
@@ -3745,6 +3785,7 @@
 
             saveState();
             renderShopIdentityAndStatus();
+            if (!document.getElementById('cartDrawer')?.classList.contains('hidden')) openCartDrawer();
 
             const heroTitle = document.getElementById('heroTitle');
             const heroDescription = document.getElementById('heroDescription');
