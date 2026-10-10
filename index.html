@@ -69,6 +69,16 @@
 .product-card-carousel>*{min-height:100%}
 .category-tabs-scroll{scrollbar-width:thin;scrollbar-color:#c4b5fd transparent}
 </style>
+
+<style id="wanderer-decoration-styles">
+  #heroBannerImage { transition: transform .65s cubic-bezier(.2,.7,.2,1); }
+  #heroBannerImage:hover { transform: scale(1.10) !important; }
+  .wanderer-floating-decoration { position: fixed; z-index: 35; display:flex; align-items:center; justify-content:center; animation: wandererFloat 5s ease-in-out infinite; pointer-events:auto; filter: drop-shadow(0 5px 8px rgba(60,30,100,.16)); }
+  .wanderer-floating-decoration img { width:100%; height:100%; object-fit:contain; }
+  .wanderer-floating-decoration.emoji { font-size:2rem; }
+  @keyframes wandererFloat { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-14px) rotate(4deg); } }
+  @media (prefers-reduced-motion: reduce) { .wanderer-floating-decoration, #heroBannerImage { animation:none !important; transition:none !important; } }
+</style>
 </head>
 <body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
 
@@ -184,7 +194,7 @@
 
                     <div class="lg:col-span-5">
                         <div class="w-full h-44 sm:h-52 bg-gradient-to-tr from-purple-800 to-indigo-900 rounded-2xl border border-purple-500/20 shadow-2xl flex flex-col items-center justify-center p-4 text-center overflow-hidden relative group">
-                            <img id="heroBannerImage" src="https://via.placeholder.com/600x300/6B21A8/FFFFFF?text=Wanderer+Shop+Banner" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">
+                            <img id="heroBannerImage" src="https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg" alt="Wanderer Shop banner" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform hover:scale-110" style="transform:scale(1);transform-origin:center center" onerror="this.style.display='none'">
                         </div>
                     </div>
                 </div>
@@ -329,6 +339,7 @@
                 <button onclick="switchAdminTab('form-templates')" id="adminTabBtn-form-templates" class="px-4 py-2 text-xs font-bold rounded-xl transition">📝 แบบฟอร์มส่งงาน & สั่งซื้อ LINE</button>
                 <button onclick="switchAdminTab('feedbacks')" id="adminTabBtn-feedbacks" class="px-4 py-2 text-xs font-bold rounded-xl transition">💡 ข้อเสนอแนะ & รีวิว</button>
                 <button onclick="switchAdminTab('settings-store')" id="adminTabBtn-settings-store" class="px-4 py-2 text-xs font-bold rounded-xl transition">⚙️ ตั้งค่าร้าน / แบนเนอร์ / ป๊อปอัป</button>
+                <button onclick="switchAdminTab('floating-decorations')" id="adminTabBtn-floating-decorations" class="px-4 py-2 text-xs font-bold rounded-xl transition">✨ รูปลอย / สติกเกอร์</button>
                 <button onclick="switchAdminTab('website-integrations')" id="adminTabBtn-website-integrations" class="px-4 py-2 text-xs font-bold rounded-xl transition">🧩 เว็บสำเร็จรูป & การเชื่อมต่อ</button>
             </div>
 
@@ -784,7 +795,33 @@
             </div>
         </div>
 
+        <div id="adminTab-floating-decorations" class="hidden space-y-6 max-w-3xl">
+            <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm space-y-4">
+                <div>
+                    <h3 class="font-bold text-lg text-purple-600">✨ จัดการรูปลอย / สติกเกอร์</h3>
+                    <p class="text-xs text-slate-500 mt-1">เพิ่มอีโมจิหรือรูป PNG/WebP ให้ลอยอยู่ริมหน้าจอ หรือเป็นของตกแต่งพื้นหลัง สามารถแนบลิงก์ปลายทางและแก้ไข/ลบได้</p>
+                </div>
+                <input type="hidden" id="decorationEditingId" value="">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div><label class="block font-bold mb-1">ชื่อเรียก</label><input id="decorationName" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="เช่น ดาวม่วง"></div>
+                    <div><label class="block font-bold mb-1">อีโมจิ (ถ้าไม่ใช้รูป)</label><input id="decorationEmoji" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="✨ 🪽 💜"></div>
+                    <div class="sm:col-span-2"><label class="block font-bold mb-1">URL รูปภาพ (PNG/JPG/WebP/GIF) — ไม่บังคับ</label><input id="decorationImageUrl" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="https://.../sticker.png"></div>
+                    <div class="sm:col-span-2"><label class="block font-bold mb-1">ลิงก์เมื่อกดรูป (ไม่บังคับ)</label><input id="decorationLinkUrl" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="https://... หรือ LINE OA"></div>
+                    <div><label class="block font-bold mb-1">ตำแหน่ง</label><select id="decorationPosition" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="left">ริมซ้าย</option><option value="right">ริมขวา</option><option value="background">ตกแต่งพื้นหลัง</option></select></div>
+                    <div><label class="block font-bold mb-1">ขนาด</label><select id="decorationSize" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="small">เล็ก</option><option value="medium" selected>กลาง</option><option value="large">ใหญ่</option></select></div>
+                    <div class="sm:col-span-2 flex items-center gap-2"><input type="checkbox" id="decorationEnabled" checked><label for="decorationEnabled" class="font-bold">เปิดแสดงบนหน้าร้าน</label></div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="saveFloatingDecoration()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold">💾 บันทึกสติกเกอร์</button>
+                    <button onclick="resetFloatingDecorationForm()" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-xl font-bold">ล้างฟอร์ม</button>
+                </div>
+                <div class="border-t pt-4"><h4 class="font-bold mb-3">รายการสติกเกอร์</h4><div id="adminFloatingDecorationsList" class="space-y-2 text-xs"></div></div>
+            </div>
+        </div>
+
     </main>
+
+    <div id="wandererFloatingDecorations" aria-label="ของตกแต่งหน้าร้าน"></div>
 
     <!-- MODALS SECTION -->
     <!-- CONTACT MODAL -->
@@ -1260,11 +1297,11 @@
             <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="hidden space-y-3 text-xs">
                 <div>
                     <label class="block font-medium mb-1">Admin Email (Supabase Auth):</label>
-                    <input type="text" id="adminUsernameInput" autocomplete="off" required value="" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <input type="text" id="adminUsernameInput" autocomplete="username" inputmode="text" placeholder="ชื่อผู้ใช้ pao หรืออีเมลแอดมิน" required value="" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
                     <label class="block font-medium mb-1">Admin Password:</label>
-                    <input type="password" id="adminPasswordInput" autocomplete="off" required value="" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <input type="password" id="adminPasswordInput" autocomplete="current-password" required value="" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <button type="submit" class="w-full py-2.5 bg-purple-900 text-white font-bold rounded-xl shadow-md">ล็อกอิน Admin</button>
             </form>
@@ -1310,8 +1347,10 @@
     <script>
         // Shared database configuration. Public anon key is designed for browser use with RLS.
         const SUPABASE_URL = 'https://ylnxommdhjzzhkzhogyg.supabase.co';
-        const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE';
-        const SUPABASE_STORE_ROW_ID = '7c512a20-2a32-40dc-af57-d19b7c4b4c46';
+        const ADMIN_USERNAME_ALIAS = 'pao';
+        const ADMIN_USERNAME_EMAIL = 's6741050006@kktech.ac.th'; // Create this user in Supabase Auth first
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsbnhvbW1kaGp6emhremhvZ3lnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NjQ5OTcsImV4cCI6MjEwMjA0MDk5N30.h9WrkjcjV2De6DPJ9_xLeZT2qBxwcOGFgEIhBh_FGfk';
+        const SUPABASE_STORE_ROW_ID = 'c2c475f7-10f0-4d75-b7ef-99d024dacb54';
         let supabaseClient = null;
         let supabaseAuthSession = null;
         let sharedStateWriteTimer = null;
@@ -1475,7 +1514,9 @@
                 popupEnabled: true,
                 popupTitle: 'ข้อตกลงและประกาศจากทางร้าน',
                 popupImages: ['https://via.placeholder.com/400x200/8B5CF6/FFFFFF?text=Notice+1'],
+                floatingDecorations: [],
                 popupDesc: 'ยินดีต้อนรับสู่ Wanderer Shop! กรุณาตรวจสอบโน้ตสลิปก่อนทำการโอนเงินทุกครั้ง',
+                floatingDecorations: [],
                 workerNotifyUrl: 'https://lineoa-001.s6741050006.workers.dev/', sheetBackupUrl: '',
                 sheetAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', sheetCategoriesUrl: '', sheetAppsUrl: '', sheetPackagesUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtNEuFBl6in-M2LkYJpfgbeP2_lyJwY3wTMGsPQStu-Dk6WEVMI_WjyPJ1ms9Nw6IHF9tECWbx2Wiz/pub?output=csv', autoSyncSheets: false, autoSyncMinutes: 15, syncHistory: [], notificationHistory: []
             },
@@ -2774,7 +2815,7 @@
         }
 
         function switchAdminTab(tabName) {
-            const tabs = ['dashboard-orders', 'products', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations'];
+            const tabs = ['dashboard-orders', 'products', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'floating-decorations'];
             tabs.forEach(t => {
                 document.getElementById(`adminTab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`adminTabBtn-${t}`);
@@ -2791,6 +2832,7 @@
             else if (tabName === 'feedbacks') renderAdminFeedbacks();
             else if (tabName === 'settings-store') loadStoreSettingsForm();
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
+            else if (tabName === 'floating-decorations') renderAdminFloatingDecorations();
         }
 
         function getOrderTotal(order) {
@@ -3804,6 +3846,7 @@
                 bannerImage.style.display = 'block';
                 bannerImage.onerror = function () { this.style.display = 'none'; };
             }
+            renderFloatingDecorations();
             const status = getEffectiveStoreStatus();
 
             const statusMap = {
@@ -3907,10 +3950,13 @@
                 popupEnabled: document.getElementById('adminPopupEnableToggle').checked,
                 popupTitle: document.getElementById('adminInputPopupTitle').value,
                 popupImages: document.getElementById('adminInputPopupImages').value.split(',').map(i => i.trim()).filter(Boolean),
-                popupDesc: document.getElementById('adminInputPopupDesc').value
+                popupDesc: document.getElementById('adminInputPopupDesc').value,
+                floatingDecorations: Array.isArray(previous.floatingDecorations) ? previous.floatingDecorations : []
             };
 
             saveState();
+            scheduleSharedStoreSave();
+            renderFloatingDecorations();
             renderShopIdentityAndStatus();
 
             const heroTitle = document.getElementById('heroTitle');
@@ -3922,6 +3968,85 @@
 
             showToast('บันทึกการตั้งค่าร้านค้า แบนเนอร์ และป๊อปอัปเรียบร้อย');
         }
+
+        // Floating decorative stickers managed by admin. Uses settings state and is included in shared Supabase payload.
+        function renderFloatingDecorations() {
+            const root = document.getElementById('wandererFloatingDecorations');
+            if (!root) return;
+            const items = (appState.settings?.floatingDecorations || []).filter(x => x && x.enabled !== false);
+            root.innerHTML = items.map((item, index) => {
+                const sizeMap = { small: 34, medium: 48, large: 64 };
+                const size = sizeMap[item.size] || 48;
+                const pos = item.position || 'left';
+                const top = 18 + ((index * 19) % 68);
+                const sideStyle = pos === 'right' ? `right:${8 + (index % 3) * 10}px;` : pos === 'left' ? `left:${8 + (index % 3) * 10}px;` : `left:${8 + ((index * 17) % 82)}%;`;
+                const style = `${sideStyle}top:${top}%;width:${size}px;height:${size}px;animation-delay:${(index % 5) * -0.7}s;${pos === 'background' ? 'opacity:.28;z-index:1;pointer-events:none;' : ''}`;
+                const content = item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name || 'สติกเกอร์')}" loading="lazy" onerror="this.style.display='none'">` : `<span class="emoji">${escapeHtml(item.emoji || '✨')}</span>`;
+                const tag = item.linkUrl && pos !== 'background' ? 'a' : 'span';
+                const href = tag === 'a' ? ` href="${escapeHtml(item.linkUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(item.name || 'เปิดลิงก์')}"` : '';
+                return `<${tag} class="wanderer-floating-decoration ${item.imageUrl ? '' : 'emoji'}" style="${style}"${href}>${content}</${tag}>`;
+            }).join('');
+        }
+
+        function renderAdminFloatingDecorations() {
+            const box = document.getElementById('adminFloatingDecorationsList');
+            if (!box) return;
+            const items = appState.settings?.floatingDecorations || [];
+            if (!items.length) { box.innerHTML = '<p class="text-slate-500">ยังไม่มีสติกเกอร์ กรอกข้อมูลด้านบนเพื่อเพิ่มรายการแรก</p>'; return; }
+            box.innerHTML = items.map(item => `<div class="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-900">
+                <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border flex items-center justify-center text-2xl overflow-hidden shrink-0">${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" class="w-full h-full object-contain" alt="">` : escapeHtml(item.emoji || '✨')}</div>
+                <div class="flex-1 min-w-0"><div class="font-bold">${escapeHtml(item.name || 'สติกเกอร์')}</div><div class="text-slate-500 break-all">${escapeHtml(item.position || 'left')} · ${item.enabled === false ? 'ปิดใช้งาน' : 'กำลังแสดง'}${item.linkUrl ? ' · มีลิงก์' : ''}</div></div>
+                <div class="flex gap-2"><button onclick="editFloatingDecoration('${escapeHtml(item.id)}')" class="px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 font-bold">แก้ไข</button><button onclick="deleteFloatingDecoration('${escapeHtml(item.id)}')" class="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 font-bold">ลบ</button></div>
+            </div>`).join('');
+        }
+
+        function saveFloatingDecoration() {
+            const name = document.getElementById('decorationName').value.trim();
+            const emoji = document.getElementById('decorationEmoji').value.trim();
+            const imageUrl = document.getElementById('decorationImageUrl').value.trim();
+            const linkUrl = document.getElementById('decorationLinkUrl').value.trim();
+            if (!imageUrl && !emoji) { showToast('กรุณาใส่อีโมจิหรือ URL รูปภาพ'); return; }
+            if (imageUrl && !/^https?:\/\//i.test(imageUrl)) { showToast('URL รูปภาพต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
+            if (linkUrl && !/^https?:\/\//i.test(linkUrl)) { showToast('ลิงก์ปลายทางต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
+            const list = Array.isArray(appState.settings.floatingDecorations) ? [...appState.settings.floatingDecorations] : [];
+            const editingId = document.getElementById('decorationEditingId').value;
+            const record = { id: editingId || `deco-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || 'สติกเกอร์', emoji: emoji || '✨', imageUrl, linkUrl, position: document.getElementById('decorationPosition').value, size: document.getElementById('decorationSize').value, enabled: document.getElementById('decorationEnabled').checked };
+            const index = list.findIndex(x => x.id === editingId);
+            if (index >= 0) list[index] = record; else list.push(record);
+            appState.settings.floatingDecorations = list; saveState(); renderFloatingDecorations(); renderAdminFloatingDecorations(); resetFloatingDecorationForm();
+            showToast(index >= 0 ? 'แก้ไขสติกเกอร์แล้ว' : 'เพิ่มสติกเกอร์แล้ว');
+        }
+
+        function editFloatingDecoration(id) {
+            const item = (appState.settings?.floatingDecorations || []).find(x => x.id === id); if (!item) return;
+            document.getElementById('decorationEditingId').value = item.id;
+            document.getElementById('decorationName').value = item.name || '';
+            document.getElementById('decorationEmoji').value = item.emoji || '';
+            document.getElementById('decorationImageUrl').value = item.imageUrl || '';
+            document.getElementById('decorationLinkUrl').value = item.linkUrl || '';
+            document.getElementById('decorationPosition').value = item.position || 'left';
+            document.getElementById('decorationSize').value = item.size || 'medium';
+            document.getElementById('decorationEnabled').checked = item.enabled !== false;
+            document.getElementById('decorationName').focus();
+        }
+
+        function deleteFloatingDecoration(id) {
+            if (!confirm('ยืนยันลบสติกเกอร์รายการนี้หรือไม่?')) return;
+            appState.settings.floatingDecorations = (appState.settings.floatingDecorations || []).filter(x => x.id !== id);
+            saveState(); renderFloatingDecorations(); renderAdminFloatingDecorations(); showToast('ลบสติกเกอร์แล้ว');
+        }
+
+        function resetFloatingDecorationForm() {
+            ['decorationEditingId','decorationName','decorationEmoji','decorationImageUrl','decorationLinkUrl'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('decorationPosition').value = 'left'; document.getElementById('decorationSize').value = 'medium'; document.getElementById('decorationEnabled').checked = true;
+        }
+
+        // Subtle scroll-linked zoom for the hero image, combined with hover zoom.
+        window.addEventListener('scroll', () => {
+            const img = document.getElementById('heroBannerImage'); if (!img || img.matches(':hover')) return;
+            const scale = 1 + Math.min(Math.max(window.scrollY, 0) / 9000, 0.045);
+            img.style.transform = `scale(${scale})`;
+        }, { passive: true });
 
         function renderAdminFeedbacks() {
             const fbBox = document.getElementById('adminFeedbacksList');
@@ -4101,9 +4226,14 @@
 
         async function handleAdminLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('adminUsernameInput').value.trim();
+            const usernameOrEmail = document.getElementById('adminUsernameInput').value.trim();
             const password = document.getElementById('adminPasswordInput').value;
-            if (!supabaseClient) { alert('ยังไม่ได้ใส่ Supabase anon key หรือโหลดไลบรารีไม่สำเร็จ กรุณาตรวจไฟล์ก่อนใช้งาน'); return; }
+            const email = usernameOrEmail.toLowerCase() === ADMIN_USERNAME_ALIAS ? ADMIN_USERNAME_EMAIL : usernameOrEmail;
+            if (!supabaseClient) { alert('เชื่อมต่อ Supabase client ไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตและการโหลดไลบรารี Supabase'); return; }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                alert('กรุณากรอกชื่อผู้ใช้ pao หรืออีเมลเต็มของบัญชี Supabase Auth');
+                return;
+            }
             try {
                 const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 if (error) throw error;
@@ -4111,15 +4241,23 @@
                 appState.isAdminLoggedIn = true;
                 appState.adminUser = data.user?.email || email;
                 saveState();
-                await pushSharedStoreState();
+                const saved = await pushSharedStoreState();
                 closeLoginModal();
                 document.getElementById('adminRibbon').classList.remove('hidden');
                 document.getElementById('adminUsernameShow').innerText = appState.adminUser;
                 navigateTo('admin');
-                showToast('เข้าสู่ระบบแอดมินและเชื่อมต่อฐานข้อมูลแล้ว');
+                showToast(saved ? 'เข้าสู่ระบบแอดมินและบันทึกฐานข้อมูลกลางแล้ว' : 'เข้าสู่ระบบสำเร็จ แต่บันทึกฐานข้อมูลกลางไม่สำเร็จ กรุณาตรวจตาราง/RLS');
+                if (!saved) alert('เข้าสู่ระบบสำเร็จ แต่เขียนข้อมูลลง wanderer_store_state ไม่สำเร็จ กรุณาตรวจสอบว่ารัน SQL setup แล้วและนโยบาย RLS อนุญาตบัญชีแอดมิน');
             } catch (err) {
                 console.error('Supabase admin login failed:', err);
-                alert('เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบอีเมล/รหัสผ่านแอดมินใน Supabase Auth และการตั้งค่า RLS');
+                const message = String(err?.message || 'ไม่ทราบสาเหตุ');
+                if (/invalid login credentials/i.test(message)) {
+                    alert('เข้าสู่ระบบไม่สำเร็จ: ตรวจสอบรหัสผ่านและการยืนยันอีเมล\n\nหากใช้ชื่อ pao ต้องสร้างผู้ใช้ใน Supabase Auth ด้วยอีเมล pao@wanderer-shop.com และตั้งรหัสผ่านเดียวกันก่อน');
+                } else if (/email not confirmed/i.test(message)) {
+                    alert('บัญชีนี้ยังไม่ได้ยืนยันอีเมล กรุณายืนยันอีเมลหรือปรับสถานะยืนยันใน Supabase Authentication');
+                } else {
+                    alert('เข้าสู่ระบบไม่สำเร็จ: ' + message);
+                }
             }
         }
 
