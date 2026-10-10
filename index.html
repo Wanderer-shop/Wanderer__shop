@@ -73,14 +73,23 @@
 <style id="wanderer-decoration-styles">
   #heroBannerImage { transition: transform .65s cubic-bezier(.2,.7,.2,1); }
   #heroBannerImage:hover { transform: scale(1.10) !important; }
-  .wanderer-floating-decoration { position: fixed; z-index: 35; display:flex; align-items:center; justify-content:center; animation: wandererFloat 5s ease-in-out infinite; pointer-events:auto; filter: drop-shadow(0 5px 8px rgba(60,30,100,.16)); }
+  #wandererFloatingDecorations { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  body > header, body > main, body > nav, body > section, body > footer { position:relative; z-index:1; }
+  .wanderer-floating-decoration { position:absolute; display:flex; align-items:center; justify-content:center; animation:wandererFloat var(--deco-speed,6s) ease-in-out infinite, wandererBlink calc(var(--deco-speed,6s) * .82) ease-in-out infinite; opacity:var(--deco-opacity,.16); filter:drop-shadow(0 2px 5px rgba(60,30,100,.08)); will-change:transform,opacity; }
   .wanderer-floating-decoration img { width:100%; height:100%; object-fit:contain; }
-  .wanderer-floating-decoration.emoji { font-size:2rem; }
-  @keyframes wandererFloat { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-14px) rotate(4deg); } }
+  .wanderer-floating-decoration.emoji { font-size:2rem; width:max-content !important; height:auto !important; max-width:90vw; white-space:pre; line-height:1.25; display:inline-flex; flex-wrap:nowrap; }
+  .wanderer-floating-decoration.emoji .emoji { white-space:pre; display:inline; width:auto; height:auto; font-size:inherit; line-height:inherit; }
+  #decorationPopupPreview { z-index:9999; }
+  .wanderer-floating-decoration.deco-side { z-index:35; pointer-events:auto; }
+  .wanderer-floating-decoration.deco-background { z-index:0; pointer-events:none; }
+  .wanderer-floating-decoration.deco-preview { outline:1px dashed rgba(124,58,237,.25); }
+  @keyframes wandererFloat { 0%,100% { transform:translateY(0) rotate(-3deg) scale(.98); } 50% { transform:translateY(-12px) rotate(4deg) scale(1.03); } }
+  @keyframes wandererBlink { 0%,100% { opacity:.06; } 50% { opacity:var(--deco-opacity,.16); } }
   @media (prefers-reduced-motion: reduce) { .wanderer-floating-decoration, #heroBannerImage { animation:none !important; transition:none !important; } }
 </style>
 </head>
 <body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+    <div id="wandererFloatingDecorations" aria-label="ของตกแต่งหน้าร้าน"></div>
 
     <!-- ADMIN FLOATING RIBBON -->
     <div id="adminRibbon" class="hidden bg-purple-900 text-purple-200 text-xs py-1.5 px-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
@@ -799,7 +808,17 @@
             <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm space-y-4">
                 <div>
                     <h3 class="font-bold text-lg text-purple-600">✨ จัดการรูปลอย / สติกเกอร์</h3>
-                    <p class="text-xs text-slate-500 mt-1">เพิ่มอีโมจิหรือรูป PNG/WebP ให้ลอยอยู่ริมหน้าจอ หรือเป็นของตกแต่งพื้นหลัง สามารถแนบลิงก์ปลายทางและแก้ไข/ลบได้</p>
+                    <p class="text-xs text-slate-500 mt-1">กระจายรูป/อีโมจิทั่วพื้นหลังหรือริมจอ ปรับความจาง การกระพริบ ความเร็ว และจำนวนได้ โดยชั้นพื้นหลังจะอยู่หลังเนื้อหาเว็บและไม่บังปุ่ม</p>
+                </div>
+                <div class="rounded-2xl border border-purple-100 dark:border-slate-700 bg-purple-50/60 dark:bg-slate-900/60 p-4 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2"><h4 class="font-bold">🎛️ รูปแบบการแสดงผล</h4><button type="button" id="decorationPreviewBtn" onclick="openFloatingDecorationPopupPreview()" class="px-3 py-2 rounded-xl bg-indigo-600 text-white font-bold">👁️ ดูตัวอย่าง</button></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        <div><label for="decorationSpeed" class="block font-bold mb-1">ความเร็วการลอย <span id="decorationSpeedValue">6 วินาที</span></label><input id="decorationSpeed" type="range" min="2" max="12" value="6" step="1" class="w-full" oninput="updateFloatingDecorationPreviewControls()"><div class="flex justify-between text-slate-500"><span>เร็ว</span><span>ช้า</span></div></div>
+                        <div><label for="decorationCount" class="block font-bold mb-1">จำนวนที่แสดง <span id="decorationCountValue">12 ชิ้น</span></label><input id="decorationCount" type="range" min="4" max="36" value="12" step="1" class="w-full" oninput="updateFloatingDecorationPreviewControls()"><div class="flex justify-between text-slate-500"><span>น้อย</span><span>มาก</span></div></div>
+                        <div class="sm:col-span-2"><label for="decorationOpacity" class="block font-bold mb-1">ความเข้ม <span id="decorationOpacityValue">16%</span></label><input id="decorationOpacity" type="range" min="6" max="30" value="16" step="1" class="w-full" oninput="updateFloatingDecorationPreviewControls()"><div class="flex justify-between text-slate-500"><span>กลืนกับพื้นหลัง</span><span>มองเห็นชัดขึ้น</span></div></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500">ค่าที่ปรับจะดูตัวอย่างได้ก่อน แล้วกด “บันทึกค่าการแสดงผล” เพื่อใช้กับหน้าร้านจริง</p>
+                    <div class="flex flex-wrap gap-2"><button type="button" onclick="saveFloatingDecorationDisplaySettings()" class="px-3 py-2 rounded-xl bg-purple-600 text-white font-bold">💾 บันทึกค่าการแสดงผล</button><button type="button" onclick="resetFloatingDecorationDisplaySettings()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 font-bold">คืนค่าเริ่มต้น</button></div>
                 </div>
                 <input type="hidden" id="decorationEditingId" value="">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
@@ -821,7 +840,6 @@
 
     </main>
 
-    <div id="wandererFloatingDecorations" aria-label="ของตกแต่งหน้าร้าน"></div>
 
     <!-- MODALS SECTION -->
     <!-- CONTACT MODAL -->
@@ -1350,7 +1368,7 @@
         const ADMIN_USERNAME_ALIAS = 'pao';
         const ADMIN_USERNAME_EMAIL = 's6741050006@kktech.ac.th'; // Create this user in Supabase Auth first
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsbnhvbW1kaGp6emhremhvZ3lnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NjQ5OTcsImV4cCI6MjEwMjA0MDk5N30.h9WrkjcjV2De6DPJ9_xLeZT2qBxwcOGFgEIhBh_FGfk';
-        const SUPABASE_STORE_ROW_ID = 'c2c475f7-10f0-4d75-b7ef-99d024dacb54';
+        const SUPABASE_STORE_ROW_ID = '7c512a20-2a32-40dc-af57-d19b7c4b4c46';
         let supabaseClient = null;
         let supabaseAuthSession = null;
         let sharedStateWriteTimer = null;
@@ -2832,7 +2850,7 @@
             else if (tabName === 'feedbacks') renderAdminFeedbacks();
             else if (tabName === 'settings-store') loadStoreSettingsForm();
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
-            else if (tabName === 'floating-decorations') renderAdminFloatingDecorations();
+            else if (tabName === 'floating-decorations') { renderAdminFloatingDecorations(); loadFloatingDecorationDisplayControls(); }
         }
 
         function getOrderTotal(order) {
@@ -3951,7 +3969,8 @@
                 popupTitle: document.getElementById('adminInputPopupTitle').value,
                 popupImages: document.getElementById('adminInputPopupImages').value.split(',').map(i => i.trim()).filter(Boolean),
                 popupDesc: document.getElementById('adminInputPopupDesc').value,
-                floatingDecorations: Array.isArray(previous.floatingDecorations) ? previous.floatingDecorations : []
+                floatingDecorations: Array.isArray(previous.floatingDecorations) ? previous.floatingDecorations : [],
+                floatingDecorationOptions: { speed: 6, count: 12, opacity: 16, ...(previous.floatingDecorationOptions || {}) }
             };
 
             saveState();
@@ -3969,22 +3988,97 @@
             showToast('บันทึกการตั้งค่าร้านค้า แบนเนอร์ และป๊อปอัปเรียบร้อย');
         }
 
-        // Floating decorative stickers managed by admin. Uses settings state and is included in shared Supabase payload.
+        // Floating decorations: low-opacity background layer behind content, or interactive side decorations.
+        let floatingDecorationPreviewEnabled = false;
+        function getFloatingDecorationOptions() {
+            const raw = appState.settings?.floatingDecorationOptions || {};
+            return { speed: Math.max(2, Math.min(12, Number(raw.speed) || 6)), count: Math.max(4, Math.min(36, Number(raw.count) || 12)), opacity: Math.max(6, Math.min(30, Number(raw.opacity) || 16)) };
+        }
+        function updateFloatingDecorationPreviewControls() {
+            const speed = Number(document.getElementById('decorationSpeed')?.value || 6);
+            const count = Number(document.getElementById('decorationCount')?.value || 12);
+            const opacity = Number(document.getElementById('decorationOpacity')?.value || 16);
+            const sv = document.getElementById('decorationSpeedValue'); if (sv) sv.textContent = `${speed} วินาที`;
+            const cv = document.getElementById('decorationCountValue'); if (cv) cv.textContent = `${count} ชิ้น`;
+            const ov = document.getElementById('decorationOpacityValue'); if (ov) ov.textContent = `${opacity}%`;
+            renderFloatingDecorations();
+        }
+        function loadFloatingDecorationDisplayControls() {
+            const o = getFloatingDecorationOptions();
+            const speed = document.getElementById('decorationSpeed'); if (speed) speed.value = o.speed;
+            const count = document.getElementById('decorationCount'); if (count) count.value = o.count;
+            const opacity = document.getElementById('decorationOpacity'); if (opacity) opacity.value = o.opacity;
+            updateFloatingDecorationPreviewControls();
+        }
+        function normalizeDecorationImageUrl(value) {
+            const raw = String(value || '').trim();
+            if (!raw) return '';
+            try {
+                const parsed = new URL(raw);
+                // Accept image-hosting viewer links and unwrap their direct image URL (?u=...)
+                const embedded = parsed.searchParams.get('u') || parsed.searchParams.get('url') || parsed.searchParams.get('image');
+                if (embedded && /^https?:\/\//i.test(embedded)) return embedded;
+                return raw;
+            } catch (_) { return raw; }
+        }
+        function openFloatingDecorationPopupPreview() {
+            const modal = document.getElementById('decorationPopupPreview');
+            const stage = document.getElementById('decorationPopupPreviewContent');
+            if (!modal || !stage) return;
+            const imageUrl = normalizeDecorationImageUrl(document.getElementById('decorationImageUrl')?.value || '');
+            const emoji = document.getElementById('decorationEmoji')?.value || '₍ᐢ - ̫ - ᐢ₎🎀3.';
+            const name = document.getElementById('decorationName')?.value.trim() || 'ตัวอย่างสติกเกอร์';
+            const sizeValue = document.getElementById('decorationSize')?.value || 'medium';
+            const size = {small:24, medium:36, large:48}[sizeValue] || 36;
+            stage.innerHTML = imageUrl
+              ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" style="max-width:80vw;max-height:48vh;object-fit:contain;width:${size*2}px;height:${size*2}px" onerror="this.style.display='none';document.getElementById('decorationPreviewImageError').classList.remove('hidden')">`
+              : `<div style="font-size:${sizeValue==='small'?'1.25rem':sizeValue==='large'?'2.5rem':'1.75rem'};white-space:pre;line-height:1.35;overflow-wrap:normal;max-width:85vw">${escapeHtml(emoji)}</div>`;
+            const error = document.getElementById('decorationPreviewImageError'); if (error) error.classList.add('hidden');
+            document.getElementById('decorationPopupPreviewName').textContent = name;
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+        function closeFloatingDecorationPopupPreview() {
+            const modal = document.getElementById('decorationPopupPreview');
+            if (modal) { modal.classList.add('hidden'); modal.classList.remove('flex'); }
+        }
+        function toggleFloatingDecorationPreview() {
+            floatingDecorationPreviewEnabled = !floatingDecorationPreviewEnabled;
+            const btn = document.getElementById('decorationPreviewBtn');
+            if (btn) { btn.textContent = floatingDecorationPreviewEnabled ? '✖ ปิดตัวอย่าง' : '👁️ ดูตัวอย่าง'; btn.classList.toggle('bg-indigo-600', !floatingDecorationPreviewEnabled); btn.classList.toggle('bg-rose-600', floatingDecorationPreviewEnabled); }
+            renderFloatingDecorations();
+            showToast(floatingDecorationPreviewEnabled ? 'เปิดตัวอย่างการแสดงผล (ยังไม่บันทึกค่า)' : 'ปิดตัวอย่างการแสดงผล');
+        }
+        function saveFloatingDecorationDisplaySettings() {
+            appState.settings.floatingDecorationOptions = { speed:Number(document.getElementById('decorationSpeed')?.value || 6), count:Number(document.getElementById('decorationCount')?.value || 12), opacity:Number(document.getElementById('decorationOpacity')?.value || 16) };
+            saveState(); renderFloatingDecorations(); showToast('บันทึกค่าการแสดงผลสติกเกอร์แล้ว');
+        }
+        function resetFloatingDecorationDisplaySettings() {
+            appState.settings.floatingDecorationOptions = { speed:6, count:12, opacity:16 };
+            loadFloatingDecorationDisplayControls(); saveState(); renderFloatingDecorations();
+        }
         function renderFloatingDecorations() {
             const root = document.getElementById('wandererFloatingDecorations');
             if (!root) return;
-            const items = (appState.settings?.floatingDecorations || []).filter(x => x && x.enabled !== false);
-            root.innerHTML = items.map((item, index) => {
-                const sizeMap = { small: 34, medium: 48, large: 64 };
-                const size = sizeMap[item.size] || 48;
+            const opts = getFloatingDecorationOptions();
+            const all = (appState.settings?.floatingDecorations || []).filter(x => x && (x.enabled !== false || floatingDecorationPreviewEnabled));
+            if (!all.length) { root.innerHTML = ''; return; }
+            const expanded = Array.from({length: Math.min(opts.count, 36)}, (_, i) => ({ item: all[i % all.length], index: i }));
+            root.innerHTML = expanded.map(({item, index}) => {
+                const sizeMap = { small: 24, medium: 36, large: 48 };
+                const size = sizeMap[item.size] || 36;
                 const pos = item.position || 'left';
-                const top = 18 + ((index * 19) % 68);
-                const sideStyle = pos === 'right' ? `right:${8 + (index % 3) * 10}px;` : pos === 'left' ? `left:${8 + (index % 3) * 10}px;` : `left:${8 + ((index * 17) % 82)}%;`;
-                const style = `${sideStyle}top:${top}%;width:${size}px;height:${size}px;animation-delay:${(index % 5) * -0.7}s;${pos === 'background' ? 'opacity:.28;z-index:1;pointer-events:none;' : ''}`;
+                // Evenly distribute across full viewport; background decorations occupy the full page behind cards/text.
+                const x = (index * 37 + 11) % 94 + 3;
+                const y = (index * 29 + 7) % 88 + 5;
+                const isBackground = pos === 'background';
+                const sideX = pos === 'right' ? `right:${5 + (index % 3) * 4}px;` : `left:${5 + (index % 3) * 4}px;`;
+                const location = isBackground ? `left:${x}%;top:${y}%;` : `${sideX}top:${y}%;`;
+                const opacity = (opts.opacity / 100) * (isBackground ? 1 : 0.82);
+                const style = `${location}width:${size}px;height:${size}px;--deco-speed:${opts.speed + (index % 4) * .6}s;--deco-opacity:${opacity};animation-delay:${(index % 7) * -.65}s;`;
                 const content = item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name || 'สติกเกอร์')}" loading="lazy" onerror="this.style.display='none'">` : `<span class="emoji">${escapeHtml(item.emoji || '✨')}</span>`;
-                const tag = item.linkUrl && pos !== 'background' ? 'a' : 'span';
+                const tag = item.linkUrl && !isBackground ? 'a' : 'span';
                 const href = tag === 'a' ? ` href="${escapeHtml(item.linkUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(item.name || 'เปิดลิงก์')}"` : '';
-                return `<${tag} class="wanderer-floating-decoration ${item.imageUrl ? '' : 'emoji'}" style="${style}"${href}>${content}</${tag}>`;
+                return `<${tag} class="wanderer-floating-decoration ${isBackground ? 'deco-background' : 'deco-side'} ${item.imageUrl ? '' : 'emoji'} ${floatingDecorationPreviewEnabled ? 'deco-preview' : ''}" style="${style}"${href}>${content}</${tag}>`;
             }).join('');
         }
 
@@ -4003,7 +4097,8 @@
         function saveFloatingDecoration() {
             const name = document.getElementById('decorationName').value.trim();
             const emoji = document.getElementById('decorationEmoji').value.trim();
-            const imageUrl = document.getElementById('decorationImageUrl').value.trim();
+            const imageUrl = normalizeDecorationImageUrl(document.getElementById('decorationImageUrl').value.trim());
+            if (imageUrl && document.getElementById('decorationImageUrl')) document.getElementById('decorationImageUrl').value = imageUrl;
             const linkUrl = document.getElementById('decorationLinkUrl').value.trim();
             if (!imageUrl && !emoji) { showToast('กรุณาใส่อีโมจิหรือ URL รูปภาพ'); return; }
             if (imageUrl && !/^https?:\/\//i.test(imageUrl)) { showToast('URL รูปภาพต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
@@ -4666,5 +4761,19 @@
 
         setInterval(renderShopIdentityAndStatus, 30000);
     </script>
+
+    <div id="decorationPopupPreview" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="decorationPopupPreviewName">
+        <button type="button" class="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" aria-label="ปิดหน้าต่างตัวอย่าง" onclick="closeFloatingDecorationPopupPreview()"></button>
+        <div class="relative w-full max-w-sm rounded-3xl bg-white dark:bg-slate-800 border border-purple-100 dark:border-slate-700 shadow-2xl p-5 text-center space-y-4">
+            <div class="flex items-center justify-between gap-3"><h3 id="decorationPopupPreviewName" class="font-bold text-purple-700 dark:text-purple-300">ตัวอย่างสติกเกอร์</h3><button type="button" onclick="closeFloatingDecorationPopupPreview()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 font-bold" aria-label="ปิด">✕</button></div>
+            <div class="min-h-40 rounded-2xl border border-dashed border-purple-200 dark:border-slate-600 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 overflow-hidden">
+                <div id="decorationPopupPreviewContent" class="flex items-center justify-center">₍ᐢ - ̫ - ᐢ₎🎀3.</div>
+                <p id="decorationPreviewImageError" class="hidden text-sm text-rose-600">โหลดรูปไม่สำเร็จ กรุณาตรวจสอบ URL รูปภาพโดยตรง</p>
+            </div>
+            <p class="text-xs text-slate-500">ตัวอย่างนี้แสดงในหน้าต่างป๊อปอัป และยังไม่บันทึกการเปลี่ยนแปลง</p>
+            <button type="button" onclick="closeFloatingDecorationPopupPreview()" class="w-full rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5">เข้าใจแล้ว</button>
+        </div>
+    </div>
+
 </body>
 </html>
