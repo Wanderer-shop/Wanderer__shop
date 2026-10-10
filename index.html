@@ -73,7 +73,7 @@
 <style id="wanderer-decoration-styles">
   #heroBannerImage { transition: transform .65s cubic-bezier(.2,.7,.2,1); }
   #heroBannerImage:hover { transform: scale(1.10) !important; }
-  #wandererFloatingDecorations { position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden; }
+  #wandererFloatingDecorations { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; }
   body > header, body > main, body > nav, body > section, body > footer { position:relative; z-index:1; }
   .wanderer-floating-decoration { position:absolute; display:flex; align-items:center; justify-content:center; animation:wandererFloat var(--deco-speed,6s) ease-in-out infinite, wandererBlink calc(var(--deco-speed,6s) * .82) ease-in-out infinite; opacity:var(--deco-opacity,.16); filter:drop-shadow(0 2px 5px rgba(60,30,100,.08)); will-change:transform,opacity; }
   .wanderer-floating-decoration img { width:100%; height:100%; object-fit:contain; }
@@ -885,7 +885,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <div><label class="block font-bold mb-1">อีโมจิ (ถ้าไม่ใช้รูป)</label><input id="decorationEmoji" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="✨ 🪽 💜"></div>
                     <div class="sm:col-span-2"><label class="block font-bold mb-1">URL รูปภาพ (PNG/JPG/WebP/GIF) — ไม่บังคับ</label><input id="decorationImageUrl" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="https://.../sticker.png"></div>
                     <div class="sm:col-span-2"><label class="block font-bold mb-1">ลิงก์เมื่อกดรูป (ไม่บังคับ)</label><input id="decorationLinkUrl" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="https://... หรือ LINE OA"></div>
-                    <div><label class="block font-bold mb-1">ตำแหน่ง</label><select id="decorationPosition" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="left">ริมซ้าย</option><option value="right">ริมขวา</option><option value="background">ตกแต่งพื้นหลัง</option></select></div>
+                    <div><label class="block font-bold mb-1">ตำแหน่ง</label><select id="decorationPosition" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="left">ริมซ้าย</option><option value="right">ริมขวา</option><option value="diagonal-left">แนวทแยงซ้ายของพื้นหลัง</option><option value="diagonal-right">แนวทแยงขวาของพื้นหลัง</option><option value="background">ตกแต่งพื้นหลัง</option></select></div>
                     <div><label class="block font-bold mb-1">ขนาด</label><select id="decorationSize" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="small">เล็ก</option><option value="medium" selected>กลาง</option><option value="large">ใหญ่</option></select></div>
                     <div class="sm:col-span-2 flex items-center gap-2"><input type="checkbox" id="decorationEnabled" checked><label for="decorationEnabled" class="font-bold">เปิดแสดงบนหน้าร้าน</label></div>
                 </div>
@@ -1633,7 +1633,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         loginOptions: []
                     }
                 ],
-                lineOrderTemplate: '🛒 รายการสั่งซื้อ (Wanderer_Shop)\n---------------------------\n[ITEMS]\n---------------------------\n💰 ยอดรวมทั้งสิ้น: [TOTAL] บาท\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ'
+                lineOrderTemplate: '🛒 รายการสั่งซื้อ Wanderer_Shop\n- รายการ : [ชื่อแอป/เกม]\n- ชื่อแพ็กเกจ : [PACKAGE]\n- กลุ่มแพ็กเกจ (Package Group) : [GROUP]\n- จำนวน : [QTY]\n- ราคารวม : [TOTAL] บาท\n-------------------------------\nรอแม่ค้าตอบก่อนโอนนะคะ'
             },
             orders: [],
             reviews: [],
@@ -2071,14 +2071,14 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                                         <span class="text-base sm:text-lg font-black text-pink-500 whitespace-nowrap">฿${escapeHtml(pkg.price)}</span>
                                     </div>
                                     ${pkg.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 whitespace-pre-line mt-2">${escapeHtml(pkg.description)}</p>` : ''}
-                                    <div class="mt-2 text-[10px] font-bold ${pkg.inStock === false ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}">
-                                        <i class="fa-solid ${pkg.inStock === false ? 'fa-circle-xmark' : 'fa-circle-check'} mr-1"></i>${pkg.inStock === false ? 'ไม่พร้อมส่ง' : 'พร้อมส่ง'}
+                                    <div class="mt-2 text-[10px] font-bold ${!isPackageAvailableForPurchase(pkg) ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}">
+                                        <i class="fa-solid ${!isPackageAvailableForPurchase(pkg) ? 'fa-circle-xmark' : 'fa-circle-check'} mr-1"></i>${!isPackageAvailableForPurchase(pkg) ? 'ไม่พร้อมส่ง' : 'พร้อมส่ง'}
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
                                     <button onclick="openPkgDetailModal('${String(pkg.id).replace(/'/g, "\\'")}')" class="px-2 py-2 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-200 rounded-xl text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 transition">รายละเอียด</button>
-                                    <button onclick="addToCart('${String(pkg.id).replace(/'/g, "\\'")}')" ${pkg.inStock === false ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition ${pkg.inStock === false ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'}">+ ตะกร้า</button>
-                                    <button onclick="buyNow('${String(pkg.id).replace(/'/g, "\\'")}')" ${pkg.inStock === false ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition ${pkg.inStock === false ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'}"><i class="fa-solid fa-bolt mr-1"></i>สั่งซื้อ</button>
+                                    <button onclick="addToCart('${String(pkg.id).replace(/'/g, "\\'")}')" ${!isPackageAvailableForPurchase(pkg) ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition ${!isPackageAvailableForPurchase(pkg) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'}">+ ตะกร้า</button>
+                                    <button onclick="buyNow('${String(pkg.id).replace(/'/g, "\\'")}')" ${!isPackageAvailableForPurchase(pkg) ? 'disabled' : ''} class="px-2 py-2 rounded-xl text-[11px] font-bold transition ${!isPackageAvailableForPurchase(pkg) ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700 text-white shadow-sm'}"><i class="fa-solid fa-bolt mr-1"></i>สั่งซื้อ</button>
                                 </div>
                             </div>
                         `).join('')}
@@ -2122,14 +2122,28 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             return getEffectiveStoreStatus() === 'OFFLINE';
         }
 
+        function normalizeAvailabilityStatus(value) {
+            const raw = String(value ?? '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+            if (!raw) return '';
+            if (['true','1','in_stock','instock','available','ready','พร้อมส่ง','พร้อม_ส่ง','มีสินค้า'].includes(raw)) return 'IN_STOCK';
+            if (['false','0','out_of_stock','outofstock','not_ready','notready','waiting','unavailable','not_ready_to_send','ไม่พร้อมส่ง','รอเติมของ','หมด','หมดสต็อก','ปิดขาย'].includes(raw)) return 'OUT_OF_STOCK';
+            return raw.toUpperCase();
+        }
         function isPackageAvailableForPurchase(pkg) {
             if (!pkg) return false;
-            const status=String(pkg.status||'').trim().toUpperCase();
-            return pkg.inStock !== false && !['OUT_OF_STOCK','NOT_READY','WAITING','UNAVAILABLE','NOTREADY','NOT_READY_TO_SEND','ไม่พร้อมส่ง','รอเติมของ','หมด','หมดสต็อก'].includes(status);
+            // Status has priority over legacy inStock flags so a stale true value cannot expose an unavailable package.
+            const status = normalizeAvailabilityStatus(pkg.status ?? pkg.stockStatus ?? pkg.availability ?? '');
+            if (['OUT_OF_STOCK','NOT_READY','WAITING','UNAVAILABLE','NOTREADY','NOT_READY_TO_SEND'].includes(status)) return false;
+            if (['IN_STOCK','AVAILABLE','READY'].includes(status)) return pkg.inStock !== false;
+            if (pkg.inStock === false) return false;
+            if (pkg.inStock === true) return true;
+            return !status;
         }
         function isAppAvailableForDisplay(app){
             if(!app || isLegacyDemoApp(app)) return false;
-            const related=(appState.packages||[]).filter(p=>p.appId===app.id);
+            const appStatus = normalizeAvailabilityStatus(app.status ?? app.stockStatus ?? app.availability ?? '');
+            if (app.available === false || app.isAvailable === false || ['OUT_OF_STOCK','NOT_READY','WAITING','UNAVAILABLE','NOTREADY','NOT_READY_TO_SEND'].includes(appStatus)) return false;
+            const related=(appState.packages||[]).filter(p=>String(p.appId)===String(app.id));
             return !related.length || related.some(isPackageAvailableForPurchase);
         }
 
@@ -2272,11 +2286,22 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const itemsText = itemsSnapshot.map((item, i) => {
                 const appName = item.appName || item.app || item.categoryName || item.name || 'สินค้า';
                 const packageName = item.packageName || item.package || item.variantName || item.name || 'แพ็กเกจ';
-                const price = (Number(item.price)||0) * getCartQuantity(item);
-                return `${i+1}. ชื่อแอพ : ${appName}\n   แพ็กเกจย่อย : ${packageName} x${getCartQuantity(item)}\n   ราคา: ${price.toLocaleString('th-TH')} บาท`;
-            }).join('\n');
-            let tmpl = appState.formTemplates.lineOrderTemplate || '🛒 รายการสั่งซื้อ (Wanderer_Shop)\n---------------------------\n[ITEMS]\n---------------------------\n💰 ยอดรวมทั้งสิ้น: [TOTAL] บาท\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ';
-            tmpl = tmpl.replace(/\[ITEMS\]/g, itemsText).replace(/\[TOTAL\]/g, total.toLocaleString('th-TH'));
+                const groupName = item.groupName || item.packageGroup || item.packageCategory || 'ไม่ระบุกลุ่ม';
+                const qty = getCartQuantity(item);
+                const lineTotal = (Number(item.price)||0) * qty;
+                return `${i+1}. รายการ : ${appName}\n   ชื่อแพ็กเกจ : ${packageName}\n   กลุ่มแพ็กเกจ (Package Group) : ${groupName}\n   จำนวน : ${qty}\n   ราคารวม : ${lineTotal.toLocaleString('th-TH')} บาท`;
+            }).join('\n\n');
+            const firstItem = itemsSnapshot[0] || {};
+            const firstApp = firstItem.appName || firstItem.app || firstItem.categoryName || firstItem.name || 'สินค้า';
+            const firstPackage = firstItem.packageName || firstItem.package || firstItem.variantName || firstItem.name || 'แพ็กเกจ';
+            const firstGroup = firstItem.groupName || firstItem.packageGroup || firstItem.packageCategory || 'ไม่ระบุกลุ่ม';
+            let tmpl = appState.formTemplates.lineOrderTemplate || '🛒 รายการสั่งซื้อ Wanderer_Shop\n[ITEMS]\n-------------------------------\nรอแม่ค้าตอบก่อนโอนนะคะ';
+            tmpl = tmpl.replace(/\[ITEMS\]/g, itemsText)
+                .replace(/\[ชื่อแอป\/เกม\]/g, firstApp)
+                .replace(/\[PACKAGE\]/g, firstPackage)
+                .replace(/\[GROUP\]/g, firstGroup)
+                .replace(/\[QTY\]/g, String(itemsSnapshot.reduce((sum, item) => sum + getCartQuantity(item), 0)))
+                .replace(/\[TOTAL\]/g, total.toLocaleString('th-TH'));
             tmpl = `เลขออเดอร์: ${orderId}\n` + tmpl;
             const copied = await copyToClipboard(tmpl);
             if (copied) {
@@ -3278,6 +3303,43 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             document.getElementById('modalCategory').classList.remove('hidden');
         }
         function closeModalCategory() { document.getElementById('modalCategory').classList.add('hidden'); }
+        // Persist the current admin catalog snapshot to a dedicated Google Sheets tab.
+        // Uses the backup endpoint if configured, otherwise reuses the Apps Script read URL.
+        async function backupCatalogToSheet(reason) {
+            const settings = appState.settings || {};
+            const endpoint = String(settings.sheetBackupUrl || settings.sheetAppsScriptUrl || '').trim();
+            if (!endpoint) {
+                recordSyncHistory({ok:false, action:'catalog_backup', message:'ยังไม่ได้ตั้งค่า Apps Script URL'});
+                return { skipped:true, reason:'Google Sheets endpoint not configured' };
+            }
+            const payload = {
+                action: 'save_catalog',
+                source: 'wanderer_shop_admin',
+                reason: String(reason || 'admin_catalog_edit'),
+                updatedAt: new Date().toISOString(),
+                categories: appState.categories || [],
+                apps: appState.apps || [],
+                packages: appState.packages || []
+            };
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(payload),
+                    mode: 'cors'
+                });
+                const result = await response.json();
+                if (!response.ok || result.success !== true) throw new Error(result.error || ('HTTP ' + response.status));
+                recordSyncHistory({ok:true, action:'catalog_backup', message:'บันทึกหมวดหมู่ แอป และแพ็กเกจลงชีตแล้ว', at:new Date().toISOString()});
+                return result;
+            } catch (error) {
+                recordSyncHistory({ok:false, action:'catalog_backup', message:String(error?.message || error)});
+                console.error('Google Sheets catalog backup failed:', error);
+                showToast('บันทึกในเว็บแล้ว แต่ส่งกลับ Google Sheets ไม่สำเร็จ');
+                return { success:false, error:String(error?.message || error) };
+            }
+        }
+
         function saveCategoryModal() {
             const name = document.getElementById('catNameInput').value;
             const icon = document.getElementById('catIconInput').value;
@@ -3291,6 +3353,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 appState.categories.push({ id: 'cat-' + Date.now(), name, icon, description: desc });
             }
             saveState();
+            backupCatalogToSheet('save_category');
             closeModalCategory();
             renderAdminProductsTree();
             renderCategories();
@@ -3299,6 +3362,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             if (confirm('ยืนยันลบหมวดหมู่นี้?')) {
                 appState.categories = appState.categories.filter(c => c.id !== id);
                 saveState();
+                backupCatalogToSheet('delete_category');
                 renderAdminProductsTree();
             }
         }
@@ -3358,6 +3422,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             }
 
             saveState();
+            backupCatalogToSheet('save_app');
             closeModalApp();
             renderAdminProductsTree();
             renderApps();
@@ -3366,6 +3431,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             if (confirm('ยืนยันลบแอปนี้?')) {
                 appState.apps = appState.apps.filter(a => a.id !== id);
                 saveState();
+                backupCatalogToSheet('delete_app');
                 renderAdminProductsTree();
             }
         }
@@ -3561,7 +3627,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 || (pkg.requirementType === 'EMAIL_PASS' ? 'crt-email-pass'
                 : pkg.requirementType === 'UID' ? 'crt-uid' : 'crt-none');
 
-            document.getElementById('pkgStatusSelect').value = pkg.inStock === false ? 'OUT_OF_STOCK' : 'IN_STOCK';
+            document.getElementById('pkgStatusSelect').value = isPackageAvailableForPurchase(pkg) ? 'IN_STOCK' : 'OUT_OF_STOCK';
             populatePackageRequirementTemplateSelect(selected);
             document.getElementById('modalPackage').classList.remove('hidden');
         }
@@ -3599,6 +3665,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     pkg.price = price;
                     pkg.description = desc;
                     pkg.inStock = inStock;
+                    pkg.status = inStock ? 'IN_STOCK' : 'OUT_OF_STOCK';
+                    pkg.stockStatus = pkg.status;
                     pkg.customerRequirementTemplateId = templateId;
                     pkg.requirementType = requirementType;
                     pkg.customerRequirementType = requirementType;
@@ -3614,6 +3682,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     price,
                     description: desc,
                     inStock,
+                    status: inStock ? 'IN_STOCK' : 'OUT_OF_STOCK',
+                    stockStatus: inStock ? 'IN_STOCK' : 'OUT_OF_STOCK',
                     customerRequirementTemplateId: templateId,
                     requirementType,
                     customerRequirementType: requirementType,
@@ -3623,8 +3693,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             }
 
             saveState();
+            backupCatalogToSheet('save_package');
             closeModalPackage();
             renderAdminProductsTree();
+            renderCategories();
+            renderApps();
             if (currentSelectedAppId) renderAppDetailPage(currentSelectedAppId);
             showToast('บันทึกแพ็กเกจเรียบร้อยแล้ว');
         }
@@ -3632,6 +3705,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             if (confirm('ยืนยันลบแพ็กเกจนี้?')) {
                 appState.packages = appState.packages.filter(p => p.id !== id);
                 saveState();
+                backupCatalogToSheet('delete_package');
                 renderAdminProductsTree();
             }
         }
@@ -4166,12 +4240,16 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 // Evenly distribute across full viewport; background decorations occupy the full page behind cards/text.
                 const x = (index * 37 + 11) % 94 + 3;
                 const y = (index * 29 + 7) % 88 + 5;
-                const isBackground = pos === 'background';
+                const isDiagonal = pos === 'diagonal-left' || pos === 'diagonal-right';
+                const isBackground = pos === 'background' || isDiagonal;
                 const sideX = pos === 'right' ? `right:${5 + (index % 3) * 4}px;` : `left:${5 + (index % 3) * 4}px;`;
-                const location = isBackground ? `left:${x}%;top:${y}%;` : `${sideX}top:${y}%;`;
+                const diagonalX = pos === 'diagonal-left' ? `${8 + ((index * 13) % 78)}%` : `${90 - ((index * 13) % 78)}%`;
+                const diagonalY = `${5 + ((index * 19) % 86)}%`;
+                const location = isDiagonal ? `left:${diagonalX};top:${diagonalY};transform:rotate(${pos === 'diagonal-left' ? '-18deg' : '18deg'});` : (isBackground ? `left:${x}%;top:${y}%;` : `${sideX}top:${y}%;`);
                 const opacity = (opts.opacity / 100) * (isBackground ? 1 : 0.82);
                 const style = `${location}width:${size}px;height:${size}px;--deco-speed:${opts.speed + (index % 4) * .6}s;--deco-opacity:${opacity};animation-delay:${(index % 7) * -.65}s;`;
-                const content = item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name || 'สติกเกอร์')}" loading="lazy" onerror="this.style.display='none'">` : `<span class="emoji">${escapeHtml(item.emoji || '✨')}</span>`;
+                const fallbackEmoji = `<span class="emoji">${escapeHtml(item.emoji || '✨')}</span>`;
+                const content = item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name || 'สติกเกอร์')}" loading="eager" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'emoji',textContent:${JSON.stringify(item.emoji || '✨')}}))">` : fallbackEmoji;
                 const tag = item.linkUrl && !isBackground ? 'a' : 'span';
                 const href = tag === 'a' ? ` href="${escapeHtml(item.linkUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(item.name || 'เปิดลิงก์')}"` : '';
                 return `<${tag} class="wanderer-floating-decoration ${isBackground ? 'deco-background' : 'deco-side'} ${item.imageUrl ? '' : 'emoji'} ${floatingDecorationPreviewEnabled ? 'deco-preview' : ''}" style="${style}"${href}>${content}</${tag}>`;
@@ -4443,7 +4521,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 console.error('Supabase admin login failed:', err);
                 const message = String(err?.message || 'ไม่ทราบสาเหตุ');
                 if (/invalid login credentials/i.test(message)) {
-                    alert('เข้าสู่ระบบไม่สำเร็จ: ตรวจสอบรหัสผ่านและการยืนยันอีเมล\n\nหากใช้ชื่อ pao ต้องสร้างผู้ใช้ใน Supabase Auth ด้วยอีเมล pao@wanderer-shop.com และตั้งรหัสผ่านเดียวกันก่อน');
+                    alert('เข้าสู่ระบบไม่สำเร็จ: ตรวจสอบรหัสผ่านและการยืนยันอีเมล\n\nหากใช้ชื่อ pao ต้องสร้างผู้ใช้ใน Supabase Auth ด้วยอีเมล s6741050006@kktech.ac.th และตั้งรหัสผ่านเดียวกันก่อน');
                 } else if (/email not confirmed/i.test(message)) {
                     alert('บัญชีนี้ยังไม่ได้ยืนยันอีเมล กรุณายืนยันอีเมลหรือปรับสถานะยืนยันใน Supabase Authentication');
                 } else {
@@ -4470,8 +4548,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function openWebsiteReadyPopup(serviceId=null) {
             // This popup belongs only to the dedicated Website Services tab.
             const servicesView=document.getElementById('viewWebsiteServices');
-            if(!servicesView) return;
+            // The modal was originally nested inside the hidden home view. Move it to body
+            // so it can overlay the dedicated website-services view reliably.
             const modal=document.getElementById('websiteReadyPopup');
+            if(!servicesView || !modal || servicesView.classList.contains('hidden')) return;
+            if(modal.parentElement !== document.body) document.body.appendChild(modal);
             const linkBox=document.getElementById('websiteReadyPreviewLink');
             const services=Array.isArray(appState.websiteServices)?appState.websiteServices:[];
             const service=services.find(w=>String(w.id)===String(serviceId));
@@ -4492,7 +4573,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     ? `<a href="${escapeHtml(preview)}" target="_blank" rel="noopener noreferrer" class="block text-center px-4 py-3 rounded-xl bg-indigo-50 dark:bg-slate-700 text-indigo-700 dark:text-indigo-200 font-bold text-sm">👁️ กดดูตัวอย่างเว็บไซต์</a>`
                     : '<p class="text-xs text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3">ยังไม่มีลิงก์ตัวอย่างเว็บไซต์ กรุณาตั้งค่า URL ตัวอย่างในแอดมิน</p>';
             }
-            if(modal){ modal.classList.remove('hidden'); modal.classList.add('flex'); modal.setAttribute('aria-hidden','false'); }
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden','false');
         }
         function renderWebsiteServiceCustomerList(){
             const root=document.getElementById('websiteServicesCustomerGrid'); if(!root)return;
@@ -4522,7 +4605,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function websiteServiceAsPackage(w){return {id:`websvc-pkg-${w.id}`,name:w.name||'เว็บสำเร็จรูป',price:Number(w.price)||0,description:w.description||'',inStock:w.inStock!==false,status:w.status||'IN_STOCK',productType:'website-service',previewUrl:w.previewUrl||'',websiteServiceId:w.id};}
         function addWebsiteServiceRecordToCart(id){if(isStoreClosedForPurchases()){showToast('ขณะนี้ร้านปิดอยู่ ยังไม่สามารถเพิ่มสินค้าลงตะกร้าได้');return;}const w=getWebsiteServices().find(x=>x.id===id);if(!w||w.inStock===false){showToast('รายการนี้ยังไม่พร้อมส่ง');return;}const pkg=websiteServiceAsPackage(w);normalizeCart();const existing=appState.cart.find(x=>x.id===pkg.id);if(existing)existing.qty++;else appState.cart.push({...pkg,qty:1});saveState();updateCartBadge();showToast(`เพิ่ม ${pkg.name} ลงตะกร้าแล้ว`);}
         function buyWebsiteServiceNow(id){if(isStoreClosedForPurchases()){showToast('ขณะนี้ร้านปิดอยู่ ยังไม่สามารถสั่งซื้อได้');return;}const w=getWebsiteServices().find(x=>x.id===id);if(!w||w.inStock===false){showToast('รายการนี้ยังไม่พร้อมส่ง');return;}appState.cart=[{...websiteServiceAsPackage(w),qty:1}];appState.pendingCustomerRequirements={};saveState();updateCartBadge();openCartDrawer();}
-        function closeWebsiteReadyPopup() { const modal=document.getElementById('websiteReadyPopup'); if(modal){modal.classList.add('hidden');modal.classList.remove('flex');modal.setAttribute('aria-hidden','true');} }
+        function closeWebsiteReadyPopup() {
+            const modal=document.getElementById('websiteReadyPopup');
+            if(modal){modal.classList.add('hidden');modal.classList.remove('flex');modal.setAttribute('aria-hidden','true');}
+        }
         function isLegacyDemoApp(app) {
             const name=String(app?.name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
             const legacyNames=['youtube premium 4k','netflix 4k ultra hd','roblox robux'].map(x=>x.toLowerCase().replace(/[^a-z0-9]/g,''));
@@ -4603,7 +4689,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
         function loadIntegrationSettings() {
             const s = appState.settings || {};
-            const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || '', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
+            const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
             Object.entries(values).forEach(([id,v]) => { const el=document.getElementById(id); if(el) el.value=v; });
         }
         // Real-use visitor counter (local browser profile; reset to zero at launch).
@@ -4653,7 +4739,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             return onCustomerCreateOrder({ id: order.id, customerName: order.customerName || order.name || 'ลูกค้าเว็บไซต์', items: order.items || [], total: order.total, itemNames: (order.items || []).map(i => `${i.name} x${getCartQuantity(i)}`).join(', ') });
         }
         async function backupOrderToSheet(order) {
-            const endpoint = String(appState.settings?.sheetBackupUrl || '').trim();
+            const endpoint = String(appState.settings?.sheetBackupUrl || appState.settings?.sheetAppsScriptUrl || '').trim();
             if (!endpoint) return { skipped:true, reason:'Google Sheets backup endpoint not configured' };
             const response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ type:'order_backup', action:'save_order', order }) , mode:'cors' });
             if (!response.ok) throw new Error(`Sheets backup HTTP ${response.status}`);
@@ -4885,7 +4971,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     if(apps.length) { const mapped=apps.filter(r=>r.id&&r.name&&r.categoryId).map(r=>({...r,id:r.id,name:r.name,categoryId:r.categoryId,osType:r.osType||'ALL',iconUrl:r.iconUrl||'',description:r.description||''})); if(mapped.length){appState.apps=mergeById(appState.apps,mapped);changed.push(`แอป ${mapped.length}`);} }
                     if(pkgs.length) { const mapped=pkgs.filter(r=>r.id&&r.name&&r.appId).map(r=>({...r,id:r.id,name:r.name,appId:r.appId,groupName:r.groupName||'',price:Math.max(0,Number(r.price)||0),description:r.description||'',inStock:!['false','0','no','out_of_stock','notready','not_ready','unavailable','ไม่พร้อมส่ง','รอเติมของ'].includes(String(r.inStock||r.status||'true').trim().toLowerCase()),requirementType:r.requirementType||'NONE'})); if(mapped.length){appState.packages=mergeById(appState.packages,mapped);changed.push(`แพ็กเกจ ${mapped.length}`);} }
                 }
-                if(changed.length) { appState.dataSource='google-sheets'; appState.settings.lastSyncAt=new Date().toISOString(); recordSyncHistory({ok:true,summary:changed.join(', ')}); saveState(); renderCategories(); renderApps(); renderWebsiteService(); status.textContent='ดึงข้อมูลสำเร็จ: '+changed.join(', ')+'\nเวลาซิงก์: '+new Date().toLocaleString('th-TH')+'\nข้อมูลที่ซิงก์สำเร็จถูกบันทึกไว้ในเบราว์เซอร์ หากชีตว่าง/อ่านไม่สำเร็จ ระบบจะไม่ลบข้อมูลเดิม'; showToast('อัปเดตข้อมูลจาก Google Sheets แล้ว'); }
+                if(changed.length) { appState.dataSource='google-sheets'; appState.settings.lastSyncAt=new Date().toISOString(); recordSyncHistory({ok:true,summary:changed.join(', ')}); saveState(); renderCategories(); renderApps(); renderWebsiteService(); status.textContent='ดึงข้อมูลสำเร็จ: '+changed.join(', ')+'\nเวลาซิงก์: '+new Date().toLocaleString('th-TH')+'\nข้อมูลที่ซิงก์สำเร็จถูกบันทึกไว้ในเบราว์เซอร์/ข้อมูลกลางตามการตั้งค่า การดึงข้อมูลเป็นทางเดียวจากชีต; การเปลี่ยนสินค้าในแอดมินไม่ได้เขียนกลับชีตโดยอัตโนมัติ หากชีตว่าง/อ่านไม่สำเร็จ ระบบจะไม่ลบข้อมูลเดิม'; showToast('อัปเดตข้อมูลจาก Google Sheets แล้ว'); }
                 else { const sampleKeys=(typeof apiRows!=='undefined' && apiRows[0])?Object.keys(apiRows[0]).join(', '):''; recordSyncHistory({ok:false,summary:'ไม่พบแถวข้อมูลที่ใช้ได้'+(sampleKeys?' | fields: '+sampleKeys:'')}); status.textContent='อ่าน URL ได้ แต่ไม่พบฟิลด์ที่เว็บนำไปสร้างหมวดหมู่/แอป/แพ็กเกจได้'+(sampleKeys?'\nฟิลด์ที่ได้รับ: '+sampleKeys:'')+'\nตรวจสอบว่า Apps Script ส่งรายการสินค้าในรูปแบบ JSON/CSV ที่รองรับ'; showToast('รูปแบบข้อมูลจากชีตไม่ตรงกับเว็บ'); }
             } catch(err) { recordSyncHistory({ok:false,summary:String(err?.message||err)}); status.textContent='ดึงข้อมูลไม่สำเร็จ: '+err.message+'\nข้อมูลเดิม/ข้อมูลตัวอย่างยังคงอยู่'; showToast('เชื่อมต่อ Google Sheets ไม่สำเร็จ'); }
         }
