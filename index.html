@@ -87,6 +87,15 @@
   @keyframes wandererBlink { 0%,100% { opacity:.06; } 50% { opacity:var(--deco-opacity,.16); } }
   @media (prefers-reduced-motion: reduce) { .wanderer-floating-decoration, #heroBannerImage { animation:none !important; transition:none !important; } }
 </style>
+<style id="wandererWebsiteThemeStyle">
+:root { --ws-page-bg:#f8f7ff; --ws-text:#334155; --ws-heading:#6d28d9; --ws-button:#7c3aed; --ws-card-bg:#ffffff; --ws-card-border:#e9d5ff; --ws-font:system-ui,sans-serif; }
+body { background-color:var(--ws-page-bg) !important; color:var(--ws-text); font-family:var(--ws-font); }
+body h1, body h2, body h3, body h4 { color:var(--ws-heading); }
+body .bg-white:not(.keep-original-theme), body .dark\:bg-slate-800:not(.keep-original-theme) { background-color:var(--ws-card-bg); }
+body .border-purple-100, body .border-indigo-100, body .border-slate-200 { border-color:var(--ws-card-border); }
+body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 { background-color:var(--ws-button); }
+.theme-edit-control:disabled { opacity:.7; cursor:not-allowed; }
+</style>
 </head>
 <body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
     <div id="wandererFloatingDecorations" aria-label="ของตกแต่งหน้าร้าน"></div>
@@ -237,11 +246,32 @@
                 </div>
             </div>
 
+            <div id="websiteReadyPopup" class="hidden fixed inset-0 z-[100] bg-slate-950/50 backdrop-blur-sm p-4 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="websiteReadyPopupTitle" onclick="if(event.target===this)closeWebsiteReadyPopup()">
+                <div class="w-full max-w-md rounded-3xl bg-white dark:bg-slate-800 border border-purple-100 dark:border-slate-700 shadow-2xl p-5">
+                    <div class="flex items-start justify-between gap-3">
+                        <div><h3 id="websiteReadyPopupTitle" class="font-black text-lg text-purple-700 dark:text-purple-300">เว็บสำเร็จรูป พร้อมใช้งาน</h3><p class="text-xs text-slate-500 mt-1">บริการเว็บไซต์พร้อมให้เลือกดูรายละเอียด</p></div>
+                        <button type="button" onclick="closeWebsiteReadyPopup()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700" aria-label="ปิด">✕</button>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 mt-4">หากสนใจเว็บสำเร็จรูป สามารถดูรายการและตัวอย่างเว็บไซต์ที่ตั้งค่าไว้ในหน้าจัดการบริการของร้านได้</p>
+                    <div id="websiteReadyPopupPrice" class="mt-3 font-black text-pink-500"></div><div id="websiteReadyPreviewLink" class="mt-4"></div>
+                    <button type="button" onclick="closeWebsiteReadyPopup()" class="mt-4 w-full py-2.5 rounded-xl bg-purple-600 text-white font-bold text-sm">เข้าใจแล้ว</button>
+                </div>
+            </div>
+
             <!-- Website services are rendered inside the main app grid (no separate category/tab) -->
             <section id="websiteServiceSection" class="hidden" aria-hidden="true"></section>
 
-            <div id="websiteServiceMessageBox" class="my-5 rounded-2xl border border-violet-200 dark:border-violet-800 bg-gradient-to-r from-violet-50 to-sky-50 dark:from-slate-800 dark:to-slate-900 p-4 shadow-sm">
-                <div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center text-violet-600"><i class="fa-solid fa-laptop-code text-lg"></i></div><div class="min-w-0 flex-1"><h3 class="font-bold text-sm text-violet-700 dark:text-violet-300">เว็บสำเร็จรูป พร้อมใช้งาน</h3><p class="text-xs text-slate-600 dark:text-slate-300 mt-1">เลือกบริการเว็บได้จากรายการสินค้า แล้วสั่งซื้อผ่านขั้นตอนเดียวกับสินค้าอื่น</p></div><button type="button" onclick="scrollToWebsiteServices()" class="shrink-0 px-3 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold">ดูบริการ</button></div>
+            <!-- Removed legacy static website-service demo card; only real saved products should render. -->
+
+            <div id="websiteReadyNotice" class="mb-4 rounded-2xl border border-purple-200 dark:border-purple-800 bg-gradient-to-r from-purple-50 via-white to-indigo-50 dark:from-slate-800 dark:via-slate-800 dark:to-indigo-950 p-4 shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center shrink-0"><i class="fa-solid fa-globe text-lg"></i></div>
+                    <div class="min-w-0 flex-1">
+                        <h3 class="font-bold text-sm text-purple-800 dark:text-purple-200">เว็บสำเร็จรูป พร้อมใช้งาน</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">เลือกชมรายละเอียดและตัวอย่างเว็บไซต์ได้ที่นี่</p>
+                    </div>
+                    <button type="button" onclick="navigateTo('website-services')" class="shrink-0 px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold">เลือกสินค้า</button>
+                </div>
             </div>
 
             <div class="pt-4 border-t border-slate-200 dark:border-slate-800">
@@ -308,6 +338,15 @@
             </div>
         </div>
 
+        <!-- WEBSITE SERVICE SELECTION VIEW -->
+        <div id="viewWebsiteServices" class="hidden space-y-5">
+            <div class="rounded-3xl border border-purple-200 dark:border-slate-700 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-slate-800 dark:to-indigo-950 p-5">
+                <h2 class="text-xl font-black text-purple-800 dark:text-purple-200">เว็บสำเร็จรูป พร้อมใช้งาน</h2>
+                <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">เลือกเว็บไซต์ที่ต้องการ แล้วดูรายละเอียด เพิ่มลงตะกร้า หรือสั่งซื้อได้ทันที</p>
+            </div>
+            <div id="websiteServicesCustomerGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+        </div>
+
         <!-- VIEW 3: ORDER TRACKING -->
         <div id="viewOrderTracking" class="hidden space-y-6 max-w-2xl mx-auto">
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-purple-100 dark:border-slate-700 shadow-sm">
@@ -350,6 +389,7 @@
                 <button onclick="switchAdminTab('settings-store')" id="adminTabBtn-settings-store" class="px-4 py-2 text-xs font-bold rounded-xl transition">⚙️ ตั้งค่าร้าน / แบนเนอร์ / ป๊อปอัป</button>
                 <button onclick="switchAdminTab('floating-decorations')" id="adminTabBtn-floating-decorations" class="px-4 py-2 text-xs font-bold rounded-xl transition">✨ รูปลอย / สติกเกอร์</button>
                 <button onclick="switchAdminTab('website-integrations')" id="adminTabBtn-website-integrations" class="px-4 py-2 text-xs font-bold rounded-xl transition">🧩 เว็บสำเร็จรูป & การเชื่อมต่อ</button>
+                <button onclick="switchAdminTab('website-theme')" id="adminTabBtn-website-theme" class="px-4 py-2 text-xs font-bold rounded-xl transition">🎨 สีเว็บ / ตัวอักษร / การ์ด</button>
             </div>
 
             <!-- TAB 1: DASHBOARD & ORDERS -->
@@ -369,7 +409,7 @@
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs text-slate-400 font-medium">ผู้เข้าชมเว็บไซต์</span>
-                        <h3 id="statVisits" class="text-2xl font-black text-cyan-600 mt-1">1,423</h3>
+                        <div class="flex items-center justify-between gap-2"><h3 id="statVisits" class="text-2xl font-black text-cyan-600 mt-1">0</h3><button type="button" onclick="resetVisitorCount()" class="text-[10px] px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-100 text-slate-600">รีเซ็ต</button></div>
                     </div>
                 </div>
 
@@ -618,6 +658,25 @@
                     <p id="integrationStatusText" class="text-xs text-slate-500 whitespace-pre-line">ระบบจะรวมข้อมูลลงในแท็บจัดการหมวดหมู่/แอป/แพ็กเกจเดิม โดยจัดหมวดตามชื่อชีต เช่น แอพพรีเมี่ยม, เติมเหรียญนิยาย, เติมเกม และสติ๊กเกอร์ไลน์; หาก URL ว่างหรือดึงข้อมูลไม่สำเร็จจะคงข้อมูลเดิมไว้</p>
                     <p class="text-[10px] text-amber-700 bg-amber-50 rounded-xl p-3">แนะนำใช้ Google Apps Script Web App URL /exec ซึ่งรองรับ JSON หรือ CSV ได้ใน URL เดียว; หากไม่ใช้ ให้ใส่ CSV แบบฟิลด์ระบบ (id, name, categoryId, appId, price ฯลฯ) หรือ CSV ตารางภาษาไทย: หมวดหลัก (ชื่อแอป), รายละเอียดแอป, หมวดหมู่แพ็กเกจ/กลุ่มตัวเลือกแพ็กเกจ/ตัวเลือกแพ็กเกจ (หมวดหมู่ย่อย), ชื่อแพ็กเกจย่อย, ราคา, ลิงก์รูป, รายละเอียดแพ็กเกจ, สถานะ, ID; หาก Apps Script ส่งหลายชีตควรแนบชื่อชีตในฟิลด์ sheetName หรือ categoryName หากใช้ /pubhtml ระบบจะลองแปลงเป็น URL CSV ให้อัตโนมัติ ทั้งนี้เบราว์เซอร์/Google อาจปฏิเสธการอ่านข้ามโดเมนได้</p>
                 </div>
+            </div>
+
+            <!-- TAB: WEBSITE THEME -->
+            <div id="adminTab-website-theme" class="hidden space-y-6 max-w-3xl">
+              <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm space-y-4">
+                <div><h3 class="font-bold text-md text-purple-700 dark:text-purple-300">🎨 ปรับแต่งหน้าตาเว็บไซต์ทั้งหมด</h3><p class="text-xs text-slate-500 mt-1">กำหนดสีพื้นหลัง สีตัวอักษร สีหัวข้อ สีปุ่ม สีพื้นการ์ด สีกรอบ และฟอนต์ โดยกดแก้ไขก่อน จากนั้นกดบันทึกเพื่อใช้กับหน้าเว็บ</p></div>
+                <div class="flex flex-wrap gap-2"><button type="button" onclick="enableWebsiteThemeEdit(true)" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-bold">✏️ แก้ไขสี</button><button type="button" onclick="saveWebsiteTheme()" class="px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold">💾 บันทึก</button><button type="button" onclick="resetWebsiteThemeForm()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-xs font-bold">คืนค่าในฟอร์ม</button></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <label class="font-bold">สีพื้นหลังหน้าเว็บ<input id="themePageBg" type="color" value="#f8f7ff" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
+                  <label class="font-bold">สีตัวอักษรทั่วไป<input id="themeTextColor" type="color" value="#334155" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
+                  <label class="font-bold">สีหัวข้อ<input id="themeHeadingColor" type="color" value="#6d28d9" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
+                  <label class="font-bold">สีปุ่มหลัก<input id="themeButtonColor" type="color" value="#7c3aed" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
+                  <label class="font-bold">สีพื้นหลังการ์ด<input id="themeCardBg" type="color" value="#ffffff" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
+                  <label class="font-bold">สีกรอบการ์ด<input id="themeCardBorder" type="color" value="#e9d5ff" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
+                  <label class="font-bold sm:col-span-2">แบบอักษร<select id="themeFontFamily" class="theme-edit-control block w-full mt-1 px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="system">ค่าเริ่มต้นของอุปกรณ์</option><option value="prompt">Prompt</option><option value="sarabun">Sarabun</option><option value="sans">Arial / Sans-serif</option></select></label>
+                </div>
+                <div class="rounded-2xl p-4 border" id="websiteThemeSample"><h4 class="font-bold mb-2">ตัวอย่างการ์ด</h4><p class="text-xs mb-3">ตัวอย่างสีตัวอักษรและกรอบการ์ดที่ตั้งค่าไว้</p><button type="button" class="px-4 py-2 rounded-xl text-white text-xs font-bold">ปุ่มตัวอย่าง</button></div>
+                <p id="websiteThemeStatus" class="text-xs text-slate-500">โหมดดูอย่างเดียว — กด “แก้ไขสี” เพื่อเปลี่ยนค่า</p>
+              </div>
             </div>
 
             <!-- TAB 5: FEEDBACKS & REVIEWS -->
@@ -880,7 +939,9 @@
                 <span class="text-xs font-bold text-slate-500">ราคาแพ็กเกจ:</span>
                 <span id="pkgModalPriceDisplay" class="text-xl font-black text-purple-600">฿0</span>
             </div>
-
+            <button id="pkgModalPreviewAction" type="button" onclick="openCurrentPackagePreview()" class="hidden w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition">
+                <i class="fa-solid fa-eye mr-2"></i>กดดูตัวอย่างเว็บ
+            </button>
 
         </div>
     </div>
@@ -1315,7 +1376,7 @@
             <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="hidden space-y-3 text-xs">
                 <div>
                     <label class="block font-medium mb-1">Admin Email (Supabase Auth):</label>
-                    <input type="text" id="adminUsernameInput" autocomplete="username" inputmode="text" placeholder="ชื่อผู้ใช้ pao หรืออีเมลแอดมิน" required value="" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <input type="text" id="adminUsernameInput" autocomplete="username" inputmode="text" placeholder="อีเมลแอดมิน" required value="s6741050006@kktech.ac.th" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
                     <label class="block font-medium mb-1">Admin Password:</label>
@@ -1366,7 +1427,7 @@
         // Shared database configuration. Public anon key is designed for browser use with RLS.
         const SUPABASE_URL = 'https://ylnxommdhjzzhkzhogyg.supabase.co';
         const ADMIN_USERNAME_ALIAS = 'pao';
-        const ADMIN_USERNAME_EMAIL = 's6741050006@kktech.ac.th'; // Create this user in Supabase Auth first
+        const ADMIN_USERNAME_EMAIL = 's6741050006@kktech.ac.th'; // Admin Supabase Auth email
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlsbnhvbW1kaGp6emhremhvZ3lnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY0NjQ5OTcsImV4cCI6MjEwMjA0MDk5N30.h9WrkjcjV2De6DPJ9_xLeZT2qBxwcOGFgEIhBh_FGfk';
         const SUPABASE_STORE_ROW_ID = '7c512a20-2a32-40dc-af57-d19b7c4b4c46';
         let supabaseClient = null;
@@ -1469,7 +1530,8 @@
         async function refreshSharedStoreState() {
             const ok = await loadSharedStoreState();
             if (ok) {
-                renderCategories(); renderApps(); renderWebsiteService(); renderShopIdentityAndStatus();
+                syncWebsiteServicesToCatalog();
+                renderCategories(); renderApps(); renderWebsiteService(); renderShopIdentityAndStatus(); renderVisitorCount(); applyWebsiteTheme();
                 const heroTitle = document.getElementById('heroTitle');
                 const heroDescription = document.getElementById('heroDescription');
                 const heroBannerImage = document.getElementById('heroBannerImage');
@@ -1486,23 +1548,9 @@
             adminUser: 'pao',
             currentSelectedCategory: 'ALL',
             cart: [],
-            categories: [
-                { id: 'cat-1', name: 'แอปพรีเมียม', icon: 'fa-box-open', description: 'บริการแอปพรีเมียมความบันเทิง ปลอดภัย จอส่วนตัว / หารจอคุณภาพ' },
-                { id: 'cat-2', name: 'เติมเกมออนไลน์', icon: 'fa-gamepad', description: 'บริการเติมเกมสะดวกรวดเร็ว ทั้งมือถือและ PC' },
-                { id: 'cat-3', name: 'เติมเหรียญนิยาย', icon: 'fa-book-open', description: 'บริการเติมเหรียญอ่านนิยาย ReadAWrite / Dek-D ราคาสุดคุ้ม' }
-            ],
-            apps: [
-                { id: 'app-1', categoryId: 'cat-1', name: 'YouTube Premium 4K', osType: 'ALL', iconUrl: 'https://cdn-icons-png.flaticon.com/512/1384/1384060.png', description: 'รับชมวิดีโอไม่มีโฆษณาคั่น ฟังเพลง YouTube Music ปิดหน้าจอได้' },
-                { id: 'app-2', categoryId: 'cat-1', name: 'Netflix 4K Ultra HD', osType: 'ALL', iconUrl: 'https://cdn-icons-png.flaticon.com/512/732/732228.png', description: 'ดูภาพยนตร์และซีรีส์ความคมชัดสูงสุด 4K Ultra HD เลือกโปรหารจอส่วนตัวได้' },
-                { id: 'app-3', categoryId: 'cat-2', name: 'ROBLOX Robux', osType: 'ALL', iconUrl: 'https://cdn-icons-png.flaticon.com/512/888/888857.png', description: 'เติม Robux ปลอดภัยแท้ 100% สะดวกรวดเร็ว จัดส่งไว' },
-                { id: 'app-4', categoryId: 'cat-3', name: 'ReadAWrite Coin', osType: 'ALL', iconUrl: 'https://cdn-icons-png.flaticon.com/512/2232/2232688.png', description: 'เติมคอยน์อ่านนิยาย ReadAWrite ราคาประหยัด' }
-            ],
-            packages: [
-                { id: 'pkg-1', appId: 'app-1', groupName: 'หารเมลร้าน', name: 'YouTube Premium 30 วัน', price: 35, description: 'ใช้งานกับเมลร้านค้า ปลอดภัย 100%', inStock: true, requirementType: 'NONE' },
-                { id: 'pkg-2', appId: 'app-2', groupName: 'หารจอส่วนตัว', name: 'Netflix 1 จอ 30 วัน', price: 99, description: 'จอส่วนตัว ตั้งรหัส PIN ล็อกจอได้', inStock: true, requirementType: 'NONE' },
-                { id: 'pkg-3', appId: 'app-3', groupName: 'เติมตรง ID', name: '500 Robux Fast', price: 150, description: 'รับสินค้าผ่านไอดีรหัสผ่าน หรือ UID', inStock: true, requirementType: 'UID' },
-                { id: 'pkg-4', appId: 'app-4', groupName: 'เติมตรง', name: '1,000 Coin ReadAWrite', price: 90, description: 'เติมคอยน์อ่านนิยายเรื่องโปรดได้ทันที', inStock: true, requirementType: 'UID' }
-            ],
+            categories: [],
+            apps: [],
+            packages: [],
             bankAccounts: {
                 promptpayNum: '0812345678',
                 promptpayName: 'นาย ปรเมษฐ์ (Wanderer Shop)',
@@ -1538,7 +1586,7 @@
                 workerNotifyUrl: 'https://lineoa-001.s6741050006.workers.dev/', sheetBackupUrl: '',
                 sheetAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', sheetCategoriesUrl: '', sheetAppsUrl: '', sheetPackagesUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtNEuFBl6in-M2LkYJpfgbeP2_lyJwY3wTMGsPQStu-Dk6WEVMI_WjyPJ1ms9Nw6IHF9tECWbx2Wiz/pub?output=csv', autoSyncSheets: false, autoSyncMinutes: 15, syncHistory: [], notificationHistory: []
             },
-            websiteServices: [{ id: 'website-service-default', name: 'เว็บสำเร็จรูป พร้อมใช้งาน', price: 990, logoUrl: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png', description: 'จัดทำเว็บพร้อมใช้งานตามรายละเอียดที่แจ้ง\nเหมาะสำหรับร้านค้า/บริการที่ต้องการเริ่มต้นเร็ว', previewUrl: '', contact: 'ติดต่อผ่าน LINE OA ของร้าน', inStock: true }],
+            websiteServices: [],
             websiteService: {
                 name: 'เว็บสำเร็จรูป พร้อมใช้งาน', price: 990,
                 logoUrl: 'https://cdn-icons-png.flaticon.com/512/1006/1006771.png',
@@ -1585,22 +1633,41 @@
                         loginOptions: []
                     }
                 ],
-                lineOrderTemplate: '🛒 **รายการสั่งซื้อใหม่ผ่าน LINE**\n- รายการ: [ITEMS]\n- ราคารวม: [TOTAL] บาท\n- ช่องทางชำระ: พร้อมเพย์'
+                lineOrderTemplate: '🛒 รายการสั่งซื้อ (Wanderer_Shop)\n---------------------------\n[ITEMS]\n---------------------------\n💰 ยอดรวมทั้งสิ้น: [TOTAL] บาท\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ'
             },
             orders: [],
-            reviews: [
-                { id: 'rev-1', author: 'Pao***', rating: 5, text: 'จัดส่งไวมาก ได้รับรหัส Netflix นำไปเข้าดูได้ทันทีครับ', date: '08/10/2026' }
-            ],
+            reviews: [],
             feedbacks: []
         };
 
         let appState = JSON.parse(localStorage.getItem('wanderer_shop_state')) || defaultState;
 
+        // Remove only known seeded demo records from older localStorage builds; preserve real/user-created records.
+        try {
+          const oldDemoCategoryIds=new Set(['cat-1','cat-2','cat-3']);
+          const oldDemoAppIds=new Set(['app-1','app-2','app-3','app-4']);
+          const oldDemoPkgIds=new Set(['pkg-1','pkg-2','pkg-3','pkg-4']);
+          if(Array.isArray(appState.categories)) appState.categories=appState.categories.filter(x=>!oldDemoCategoryIds.has(String(x.id)));
+          if(Array.isArray(appState.apps)) appState.apps=appState.apps.filter(x=>!oldDemoAppIds.has(String(x.id)));
+          if(Array.isArray(appState.packages)) appState.packages=appState.packages.filter(x=>!oldDemoPkgIds.has(String(x.id)));
+          if(Array.isArray(appState.reviews)) appState.reviews=appState.reviews.filter(x=>String(x.id)!=='rev-1');
+          if(Array.isArray(appState.apps)) appState.apps=appState.apps.filter(x=>!String(x?.id||'').startsWith('app-websvc-') && !x?._websiteServiceId);
+          if(Array.isArray(appState.packages)) appState.packages=appState.packages.filter(x=>!String(x?.id||'').startsWith('pkg-websvc-') && x?.productType!=='website-service');
+          if(Array.isArray(appState.categories)) appState.categories=appState.categories.filter(x=>String(x?.id||'')!=='cat-website-services-internal');
+        } catch(e) { console.warn('Demo cleanup skipped',e); }
+        // Remove only the three known legacy demo cards from saved catalog data.
+        if (Array.isArray(appState.apps)) {
+            const removedIds = new Set(appState.apps.filter(isLegacyDemoApp).map(a => a.id));
+            appState.apps = appState.apps.filter(a => !isLegacyDemoApp(a));
+            if (Array.isArray(appState.packages)) appState.packages = appState.packages.filter(p => !removedIds.has(p.appId) && !['YouTube Premium 4K','Netflix 4K Ultra HD','ROBLOX Robux'].includes(String(p.appName||p.name||'')));
+        }
         // Backward-compatible state normalization.
         appState.settings = { ...defaultState.settings, ...(appState.settings || {}) };
         appState.websiteService = { ...defaultState.websiteService, ...(appState.websiteService || {}) };
-        if (!Array.isArray(appState.websiteServices) || !appState.websiteServices.length) appState.websiteServices = [{ id: 'website-service-default', ...defaultState.websiteService, inStock: true }];
-        appState.websiteServices = appState.websiteServices.map((x,i)=>({ ...defaultState.websiteService, inStock:true, ...x, id:x.id || `website-service-${i+1}` }));
+        if (!Array.isArray(appState.websiteServices)) appState.websiteServices = [];
+        // Remove the legacy built-in demo website-service so it cannot reappear after deleting it in Admin.
+        appState.websiteServices = appState.websiteServices.filter(x => String(x?.id || '') !== 'website-service-default' && !(String(x?.name || '').trim() === 'เว็บสำเร็จรูป พร้อมใช้งาน' && !String(x?.previewUrl || '').trim() && Number(x?.price) === 990));
+        appState.websiteServices = appState.websiteServices.map((x,i)=>({ ...defaultState.websiteService, ...x, id:x.id || `website-service-${i+1}` }));
         appState.settings = { ...defaultState.settings, ...(appState.settings || {}) };
         appState.bankAccounts = { ...defaultState.bankAccounts, ...(appState.bankAccounts || {}) };
         appState.formTemplates = { ...defaultState.formTemplates, ...(appState.formTemplates || {}) };
@@ -1608,6 +1675,8 @@
             Array.isArray(appState.formTemplates.customerRequirementTemplates)
                 ? appState.formTemplates.customerRequirementTemplates
                 : JSON.parse(JSON.stringify(defaultState.formTemplates.customerRequirementTemplates));
+        // Persist the removal of legacy seeded demo services and their generated catalog rows.
+        try { syncWebsiteServicesToCatalog(); localStorage.setItem('wanderer_shop_state', JSON.stringify(appState)); } catch (e) { console.warn('Catalog cleanup persistence skipped', e); }
 
         function ensureCustomerRequirementTemplates() {
             if (!Array.isArray(appState.formTemplates.customerRequirementTemplates)) {
@@ -1774,8 +1843,10 @@
 
         // Navigation
         function navigateTo(view, param = null) {
+            if(view !== 'website-services') closeWebsiteReadyPopup();
             document.getElementById('viewHome').classList.add('hidden');
             document.getElementById('viewAppDetail').classList.add('hidden');
+            document.getElementById('viewWebsiteServices')?.classList.add('hidden');
             document.getElementById('viewOrderTracking').classList.add('hidden');
             document.getElementById('viewAdmin').classList.add('hidden');
             document.getElementById('backButtonContainer').classList.add('hidden');
@@ -1785,6 +1856,10 @@
                 renderCategories();
                 renderApps();
                 renderWebsiteService();
+            } else if (view === 'website-services') {
+                document.getElementById('viewWebsiteServices').classList.remove('hidden');
+                document.getElementById('backButtonContainer').classList.remove('hidden');
+                renderWebsiteServiceCustomerList();
             } else if (view === 'app-detail') {
                 currentSelectedAppId = param;
                 document.getElementById('viewAppDetail').classList.remove('hidden');
@@ -1877,9 +1952,8 @@
         }
 
         function renderApps() {
-            syncWebsiteServicesToCatalog();
             const grid = document.getElementById('appsGrid');
-            let filtered = appState.apps.filter(a => !a._websiteServiceId && !String(a.id).startsWith('app-websvc-'));
+            let filtered = appState.apps.filter(a => !a._websiteServiceId && !String(a.id).startsWith('app-websvc-') && isAppAvailableForDisplay(a));
 
             if (appState.currentSelectedCategory !== 'ALL') {
                 filtered = filtered.filter(a => a.categoryId === appState.currentSelectedCategory);
@@ -1912,7 +1986,7 @@
 
         function renderBestSellers() {
             const grid = document.getElementById('bestSellersGrid');
-            const topApps = appState.apps.slice(0, 3);
+            const topApps = appState.apps.filter(a => !a._websiteServiceId && !String(a.id).startsWith('app-websvc-') && isAppAvailableForDisplay(a)).slice(0, 3);
 
             grid.innerHTML = topApps.map(a => `
                 <div onclick="navigateTo('app-detail', '${a.id}')" class="relative bg-gradient-to-r from-purple-900/10 to-indigo-900/10 dark:bg-slate-800 border border-purple-200 dark:border-slate-700 p-3.5 rounded-2xl flex items-center gap-3 cursor-pointer hover:shadow-md transition">
@@ -1957,7 +2031,7 @@
             const cat = appState.categories.find(c => c.id === app.categoryId);
             document.getElementById('appDetailCategoryTag').innerText = cat ? cat.name : 'ทั่วไป';
 
-            const packages = appState.packages.filter(p => p.appId === appId);
+            const packages = appState.packages.filter(p => p.appId === appId && isPackageAvailableForPurchase(p));
             const pGrid = document.getElementById('packagesListGrid');
             if (!packages.length) {
                 pGrid.innerHTML = '<div class="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center text-sm text-slate-400">ยังไม่มีแพ็กเกจสำหรับแอปนี้</div>';
@@ -2049,7 +2123,14 @@
         }
 
         function isPackageAvailableForPurchase(pkg) {
-            return !!pkg && pkg.inStock !== false && pkg.status !== 'OUT_OF_STOCK';
+            if (!pkg) return false;
+            const status=String(pkg.status||'').trim().toUpperCase();
+            return pkg.inStock !== false && !['OUT_OF_STOCK','NOT_READY','WAITING','UNAVAILABLE','NOTREADY','NOT_READY_TO_SEND','ไม่พร้อมส่ง','รอเติมของ','หมด','หมดสต็อก'].includes(status);
+        }
+        function isAppAvailableForDisplay(app){
+            if(!app || isLegacyDemoApp(app)) return false;
+            const related=(appState.packages||[]).filter(p=>p.appId===app.id);
+            return !related.length || related.some(isPackageAvailableForPurchase);
         }
 
         function addToCart(pkgId) {
@@ -2174,12 +2255,12 @@
             document.getElementById('cartDrawer').classList.add('hidden');
         }
 
-        function copyLineOrderFromCart() {
+        async function copyLineOrderFromCart() {
             normalizeCart();
             if (appState.cart.length === 0) return alert('ไม่มีสินค้าในตะกร้า');
+            if (isStoreClosedForPurchases()) { showToast('ขณะนี้ร้านปิดอยู่ ไม่สามารถสั่งซื้อผ่าน LINE ได้'); return; }
 
             const itemsSnapshot = appState.cart.map(item => ({ ...item, qty: getCartQuantity(item) }));
-            const itemsText = itemsSnapshot.map(c => `${c.name} x${getCartQuantity(c)}`).join(', ');
             const total = getCartTotal();
             const orderId = 'ORD-' + new Date().toISOString().slice(0,10).replace(/-/g, '') + '-' + Math.floor(10000 + Math.random() * 90000);
             const lineOrder = { id: orderId, date: new Date().toLocaleString('th-TH'), items: itemsSnapshot, total, paymentMethod: 'LINE OA', source: 'LINE', status: 'AWAITING_PAYMENT', deliveryData: '', customerRequirements: appState.pendingCustomerRequirements || {} };
@@ -2187,14 +2268,23 @@
             saveState();
             notifyOrderToWorker(lineOrder).catch(err => console.warn('Worker notification failed:', err));
             backupOrderToSheet(lineOrder).catch(err => console.warn('Google Sheets backup failed:', err));
-            let tmpl = appState.formTemplates.lineOrderTemplate || 'สั่งซื้อ: [ITEMS] ราคารวม: [TOTAL] บาท';
-            tmpl = tmpl.replace('[ITEMS]', itemsText).replace('[TOTAL]', total);
-            tmpl = `Order ID: ${orderId}\n${tmpl}`;
-            copyToClipboard(tmpl);
 
-            const rawId = String(appState.settings.lineId || '@997pfoig').trim();
-            const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
-            window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank');
+            const itemsText = itemsSnapshot.map((item, i) => {
+                const appName = item.appName || item.app || item.categoryName || item.name || 'สินค้า';
+                const packageName = item.packageName || item.package || item.variantName || item.name || 'แพ็กเกจ';
+                const price = (Number(item.price)||0) * getCartQuantity(item);
+                return `${i+1}. ชื่อแอพ : ${appName}\n   แพ็กเกจย่อย : ${packageName} x${getCartQuantity(item)}\n   ราคา: ${price.toLocaleString('th-TH')} บาท`;
+            }).join('\n');
+            let tmpl = appState.formTemplates.lineOrderTemplate || '🛒 รายการสั่งซื้อ (Wanderer_Shop)\n---------------------------\n[ITEMS]\n---------------------------\n💰 ยอดรวมทั้งสิ้น: [TOTAL] บาท\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ';
+            tmpl = tmpl.replace(/\[ITEMS\]/g, itemsText).replace(/\[TOTAL\]/g, total.toLocaleString('th-TH'));
+            tmpl = `เลขออเดอร์: ${orderId}\n` + tmpl;
+            const copied = await copyToClipboard(tmpl);
+            if (copied) {
+                alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
+                const rawId = String(appState.settings.lineId || '@997pfoig').trim();
+                const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
+                window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
+            }
         }
 
         function proceedToPaymentModal() {
@@ -2753,8 +2843,13 @@
             document.getElementById('pkgModalAppName').innerText = app ? app.name : '';
             document.getElementById('pkgModalDescText').innerText = pkg.description || 'ไม่มีรายละเอียดเพิ่มเติม';
             document.getElementById('pkgModalPriceDisplay').innerText = `฿${pkg.price}`;
+            const previewAction=document.getElementById('pkgModalPreviewAction');
+            const service=(appState.websiteServices||[]).find(w=>w.id===app?._websiteServiceId) || (pkg.productType==='website-service' ? appState.websiteServices?.find(w=>String(w.name)===String(pkg.name)) : null);
+            window.currentPackagePreviewUrl = service?.previewUrl || pkg.previewUrl || '';
+            if(previewAction) previewAction.classList.toggle('hidden', !(pkg.productType==='website-service' || app?._websiteServiceId));
             document.getElementById('pkgDetailModal').classList.remove('hidden');
         }
+        function openCurrentPackagePreview(){const url=String(window.currentPackagePreviewUrl||'').trim();if(/^https?:\/\//i.test(url)){window.open(url,'_blank','noopener,noreferrer');}else{showToast('รายการนี้ยังไม่ได้กำหนด URL ตัวอย่าง');}}
         function closePkgDetailModal() { document.getElementById('pkgDetailModal').classList.add('hidden'); }
 
         // Customer Reviews & Feedback Submission
@@ -2833,7 +2928,7 @@
         }
 
         function switchAdminTab(tabName) {
-            const tabs = ['dashboard-orders', 'products', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'floating-decorations'];
+            const tabs = ['dashboard-orders', 'products', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations'];
             tabs.forEach(t => {
                 document.getElementById(`adminTab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`adminTabBtn-${t}`);
@@ -2850,6 +2945,7 @@
             else if (tabName === 'feedbacks') renderAdminFeedbacks();
             else if (tabName === 'settings-store') loadStoreSettingsForm();
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
+            else if (tabName === 'website-theme') loadWebsiteThemeForm();
             else if (tabName === 'floating-decorations') { renderAdminFloatingDecorations(); loadFloatingDecorationDisplayControls(); }
         }
 
@@ -4371,29 +4467,87 @@
             else navigateTo('home');
         }
 
+        function openWebsiteReadyPopup(serviceId=null) {
+            // This popup belongs only to the dedicated Website Services tab.
+            const servicesView=document.getElementById('viewWebsiteServices');
+            if(!servicesView) return;
+            const modal=document.getElementById('websiteReadyPopup');
+            const linkBox=document.getElementById('websiteReadyPreviewLink');
+            const services=Array.isArray(appState.websiteServices)?appState.websiteServices:[];
+            const service=services.find(w=>String(w.id)===String(serviceId));
+            const desc=document.querySelector('#websiteReadyPopup p.text-sm');
+            const title=document.getElementById('websiteReadyPopupTitle');
+            const price=document.getElementById('websiteReadyPopupPrice');
+            if(!service){
+                if(title) title.textContent='เว็บสำเร็จรูป พร้อมใช้งาน';
+                if(desc) desc.textContent='ไม่พบข้อมูลเว็บสำเร็จรูปนี้ กรุณารีเฟรชหน้าเว็บแล้วลองอีกครั้ง';
+                if(price) price.textContent='';
+                if(linkBox) linkBox.innerHTML='';
+            } else {
+                if(title) title.textContent=service.name||'เว็บสำเร็จรูป พร้อมใช้งาน';
+                if(desc) desc.textContent=service.description||'เว็บไซต์สำเร็จรูปพร้อมใช้งาน';
+                if(price) price.textContent=`ราคา ฿${(Number(service.price)||0).toLocaleString('th-TH')}`;
+                const preview=String(service.previewUrl||'').trim();
+                if(linkBox) linkBox.innerHTML=/^https?:\/\//i.test(preview)
+                    ? `<a href="${escapeHtml(preview)}" target="_blank" rel="noopener noreferrer" class="block text-center px-4 py-3 rounded-xl bg-indigo-50 dark:bg-slate-700 text-indigo-700 dark:text-indigo-200 font-bold text-sm">👁️ กดดูตัวอย่างเว็บไซต์</a>`
+                    : '<p class="text-xs text-amber-600 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 rounded-xl p-3">ยังไม่มีลิงก์ตัวอย่างเว็บไซต์ กรุณาตั้งค่า URL ตัวอย่างในแอดมิน</p>';
+            }
+            if(modal){ modal.classList.remove('hidden'); modal.classList.add('flex'); modal.setAttribute('aria-hidden','false'); }
+        }
+        function renderWebsiteServiceCustomerList(){
+            const root=document.getElementById('websiteServicesCustomerGrid'); if(!root)return;
+            const unavailable=['OUT_OF_STOCK','NOT_READY','WAITING','ไม่พร้อมส่ง','รอเติมของ','หมดสต็อก'];
+            const services=getWebsiteServices().filter(w=>w.inStock!==false && !unavailable.includes(String(w.status||'').trim().toUpperCase()));
+            root.innerHTML=services.map(w=>{
+                const sid=String(w.id||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+                const logo=escapeHtml(w.logoUrl||defaultState.websiteService.logoUrl);
+                const name=escapeHtml(w.name||'เว็บสำเร็จรูป');
+                const desc=escapeHtml(w.description||'ไม่มีรายละเอียดเพิ่มเติม');
+                const price=(Number(w.price)||0).toLocaleString('th-TH');
+                return `<article class="relative shrink-0 w-full sm:w-auto bg-white dark:bg-slate-800 rounded-3xl p-4 border border-purple-100 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition flex flex-col justify-between gap-3" style="background:${escapeHtml(w.cardBg||'#ffffff')};border-color:${escapeHtml(w.cardBorder||'#ddd6fe')}">
+                    <div class="flex flex-col items-center text-center pt-1">
+                        <img src="${logo}" onerror="this.style.display='none'" alt="${name}" class="w-14 h-14 rounded-2xl mb-3 object-cover shadow-sm bg-white">
+                        <h3 class="font-bold text-xs text-slate-800 dark:text-slate-100 line-clamp-1" style="color:${escapeHtml(w.titleColor||'#6d28d9')}">${name}</h3>
+                        <p class="text-[10px] text-slate-400 dark:text-slate-300 line-clamp-2 mt-1 whitespace-pre-line">${desc}</p>
+                    </div>
+                    <div class="text-center text-base font-black text-pink-500">฿${price}</div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" onclick="openWebsiteReadyPopup('${sid}')" class="w-full py-1.5 bg-purple-50 dark:bg-slate-700 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-300 font-bold text-[11px] rounded-xl transition">รายละเอียด</button>
+                        <button type="button" onclick="addWebsiteServiceRecordToCart('${sid}')" class="w-full py-1.5 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 text-purple-700 dark:text-purple-200 font-bold text-[11px] rounded-xl transition">+ ตะกร้า</button>
+                        <button type="button" onclick="buyWebsiteServiceNow('${sid}')" class="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-xl transition">สั่งซื้อ</button>
+                    </div>
+                </article>`;
+            }).join('') || '<div class="col-span-full rounded-2xl border border-dashed p-8 text-center text-sm text-slate-500">ยังไม่มีเว็บสำเร็จรูปที่พร้อมขาย</div>';
+        }
+        function websiteServiceAsPackage(w){return {id:`websvc-pkg-${w.id}`,name:w.name||'เว็บสำเร็จรูป',price:Number(w.price)||0,description:w.description||'',inStock:w.inStock!==false,status:w.status||'IN_STOCK',productType:'website-service',previewUrl:w.previewUrl||'',websiteServiceId:w.id};}
+        function addWebsiteServiceRecordToCart(id){if(isStoreClosedForPurchases()){showToast('ขณะนี้ร้านปิดอยู่ ยังไม่สามารถเพิ่มสินค้าลงตะกร้าได้');return;}const w=getWebsiteServices().find(x=>x.id===id);if(!w||w.inStock===false){showToast('รายการนี้ยังไม่พร้อมส่ง');return;}const pkg=websiteServiceAsPackage(w);normalizeCart();const existing=appState.cart.find(x=>x.id===pkg.id);if(existing)existing.qty++;else appState.cart.push({...pkg,qty:1});saveState();updateCartBadge();showToast(`เพิ่ม ${pkg.name} ลงตะกร้าแล้ว`);}
+        function buyWebsiteServiceNow(id){if(isStoreClosedForPurchases()){showToast('ขณะนี้ร้านปิดอยู่ ยังไม่สามารถสั่งซื้อได้');return;}const w=getWebsiteServices().find(x=>x.id===id);if(!w||w.inStock===false){showToast('รายการนี้ยังไม่พร้อมส่ง');return;}appState.cart=[{...websiteServiceAsPackage(w),qty:1}];appState.pendingCustomerRequirements={};saveState();updateCartBadge();openCartDrawer();}
+        function closeWebsiteReadyPopup() { const modal=document.getElementById('websiteReadyPopup'); if(modal){modal.classList.add('hidden');modal.classList.remove('flex');modal.setAttribute('aria-hidden','true');} }
+        function isLegacyDemoApp(app) {
+            const name=String(app?.name||'').toLowerCase().replace(/[^a-z0-9]/g,'');
+            const legacyNames=['youtube premium 4k','netflix 4k ultra hd','roblox robux'].map(x=>x.toLowerCase().replace(/[^a-z0-9]/g,''));
+            return legacyNames.includes(name) || ['youtubepremium4k','netflix4kultrahd','robloxrobux'].includes(name);
+        }
+
         // Website service storefront + admin settings
         function getWebsiteServices() {
-            if (!Array.isArray(appState.websiteServices)) appState.websiteServices = [{ id:'website-service-default', ...(appState.websiteService || defaultState.websiteService), inStock:true }];
+            if (!Array.isArray(appState.websiteServices)) appState.websiteServices = [];
             return appState.websiteServices;
         }
         function syncWebsiteServicesToCatalog() {
-            const services = getWebsiteServices();
-            const catId = 'cat-website-services-internal';
-            if (!appState.categories.some(c => c.id === catId)) appState.categories.push({id:catId,name:'บริการเว็บ',icon:'fa-laptop-code',description:'บริการเว็บสำเร็จรูป'});
-            // Remove previous generated app/package rows before rebuilding; keep all unrelated catalog data.
-            appState.apps = appState.apps.filter(a => !String(a.id).startsWith('app-websvc-'));
-            appState.packages = appState.packages.filter(p => !String(p.id).startsWith('pkg-websvc-'));
-            services.forEach((w, index) => {
-                const appId = `app-websvc-${String(w.id).replace(/[^a-zA-Z0-9_-]/g,'-')}`;
-                appState.apps.push({id:appId,name:w.name || 'บริการเว็บสำเร็จรูป',categoryId:catId,osType:'ALL',iconUrl:w.logoUrl || defaultState.websiteService.logoUrl,description:w.description || 'บริการเว็บสำเร็จรูป',_websiteServiceId:w.id});
-                appState.packages.push({id:`pkg-websvc-${String(w.id).replace(/[^a-zA-Z0-9_-]/g,'-')}`,name:w.name || 'บริการเว็บสำเร็จรูป',appId,groupName:'บริการเว็บ',price:Math.max(0,Number(w.price)||0),description:[w.description,w.contact].filter(Boolean).join('\n\n'),inStock:w.inStock !== false,status:w.inStock === false?'OUT_OF_STOCK':'IN_STOCK',requirementType:'NONE',deliveryMethod:'ติดต่อผ่าน LINE',productType:'website-service',previewUrl:w.previewUrl || ''});
-            });
+            // IMPORTANT: Do not auto-generate storefront categories/apps/packages from websiteServices.
+            // This used to recreate deleted/demo cards every time the catalog rendered.
+            const internalCategoryId = 'cat-website-services-internal';
+            appState.apps = (appState.apps || []).filter(a => !String(a?.id || '').startsWith('app-websvc-') && !a?._websiteServiceId);
+            appState.packages = (appState.packages || []).filter(p => !String(p?.id || '').startsWith('pkg-websvc-') && p?.productType !== 'website-service');
+            appState.categories = (appState.categories || []).filter(c => String(c?.id || '') !== internalCategoryId);
         }
         function renderWebsiteService() {
             // Keep legacy nodes hidden/compatible for older saved states; customer-facing services appear in the main app grid.
             syncWebsiteServicesToCatalog();
             const section=document.getElementById('websiteServiceSection'); if(section) section.classList.add('hidden');
             renderAdminWebsiteServiceList();
+            renderWebsiteServiceCustomerList();
         }
         function renderAdminWebsiteServiceList() {
             const root=document.getElementById('adminWebsiteServiceList'); if(!root) return;
@@ -4452,6 +4606,24 @@
             const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || '', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
             Object.entries(values).forEach(([id,v]) => { const el=document.getElementById(id); if(el) el.value=v; });
         }
+        // Real-use visitor counter (local browser profile; reset to zero at launch).
+        function getVisitorCount(){ return Math.max(0, Number(localStorage.getItem('wanderer_shop_visits') || 0)); }
+        function renderVisitorCount(){ const el=document.getElementById('statVisits'); if(el) el.textContent=getVisitorCount().toLocaleString('th-TH'); }
+        function resetVisitorCount(){ if(!confirm('ยืนยันรีเซ็ตจำนวนผู้เข้าชมเป็น 0 เพื่อเริ่มใช้งานจริงหรือไม่?')) return; localStorage.setItem('wanderer_shop_visits','0'); renderVisitorCount(); showToast('รีเซ็ตผู้เข้าชมเป็น 0 แล้ว'); }
+        (function countVisitOncePerTab(){ try { if(!sessionStorage.getItem('wanderer_visit_counted')) { localStorage.setItem('wanderer_shop_visits', String(getVisitorCount()+1)); sessionStorage.setItem('wanderer_visit_counted','1'); } } catch(e){} })();
+
+        // Website-wide appearance editor
+        const websiteThemeDefaults={pageBg:'#f8f7ff',textColor:'#334155',headingColor:'#6d28d9',buttonColor:'#7c3aed',cardBg:'#ffffff',cardBorder:'#e9d5ff',fontFamily:'system'};
+        function getWebsiteTheme(){ return {...websiteThemeDefaults,...(appState.settings?.websiteTheme||{})}; }
+        function applyWebsiteTheme(){ const t=getWebsiteTheme(), root=document.documentElement; root.style.setProperty('--ws-page-bg',t.pageBg);root.style.setProperty('--ws-text',t.textColor);root.style.setProperty('--ws-heading',t.headingColor);root.style.setProperty('--ws-button',t.buttonColor);root.style.setProperty('--ws-card-bg',t.cardBg);root.style.setProperty('--ws-card-border',t.cardBorder);const fonts={system:'system-ui,sans-serif',prompt:'Prompt, system-ui, sans-serif',sarabun:'Sarabun, system-ui, sans-serif',sans:'Arial, sans-serif'};root.style.setProperty('--ws-font',fonts[t.fontFamily]||fonts.system); }
+        function loadWebsiteThemeForm(){ const t=getWebsiteTheme(); const map={themePageBg:'pageBg',themeTextColor:'textColor',themeHeadingColor:'headingColor',themeButtonColor:'buttonColor',themeCardBg:'cardBg',themeCardBorder:'cardBorder',themeFontFamily:'fontFamily'};Object.entries(map).forEach(([id,k])=>{const e=document.getElementById(id);if(e)e.value=t[k]||websiteThemeDefaults[k];}); enableWebsiteThemeEdit(false); updateWebsiteThemeSample(); }
+        function enableWebsiteThemeEdit(on){ document.querySelectorAll('#adminTab-website-theme .theme-edit-control').forEach(e=>e.disabled=!on);const st=document.getElementById('websiteThemeStatus');if(st)st.textContent=on?'โหมดแก้ไข — ปรับค่าแล้วกด “บันทึก”':'โหมดดูอย่างเดียว — กด “แก้ไขสี” เพื่อเปลี่ยนค่า'; }
+        function updateWebsiteThemeSample(){const e=document.getElementById('websiteThemeSample');if(!e)return;const val=id=>document.getElementById(id)?.value; e.style.background=val('themeCardBg')||'#fff';e.style.borderColor=val('themeCardBorder')||'#ddd';e.style.color=val('themeTextColor')||'#334155';e.style.setProperty('--sample-heading',val('themeHeadingColor')||'#6d28d9');e.querySelector('h4').style.color=val('themeHeadingColor')||'#6d28d9';e.querySelector('button').style.background=val('themeButtonColor')||'#7c3aed';e.querySelector('p').style.color=val('themeTextColor')||'#334155';}
+        function saveWebsiteTheme(){const map={pageBg:'themePageBg',textColor:'themeTextColor',headingColor:'themeHeadingColor',buttonColor:'themeButtonColor',cardBg:'themeCardBg',cardBorder:'themeCardBorder',fontFamily:'themeFontFamily'};const t={};Object.entries(map).forEach(([k,id])=>t[k]=document.getElementById(id)?.value||websiteThemeDefaults[k]);appState.settings.websiteTheme=t;saveState();applyWebsiteTheme();updateWebsiteThemeSample();enableWebsiteThemeEdit(false);showToast('บันทึกสี ตัวอักษร และกรอบการ์ดแล้ว');}
+        function resetWebsiteThemeForm(){const map={themePageBg:'pageBg',themeTextColor:'textColor',themeHeadingColor:'headingColor',themeButtonColor:'buttonColor',themeCardBg:'cardBg',themeCardBorder:'cardBorder',themeFontFamily:'fontFamily'};Object.entries(map).forEach(([id,k])=>{const e=document.getElementById(id);if(e)e.value=websiteThemeDefaults[k];});updateWebsiteThemeSample();}
+        document.addEventListener('input',e=>{if(e.target?.classList?.contains('theme-edit-control'))updateWebsiteThemeSample();});
+        applyWebsiteTheme();
+
         // LINE OA notification integration (Cloudflare Worker)
         const LINE_WORKER_URL = 'https://lineoa-001.s6741050006.workers.dev/';
         async function sendLineNotification(data) {
