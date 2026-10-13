@@ -73,15 +73,21 @@
 <style id="wanderer-decoration-styles">
   #heroBannerImage { transition: transform .65s cubic-bezier(.2,.7,.2,1); }
   #heroBannerImage:hover { transform: scale(1.10) !important; }
-  #wandererFloatingDecorations { position:fixed; inset:0; z-index:2; pointer-events:none; overflow:hidden; }
-  body > header, body > main, body > nav, body > section, body > footer { position:relative; z-index:1; }
+  #wandererFloatingDecorations { position:fixed; inset:0; z-index:1; pointer-events:none; overflow:hidden; isolation:isolate; }
+  body > header, body > main, body > nav, body > section, body > footer { position:relative; z-index:2; }
+  /* Keep all floating stickers behind storefront content, banners and text panels. */
+  body > #wandererFloatingDecorations { z-index:1 !important; }
   .wanderer-floating-decoration { position:absolute; display:flex; align-items:center; justify-content:center; animation:wandererFloat var(--deco-speed,6s) ease-in-out infinite, wandererBlink calc(var(--deco-speed,6s) * .82) ease-in-out infinite; opacity:var(--deco-opacity,.16); filter:drop-shadow(0 2px 5px rgba(60,30,100,.08)); will-change:transform,opacity; }
-  .wanderer-floating-decoration img { width:100%; height:100%; object-fit:contain; }
+  .wanderer-floating-decoration img { width:100%; height:100%; object-fit:contain; opacity:1 !important; display:block !important; visibility:visible !important; }
   .wanderer-floating-decoration.emoji { font-size:2rem; width:max-content !important; height:auto !important; max-width:90vw; white-space:pre; line-height:1.25; display:inline-flex; flex-wrap:nowrap; }
   .wanderer-floating-decoration.emoji .emoji { white-space:pre; display:inline; width:auto; height:auto; font-size:inherit; line-height:inherit; }
   #decorationPopupPreview { z-index:9999; }
-  .wanderer-floating-decoration.deco-side { z-index:35; pointer-events:auto; }
-  .wanderer-floating-decoration.deco-background { z-index:0; pointer-events:none; }
+  .wanderer-floating-decoration.deco-side { z-index:1; pointer-events:none; }
+  .wanderer-floating-decoration.deco-background { z-index:1; pointer-events:none; }
+  /* Uploaded image stickers need stronger visibility than emoji decorations. */
+  .wanderer-floating-decoration.deco-image { opacity:var(--deco-image-opacity,.78); filter:drop-shadow(0 2px 6px rgba(60,30,100,.22)); }
+  .wanderer-floating-decoration.deco-image { animation:wandererFloat var(--deco-speed,6s) ease-in-out infinite, wandererImageBlink calc(var(--deco-speed,6s) * .82) ease-in-out infinite; }
+  @keyframes wandererImageBlink { 0%,100% { opacity:.62; } 50% { opacity:var(--deco-image-opacity,.78); } }
   .wanderer-floating-decoration.deco-preview { outline:1px dashed rgba(124,58,237,.25); }
   @keyframes wandererFloat { 0%,100% { transform:translateY(0) rotate(-3deg) scale(.98); } 50% { transform:translateY(-12px) rotate(4deg) scale(1.03); } }
   @keyframes wandererBlink { 0%,100% { opacity:.06; } 50% { opacity:var(--deco-opacity,.16); } }
@@ -212,7 +218,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
                     <div class="lg:col-span-5">
                         <div class="w-full h-44 sm:h-52 bg-gradient-to-tr from-purple-800 to-indigo-900 rounded-2xl border border-purple-500/20 shadow-2xl flex flex-col items-center justify-center p-4 text-center overflow-hidden relative group">
-                            <img id="heroBannerImage" src="https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg" alt="Wanderer Shop banner" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform hover:scale-110" style="transform:scale(1);transform-origin:center center" onerror="this.style.display='none'">
+                            <img id="heroBannerImage" src="https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg" alt="Wanderer Shop banner" class="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out will-change-transform hover:scale-110" style="transform:scale(1);transform-origin:center center" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')">
                         </div>
                     </div>
                 </div>
@@ -344,7 +350,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <h2 class="text-xl font-black text-purple-800 dark:text-purple-200">เว็บสำเร็จรูป พร้อมใช้งาน</h2>
                 <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">เลือกเว็บไซต์ที่ต้องการ แล้วดูรายละเอียด เพิ่มลงตะกร้า หรือสั่งซื้อได้ทันที</p>
             </div>
-            <div id="websiteServicesCustomerGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
+            <div id="websiteServicesCustomerGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
         </div>
 
         <!-- VIEW 3: ORDER TRACKING -->
@@ -883,10 +889,16 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div><label class="block font-bold mb-1">ชื่อเรียก</label><input id="decorationName" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="เช่น ดาวม่วง"></div>
                     <div><label class="block font-bold mb-1">อีโมจิ (ถ้าไม่ใช้รูป)</label><input id="decorationEmoji" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="✨ 🪽 💜"></div>
-                    <div class="sm:col-span-2"><label class="block font-bold mb-1">URL รูปภาพ (PNG/JPG/WebP/GIF) — ไม่บังคับ</label><input id="decorationImageUrl" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="https://.../sticker.png"></div>
+                    <div class="sm:col-span-2">
+                        <label class="block font-bold mb-1" for="decorationImageFile">ไฟล์รูปสติกเกอร์ (PNG/JPG/WEBP/GIF) — ไม่บังคับ</label>
+                        <input id="decorationImageFile" type="file" accept="image/png,image/jpeg,image/webp,image/gif" onchange="handleDecorationImageFile(this)" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 bg-white">
+                        <input id="decorationImageUrl" type="hidden" value="">
+                        <div class="mt-2 flex items-center gap-3"><div class="w-16 h-16 rounded-xl border bg-white flex items-center justify-center overflow-hidden shrink-0"><img id="decorationImageFilePreview" class="hidden w-full h-full object-contain" alt="ตัวอย่างรูปสติกเกอร์"><span id="decorationImageFilePlaceholder" class="text-2xl">🖼️</span></div><div class="min-w-0"><p id="decorationImageFileStatus" class="text-xs text-slate-500">เลือกรูปจากเครื่องได้โดยตรง ไม่ต้องใช้ลิงก์รูป</p><button type="button" onclick="clearDecorationImageFile()" class="mt-1 text-xs text-rose-600 font-bold">ล้างรูปที่เลือก</button></div></div>
+                        <p class="mt-1 text-[10px] text-slate-500">ระบบจะย่อรูปอัตโนมัติเพื่อลดขนาดข้อมูลที่บันทึก (ไฟล์ต้นฉบับไม่เกิน 8 MB)</p>
+                    </div>
                     <div class="sm:col-span-2"><label class="block font-bold mb-1">ลิงก์เมื่อกดรูป (ไม่บังคับ)</label><input id="decorationLinkUrl" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900" placeholder="https://... หรือ LINE OA"></div>
                     <div><label class="block font-bold mb-1">ตำแหน่ง</label><select id="decorationPosition" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="left">ริมซ้าย</option><option value="right">ริมขวา</option><option value="diagonal-left">แนวทแยงซ้ายของพื้นหลัง</option><option value="diagonal-right">แนวทแยงขวาของพื้นหลัง</option><option value="background">ตกแต่งพื้นหลัง</option></select></div>
-                    <div><label class="block font-bold mb-1">ขนาด</label><select id="decorationSize" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="small">เล็ก</option><option value="medium" selected>กลาง</option><option value="large">ใหญ่</option></select></div>
+                    <div><label for="decorationSizePercent" class="block font-bold mb-1">ขนาดรูป (%) <span id="decorationSizePercentValue">100%</span></label><input id="decorationSizePercent" type="range" min="25" max="200" value="100" step="5" class="w-full" oninput="document.getElementById('decorationSizePercentValue').textContent=this.value+'%';renderFloatingDecorations()"><p class="text-[10px] text-slate-500">ปรับขนาดรูปแบบเปอร์เซ็นต์</p><select id="decorationSize" class="hidden"><option value="small">เล็ก</option><option value="medium" selected>กลาง</option><option value="large">ใหญ่</option></select></div>
                     <div class="sm:col-span-2 flex items-center gap-2"><input type="checkbox" id="decorationEnabled" checked><label for="decorationEnabled" class="font-bold">เปิดแสดงบนหน้าร้าน</label></div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -1468,6 +1480,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 bankAccounts: appState.bankAccounts || {},
                 formTemplates: appState.formTemplates || {},
                 reviews: appState.reviews || [],
+                orders: appState.orders || [],
+                feedbacks: appState.feedbacks || [],
                 updatedAt: new Date().toISOString()
             };
         }
@@ -1492,6 +1506,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 if (cloud.bankAccounts) appState.bankAccounts = { ...appState.bankAccounts, ...cloud.bankAccounts };
                 if (cloud.formTemplates) appState.formTemplates = { ...appState.formTemplates, ...cloud.formTemplates };
                 if (Array.isArray(cloud.reviews)) appState.reviews = cloud.reviews;
+                if (Array.isArray(cloud.orders)) appState.orders = cloud.orders;
+                if (Array.isArray(cloud.feedbacks)) appState.feedbacks = cloud.feedbacks;
                 sharedStateLastUpdatedAt = data.updated_at || cloud.updatedAt || null;
                 localStorage.setItem('wanderer_shop_state', JSON.stringify(appState));
                 return true;
@@ -1519,6 +1535,24 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 try { showToast('บันทึกฐานข้อมูลกลางไม่สำเร็จ: ' + (e.message || 'ตรวจสอบตาราง/RLS')); } catch (_) {}
                 return false;
             }
+        }
+
+        let sharedStatePollTimer = null;
+        function startSharedStateAutoRefresh() {
+            if (sharedStatePollTimer) clearInterval(sharedStatePollTimer);
+            sharedStatePollTimer = setInterval(async () => {
+                // Refresh only when the local editor is not actively focused on an input.
+                if (!supabaseClient || document.querySelector('#adminPanel:not(.hidden) input:focus, #adminPanel:not(.hidden) textarea:focus, #adminPanel:not(.hidden) select:focus')) return;
+                const before = sharedStateLastUpdatedAt;
+                const ok = await loadSharedStoreState();
+                if (ok && sharedStateLastUpdatedAt !== before) {
+                    try {
+                        renderCategories(); renderApps(); renderWebsiteService(); renderShopIdentityAndStatus(); renderVisitorCount();
+                        if (document.getElementById('adminTab-dashboard-orders') && !document.getElementById('adminTab-dashboard-orders').classList.contains('hidden')) renderAdminOrdersTable();
+                        renderAdminFeedbacks(); renderFloatingDecorations();
+                    } catch (e) { console.warn('Shared-state UI refresh failed:', e); }
+                }
+            }, 15000);
         }
 
         function scheduleSharedStoreSave() {
@@ -1774,10 +1808,28 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         let activePayMethod = 'PROMPTPAY';
         let activeBankModalTab = 'PROMPTPAY';
 
+        let catalogAutoBackupTimer = null;
+        let lastCatalogAutoBackupSignature = '';
+        function catalogSignature() { try { return JSON.stringify([appState.categories||[], appState.apps||[], appState.packages||[]]); } catch (_) { return ''; } }
+        function scheduleCatalogAutoBackup() {
+            const sig = catalogSignature();
+            if (!sig || sig === lastCatalogAutoBackupSignature) return;
+            if (!lastCatalogAutoBackupSignature) { lastCatalogAutoBackupSignature = sig; return; }
+            if (catalogAutoBackupTimer) clearTimeout(catalogAutoBackupTimer);
+            catalogAutoBackupTimer = setTimeout(async () => {
+                const latest = catalogSignature();
+                if (latest === lastCatalogAutoBackupSignature) return;
+                if (typeof backupCatalogToSheet === 'function') {
+                    const result = await backupCatalogToSheet('automatic_catalog_change');
+                    if (result && result.success === true) lastCatalogAutoBackupSignature = latest;
+                }
+            }, 1200);
+        }
         function saveState() {
             try { localStorage.setItem('wanderer_shop_state', JSON.stringify(appState)); }
             catch (e) { console.error('Save state failed',e); try { showToast('บันทึกข้อมูลไม่สำเร็จ พื้นที่จัดเก็บอาจเต็ม'); } catch (_) {} }
             scheduleSharedStoreSave();
+            scheduleCatalogAutoBackup();
         }
         function recordSyncHistory(entry){
             appState.settings=appState.settings||{};
@@ -2284,31 +2336,46 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             backupOrderToSheet(lineOrder).catch(err => console.warn('Google Sheets backup failed:', err));
 
             const itemsText = itemsSnapshot.map((item, i) => {
-                const appName = item.appName || item.app || item.categoryName || item.name || 'สินค้า';
+                const appName = item.appName || item.app || item.categoryName || item.category || item.name || 'สินค้า';
                 const packageName = item.packageName || item.package || item.variantName || item.name || 'แพ็กเกจ';
-                const groupName = item.groupName || item.packageGroup || item.packageCategory || 'ไม่ระบุกลุ่ม';
+                const groupName = item.groupName || item.packageGroup || item.packageCategory || item.group || '';
                 const qty = getCartQuantity(item);
-                const lineTotal = (Number(item.price)||0) * qty;
-                return `${i+1}. รายการ : ${appName}\n   ชื่อแพ็กเกจ : ${packageName}\n   กลุ่มแพ็กเกจ (Package Group) : ${groupName}\n   จำนวน : ${qty}\n   ราคารวม : ${lineTotal.toLocaleString('th-TH')} บาท`;
+                const unitPrice = Number(item.price) || 0;
+                const groupLine = groupName && !['ไม่ระบุกลุ่ม', 'ไม่ระบุ', '-'].includes(String(groupName).trim())
+                    ? `\n   กลุ่มแพ็กเกจ : ${groupName}` : '';
+                const qtyLine = qty > 1 ? `\n   จำนวน : ${qty}` : '';
+                return `${i+1}. ชื่อแอพ : ${appName}\n   แพ็กเกจย่อย : ${packageName}${groupLine}${qtyLine}\n   ราคา: ${unitPrice.toLocaleString('th-TH')}`;
             }).join('\n\n');
-            const firstItem = itemsSnapshot[0] || {};
-            const firstApp = firstItem.appName || firstItem.app || firstItem.categoryName || firstItem.name || 'สินค้า';
-            const firstPackage = firstItem.packageName || firstItem.package || firstItem.variantName || firstItem.name || 'แพ็กเกจ';
-            const firstGroup = firstItem.groupName || firstItem.packageGroup || firstItem.packageCategory || 'ไม่ระบุกลุ่ม';
-            let tmpl = appState.formTemplates.lineOrderTemplate || '🛒 รายการสั่งซื้อ Wanderer_Shop\n[ITEMS]\n-------------------------------\nรอแม่ค้าตอบก่อนโอนนะคะ';
-            tmpl = tmpl.replace(/\[ITEMS\]/g, itemsText)
-                .replace(/\[ชื่อแอป\/เกม\]/g, firstApp)
-                .replace(/\[PACKAGE\]/g, firstPackage)
-                .replace(/\[GROUP\]/g, firstGroup)
-                .replace(/\[QTY\]/g, String(itemsSnapshot.reduce((sum, item) => sum + getCartQuantity(item), 0)))
-                .replace(/\[TOTAL\]/g, total.toLocaleString('th-TH'));
-            tmpl = `เลขออเดอร์: ${orderId}\n` + tmpl;
+            const tmpl = `🛒 รายการสั่งซื้อ (Wanderer_Shop)\n\nเลขออเดอร์ : ${orderId}\n---------------------------\n${itemsText}\n---------------------------\n💰 ยอดรวมทั้งสิ้น: ${total.toLocaleString('th-TH')}\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ`;
             const copied = await copyToClipboard(tmpl);
             if (copied) {
                 alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
                 const rawId = String(appState.settings.lineId || '@997pfoig').trim();
                 const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
                 window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
+            }
+        }
+
+        function showLineOrderCopiedPopup() {
+            let modal = document.getElementById('lineOrderCopiedPopup');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'lineOrderCopiedPopup';
+                modal.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/50 p-4';
+                modal.innerHTML = `<div role="dialog" aria-modal="true" aria-labelledby="lineOrderCopiedTitle" class="w-full max-w-sm rounded-3xl bg-white dark:bg-slate-900 border border-purple-100 dark:border-slate-700 shadow-2xl p-6 text-center">
+                  <div class="mx-auto mb-3 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 text-2xl"><i class="fa-solid fa-check"></i></div>
+                  <h3 id="lineOrderCopiedTitle" class="text-lg font-extrabold text-slate-800 dark:text-white">คัดลอกข้อความสั่งซื้อแล้ว</h3>
+                  <p class="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">เปิดห้องแชท LINE OA ของร้าน แล้ววางข้อความที่คัดลอกไว้เพื่อส่งรายการสั่งซื้อได้เลยค่ะ</p>
+                  <div class="mt-5 grid grid-cols-2 gap-2"><button type="button" id="lineOrderCopiedClose" class="rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-600 dark:text-slate-200">ปิด</button><button type="button" id="lineOrderCopiedOpen" class="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-bold text-white"><i class="fa-brands fa-line mr-1"></i> เปิด LINE OA</button></div>
+                </div>`;
+                document.body.appendChild(modal);
+                modal.querySelector('#lineOrderCopiedClose').addEventListener('click',()=>modal.remove());
+                modal.querySelector('#lineOrderCopiedOpen').addEventListener('click',()=>{
+                    const rawId = String(appState.settings.lineId || '@997pfoig').trim();
+                    const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
+                    window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
+                    modal.remove();
+                });
             }
         }
 
@@ -2635,7 +2702,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             if (method === 'PROMPTPAY') {
                 container.innerHTML = `
-                    <img src="${acc.promptpayQrUrl || ''}" class="w-36 h-36 mx-auto rounded-xl shadow-sm border mb-2" onerror="this.style.display='none'">
+                    <img src="${acc.promptpayQrUrl || ''}" class="w-36 h-36 mx-auto rounded-xl shadow-sm border mb-2" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')">
                     <p class="font-bold text-xs text-purple-600">พร้อมเพย์: ${acc.promptpayNum || '-'}</p>
                     <button type="button" onclick="copyToClipboard('${String(acc.promptpayNum || '').replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-[10px] font-bold">
                         <i class="fa-solid fa-copy"></i> คัดลอกเลขบัญชี
@@ -2732,7 +2799,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             if (method === 'PROMPTPAY') {
                 container.innerHTML = `
-                    <img src="${acc.promptpayQrUrl || ''}" class="w-36 h-36 mx-auto rounded-xl shadow-sm border mb-2" onerror="this.style.display='none'">
+                    <img src="${acc.promptpayQrUrl || ''}" class="w-36 h-36 mx-auto rounded-xl shadow-sm border mb-2" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')">
                     <p class="font-bold text-xs text-purple-600">พร้อมเพย์: ${acc.promptpayNum || '-'}</p>
                     <button type="button" onclick="copyToClipboard('${String(acc.promptpayNum || '').replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-[10px] font-bold">
                         <i class="fa-solid fa-copy"></i> คัดลอกเลขบัญชี
@@ -3261,7 +3328,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                                         <div class="flex justify-between items-center font-bold">
                                             <span>📱 ${app.name}</span>
                                             <div class="space-x-1">
-                                                <button onclick="openEditAppModal('${app.id}')" class="text-blue-500">แก้ไข</button>
+                                                <button onclick="moveAppOrder('${app.id}', -1)" class="text-slate-500 px-1" title="เลื่อนขึ้น">↑</button><button onclick="moveAppOrder('${app.id}', 1)" class="text-slate-500 px-1" title="เลื่อนลง">↓</button><button onclick="openEditAppModal('${app.id}')" class="text-blue-500">แก้ไข</button>
                                                 <button onclick="deleteApp('${app.id}')" class="text-red-500">ลบ</button>
                                             </div>
                                         </div>
@@ -3270,7 +3337,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                                                 <div class="flex justify-between border-t pt-1">
                                                     <span>📦 ${p.name} (฿${p.price})</span>
                                                     <div>
-                                                        <button onclick="openEditPackageModal('${p.id}')" class="text-blue-500 mr-2">แก้ไข</button>
+                                                        <button onclick="movePackageOrder('${p.id}', -1)" class="text-slate-500 px-1" title="เลื่อนขึ้น">↑</button><button onclick="movePackageOrder('${p.id}', 1)" class="text-slate-500 px-1" title="เลื่อนลง">↓</button><button onclick="openEditPackageModal('${p.id}')" class="text-blue-500 mr-2">แก้ไข</button>
                                                         <button onclick="deletePackage('${p.id}')" class="text-red-500">ลบ</button>
                                                     </div>
                                                 </div>
@@ -3283,6 +3350,25 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     </div>
                 `;
             }).join('');
+        }
+
+        function moveAppOrder(id, direction) {
+            const item = appState.apps.find(x => String(x.id) === String(id)); if (!item) return;
+            const siblings = appState.apps.filter(x => String(x.categoryId) === String(item.categoryId));
+            const idx = siblings.findIndex(x => String(x.id) === String(id)); const target = idx + direction;
+            if (target < 0 || target >= siblings.length) return;
+            const a = appState.apps.indexOf(siblings[idx]), b = appState.apps.indexOf(siblings[target]);
+            [appState.apps[a], appState.apps[b]] = [appState.apps[b], appState.apps[a]];
+            saveState(); renderAdminProductsTree(); renderApps();
+        }
+        function movePackageOrder(id, direction) {
+            const item = appState.packages.find(x => String(x.id) === String(id)); if (!item) return;
+            const siblings = appState.packages.filter(x => String(x.appId) === String(item.appId));
+            const idx = siblings.findIndex(x => String(x.id) === String(id)); const target = idx + direction;
+            if (target < 0 || target >= siblings.length) return;
+            const a = appState.packages.indexOf(siblings[idx]), b = appState.packages.indexOf(siblings[target]);
+            [appState.packages[a], appState.packages[b]] = [appState.packages[b], appState.packages[a]];
+            saveState(); renderAdminProductsTree(); renderApps();
         }
 
         // CRUD Modal Functions for Category
@@ -4016,6 +4102,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function normalizeBannerImageUrl(value) {
             const raw = String(value || '').trim();
             if (!raw) return '';
+            if (raw.startsWith('//')) return 'https:' + raw;
             try {
                 const parsed = new URL(raw);
                 if (parsed.hostname.includes('imagetourls.com') && parsed.searchParams.has('u')) {
@@ -4180,14 +4267,80 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const opacity = document.getElementById('decorationOpacity'); if (opacity) opacity.value = o.opacity;
             updateFloatingDecorationPreviewControls();
         }
+        async function handleDecorationImageFile(input) {
+            const file = input?.files?.[0];
+            if (!file) return;
+            if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) {
+                showToast('กรุณาเลือกไฟล์รูป PNG, JPG, WEBP หรือ GIF'); input.value = ''; return;
+            }
+            if (file.size > 8 * 1024 * 1024) {
+                showToast('ไฟล์รูปใหญ่เกิน 8 MB กรุณาเลือกไฟล์ที่เล็กกว่านี้'); input.value = ''; return;
+            }
+            try {
+                let dataUrl;
+                // Keep small GIFs animated. Other images are resized/compressed to avoid localStorage quota errors.
+                if (file.type === 'image/gif' && file.size <= 350 * 1024) {
+                    dataUrl = await new Promise((resolve, reject) => {
+                        const r = new FileReader(); r.onload = () => resolve(String(r.result || '')); r.onerror = reject; r.readAsDataURL(file);
+                    });
+                } else {
+                    const objectUrl = URL.createObjectURL(file);
+                    try {
+                        const img = await new Promise((resolve, reject) => {
+                            const im = new Image(); im.onload = () => resolve(im); im.onerror = reject; im.src = objectUrl;
+                        });
+                        const maxSide = 900;
+                        const scale = Math.min(1, maxSide / Math.max(img.naturalWidth || img.width, img.naturalHeight || img.height));
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.max(1, Math.round((img.naturalWidth || img.width) * scale));
+                        canvas.height = Math.max(1, Math.round((img.naturalHeight || img.height) * scale));
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) throw new Error('canvas unavailable');
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        dataUrl = canvas.toDataURL('image/webp', 0.82);
+                        if (dataUrl.length > 450 * 1024) dataUrl = canvas.toDataURL('image/webp', 0.62);
+                        if (dataUrl.length > 700 * 1024) throw new Error('image too large after compression');
+                    } finally { URL.revokeObjectURL(objectUrl); }
+                }
+                if (!String(dataUrl).startsWith('data:image/')) throw new Error('invalid image data');
+                document.getElementById('decorationImageUrl').value = dataUrl;
+                const preview = document.getElementById('decorationImageFilePreview');
+                const placeholder = document.getElementById('decorationImageFilePlaceholder');
+                const status = document.getElementById('decorationImageFileStatus');
+                if (preview) { preview.src = dataUrl; preview.classList.remove('hidden'); }
+                if (placeholder) placeholder.classList.add('hidden');
+                if (status) status.textContent = `${file.name} · ไฟล์หลังเตรียม ${(dataUrl.length * 0.75 / 1024).toFixed(0)} KB`;
+                renderFloatingDecorations();
+                showToast('โหลดรูปแล้ว อย่าลืมกด “บันทึกสติกเกอร์”');
+            } catch (err) {
+                console.error('Decoration image processing failed', err);
+                showToast('เตรียมรูปไม่สำเร็จ กรุณาลองใช้ไฟล์ PNG/JPG/WEBP ขนาดเล็กลง');
+                input.value = '';
+            }
+        }
+        function clearDecorationImageFile() {
+            const file = document.getElementById('decorationImageFile'); if (file) file.value = '';
+            const hidden = document.getElementById('decorationImageUrl'); if (hidden) hidden.value = '';
+            const preview = document.getElementById('decorationImageFilePreview');
+            if (preview) { preview.removeAttribute('src'); preview.classList.add('hidden'); }
+            document.getElementById('decorationImageFilePlaceholder')?.classList.remove('hidden');
+            const status = document.getElementById('decorationImageFileStatus'); if (status) status.textContent = 'ยังไม่ได้เลือกรูป';
+            renderFloatingDecorations();
+        }
+
         function normalizeDecorationImageUrl(value) {
-            const raw = String(value || '').trim();
+            let raw = String(value || '').trim();
             if (!raw) return '';
+            if (raw.startsWith('//')) raw = 'https:' + raw;
+            // Fix common pasted links that include Markdown brackets or trailing punctuation.
+            raw = raw.replace(/^<|>$/g, '').replace(/[)\]>,]+$/g, '');
             try {
                 const parsed = new URL(raw);
-                // Accept image-hosting viewer links and unwrap their direct image URL (?u=...)
-                const embedded = parsed.searchParams.get('u') || parsed.searchParams.get('url') || parsed.searchParams.get('image');
-                if (embedded && /^https?:\/\//i.test(embedded)) return embedded;
+                // imagetourls viewer URL: extract the actual CDN image URL.
+                if (/imagetourls\.com$/i.test(parsed.hostname) || /\.imagetourls\.com$/i.test(parsed.hostname)) {
+                    const embedded = parsed.searchParams.get('u') || parsed.searchParams.get('url') || parsed.searchParams.get('image');
+                    if (embedded && /^https?:\/\//i.test(embedded)) raw = embedded;
+                }
                 return raw;
             } catch (_) { return raw; }
         }
@@ -4196,15 +4349,27 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const stage = document.getElementById('decorationPopupPreviewContent');
             if (!modal || !stage) return;
             const imageUrl = normalizeDecorationImageUrl(document.getElementById('decorationImageUrl')?.value || '');
-            const emoji = document.getElementById('decorationEmoji')?.value || '₍ᐢ - ̫ - ᐢ₎🎀3.';
+            const emoji = document.getElementById('decorationEmoji')?.value || '✨';
             const name = document.getElementById('decorationName')?.value.trim() || 'ตัวอย่างสติกเกอร์';
             const sizeValue = document.getElementById('decorationSize')?.value || 'medium';
             const size = {small:24, medium:36, large:48}[sizeValue] || 36;
-            stage.innerHTML = imageUrl
-              ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" style="max-width:80vw;max-height:48vh;object-fit:contain;width:${size*2}px;height:${size*2}px" onerror="this.style.display='none';document.getElementById('decorationPreviewImageError').classList.remove('hidden')">`
-              : `<div style="font-size:${sizeValue==='small'?'1.25rem':sizeValue==='large'?'2.5rem':'1.75rem'};white-space:pre;line-height:1.35;overflow-wrap:normal;max-width:85vw">${escapeHtml(emoji)}</div>`;
-            const error = document.getElementById('decorationPreviewImageError'); if (error) error.classList.add('hidden');
-            document.getElementById('decorationPopupPreviewName').textContent = name;
+            const position = document.getElementById('decorationPosition')?.value || 'diagonal-left';
+            const percent = Number(document.getElementById('decorationSizePercent')?.value || 100);
+            const px = Math.max(18, Math.min(160, size * 2 * percent / 100));
+            const error = document.getElementById('decorationPreviewImageError');
+            if (error) { error.classList.add('hidden'); error.textContent = 'โหลดรูปไม่สำเร็จ กรุณาใช้ลิงก์ไฟล์รูปโดยตรงที่เปิดแล้วเห็นเฉพาะรูป'; }
+            const isSide = position === 'left' || position === 'right';
+            const sticker = imageUrl
+                ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" referrerpolicy="no-referrer" style="width:${px}px;height:${px}px;max-width:35vw;max-height:20vh;object-fit:contain" onerror="this.onerror=null;this.style.display='none';const f=this.parentElement.querySelector('.deco-preview-fallback');if(f)f.classList.remove('hidden');const e=document.getElementById('decorationPreviewImageError');if(e)e.classList.remove('hidden')"><span class="deco-preview-fallback hidden" style="font-size:${Math.max(20,px/2)}px">${escapeHtml(emoji)}</span>`
+                : `<span style="font-size:${Math.max(20,px/2)}px">${escapeHtml(emoji)}</span>`;
+            stage.innerHTML = `<div class="relative w-full h-64 sm:h-72 rounded-2xl overflow-hidden bg-slate-50 border border-purple-100 text-left">
+                <div class="absolute inset-x-3 top-3 h-8 rounded-lg bg-white border border-slate-100 flex items-center px-3 gap-1"><i class="w-2 h-2 rounded-full bg-rose-300"></i><i class="w-2 h-2 rounded-full bg-amber-300"></i><i class="w-2 h-2 rounded-full bg-emerald-300"></i><span class="ml-2 text-[10px] text-slate-400">ตัวอย่างหน้าร้าน Wanderer Shop</span></div>
+                <div class="absolute left-4 right-4 top-14 h-20 rounded-xl bg-gradient-to-r from-purple-100 via-blue-50 to-pink-100 border border-white shadow-sm p-3"><div class="font-bold text-purple-800 text-sm">ยินดีต้อนรับสู่ร้านค้า</div><div class="text-[10px] text-slate-500 mt-1">แบนเนอร์และข้อความของหน้าร้าน</div></div>
+                <div class="absolute left-4 right-4 top-40 h-16 rounded-xl bg-white border border-slate-100 shadow-sm p-3"><div class="h-2 w-2/5 rounded bg-purple-100"></div><div class="h-2 w-3/4 rounded bg-slate-100 mt-2"></div><div class="h-2 w-1/2 rounded bg-slate-100 mt-2"></div></div>
+                <div class="absolute ${isSide ? (position === 'right' ? 'right-2' : 'left-2') : (position === 'diagonal-right' ? 'right-5' : 'left-5')} ${position === 'background' ? 'left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2' : (position === 'diagonal-left' || position === 'diagonal-right' ? 'top-28 rotate-12' : 'top-24')} z-10 pointer-events-none opacity-80">${sticker}</div>
+                <div class="absolute bottom-3 left-4 text-[10px] text-slate-400">ตำแหน่ง: ${escapeHtml(position)} · ขนาด: ${percent}%</div>
+            </div>`;
+            document.getElementById('decorationPopupPreviewName').textContent = `ตัวอย่างการแสดงผล: ${name}`;
             modal.classList.remove('hidden'); modal.classList.add('flex');
         }
         function closeFloatingDecorationPopupPreview() {
@@ -4235,7 +4400,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const expanded = Array.from({length: Math.min(opts.count, 36)}, (_, i) => ({ item: all[i % all.length], index: i }));
             root.innerHTML = expanded.map(({item, index}) => {
                 const sizeMap = { small: 24, medium: 36, large: 48 };
-                const size = sizeMap[item.size] || 36;
+                const size = (sizeMap[item.size] || 36) * (Number(item.sizePercent || document.getElementById('decorationSizePercent')?.value || 100) / 100);
                 const pos = item.position || 'left';
                 // Evenly distribute across full viewport; background decorations occupy the full page behind cards/text.
                 const x = (index * 37 + 11) % 94 + 3;
@@ -4248,11 +4413,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 const location = isDiagonal ? `left:${diagonalX};top:${diagonalY};transform:rotate(${pos === 'diagonal-left' ? '-18deg' : '18deg'});` : (isBackground ? `left:${x}%;top:${y}%;` : `${sideX}top:${y}%;`);
                 const opacity = (opts.opacity / 100) * (isBackground ? 1 : 0.82);
                 const style = `${location}width:${size}px;height:${size}px;--deco-speed:${opts.speed + (index % 4) * .6}s;--deco-opacity:${opacity};animation-delay:${(index % 7) * -.65}s;`;
+                const normalizedImageUrl = normalizeDecorationImageUrl(item.imageUrl || '');
                 const fallbackEmoji = `<span class="emoji">${escapeHtml(item.emoji || '✨')}</span>`;
-                const content = item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${escapeHtml(item.name || 'สติกเกอร์')}" loading="eager" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'emoji',textContent:${JSON.stringify(item.emoji || '✨')}}))">` : fallbackEmoji;
+                const content = normalizedImageUrl ? `<img src="${escapeHtml(normalizedImageUrl)}" alt="${escapeHtml(item.name || 'สติกเกอร์')}" loading="eager" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.style.display='none';const f=document.createElement('span');f.className='emoji';f.textContent=${JSON.stringify(item.emoji || '✨')};this.parentElement.appendChild(f)">` : fallbackEmoji;
                 const tag = item.linkUrl && !isBackground ? 'a' : 'span';
                 const href = tag === 'a' ? ` href="${escapeHtml(item.linkUrl)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(item.name || 'เปิดลิงก์')}"` : '';
-                return `<${tag} class="wanderer-floating-decoration ${isBackground ? 'deco-background' : 'deco-side'} ${item.imageUrl ? '' : 'emoji'} ${floatingDecorationPreviewEnabled ? 'deco-preview' : ''}" style="${style}"${href}>${content}</${tag}>`;
+                return `<${tag} class="wanderer-floating-decoration ${isBackground ? 'deco-background' : 'deco-side'} ${normalizedImageUrl ? 'deco-image' : 'emoji'} ${floatingDecorationPreviewEnabled ? 'deco-preview' : ''}" style="${style};--deco-image-opacity:${Math.max(0.58, Math.min(0.92, opts.opacity / 100 + 0.62))};"${href}>${content}</${tag}>`;
             }).join('');
         }
 
@@ -4262,7 +4428,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const items = appState.settings?.floatingDecorations || [];
             if (!items.length) { box.innerHTML = '<p class="text-slate-500">ยังไม่มีสติกเกอร์ กรอกข้อมูลด้านบนเพื่อเพิ่มรายการแรก</p>'; return; }
             box.innerHTML = items.map(item => `<div class="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-xl border bg-slate-50 dark:bg-slate-900">
-                <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border flex items-center justify-center text-2xl overflow-hidden shrink-0">${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" class="w-full h-full object-contain" alt="">` : escapeHtml(item.emoji || '✨')}</div>
+                <div class="w-12 h-12 rounded-xl bg-white dark:bg-slate-800 border flex items-center justify-center text-2xl overflow-hidden shrink-0">${normalizeDecorationImageUrl(item.imageUrl) ? `<img src="${escapeHtml(normalizeDecorationImageUrl(item.imageUrl))}" referrerpolicy="no-referrer" class="w-full h-full object-contain" alt="" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')">` : escapeHtml(item.emoji || '✨')}</div>
                 <div class="flex-1 min-w-0"><div class="font-bold">${escapeHtml(item.name || 'สติกเกอร์')}</div><div class="text-slate-500 break-all">${escapeHtml(item.position || 'left')} · ${item.enabled === false ? 'ปิดใช้งาน' : 'กำลังแสดง'}${item.linkUrl ? ' · มีลิงก์' : ''}</div></div>
                 <div class="flex gap-2"><button onclick="editFloatingDecoration('${escapeHtml(item.id)}')" class="px-3 py-1.5 rounded-lg bg-indigo-100 text-indigo-700 font-bold">แก้ไข</button><button onclick="deleteFloatingDecoration('${escapeHtml(item.id)}')" class="px-3 py-1.5 rounded-lg bg-red-100 text-red-700 font-bold">ลบ</button></div>
             </div>`).join('');
@@ -4274,16 +4440,18 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const imageUrl = normalizeDecorationImageUrl(document.getElementById('decorationImageUrl').value.trim());
             if (imageUrl && document.getElementById('decorationImageUrl')) document.getElementById('decorationImageUrl').value = imageUrl;
             const linkUrl = document.getElementById('decorationLinkUrl').value.trim();
-            if (!imageUrl && !emoji) { showToast('กรุณาใส่อีโมจิหรือ URL รูปภาพ'); return; }
-            if (imageUrl && !/^https?:\/\//i.test(imageUrl)) { showToast('URL รูปภาพต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
+            if (!imageUrl && !emoji) { showToast('กรุณาใส่อีโมจิหรือเลือกไฟล์รูปภาพ'); return; }
+            if (imageUrl && !(/^https?:\/\//i.test(imageUrl) || /^data:image\/(png|jpeg|webp|gif);base64,/i.test(imageUrl))) { showToast('กรุณาเลือกไฟล์รูปภาพที่ถูกต้อง'); return; }
             if (linkUrl && !/^https?:\/\//i.test(linkUrl)) { showToast('ลิงก์ปลายทางต้องขึ้นต้นด้วย http:// หรือ https://'); return; }
             const list = Array.isArray(appState.settings.floatingDecorations) ? [...appState.settings.floatingDecorations] : [];
             const editingId = document.getElementById('decorationEditingId').value;
-            const record = { id: editingId || `deco-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || 'สติกเกอร์', emoji: emoji || '✨', imageUrl, linkUrl, position: document.getElementById('decorationPosition').value, size: document.getElementById('decorationSize').value, enabled: document.getElementById('decorationEnabled').checked };
+            const record = { id: editingId || `deco-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, name: name || 'สติกเกอร์', emoji: emoji || '✨', imageUrl, linkUrl, position: document.getElementById('decorationPosition').value, size: document.getElementById('decorationSize').value, sizePercent: Number(document.getElementById('decorationSizePercent')?.value || 100), enabled: document.getElementById('decorationEnabled').checked };
             const index = list.findIndex(x => x.id === editingId);
             if (index >= 0) list[index] = record; else list.push(record);
             appState.settings.floatingDecorations = list; saveState(); renderFloatingDecorations(); renderAdminFloatingDecorations(); resetFloatingDecorationForm();
-            showToast(index >= 0 ? 'แก้ไขสติกเกอร์แล้ว' : 'เพิ่มสติกเกอร์แล้ว');
+            const savedImage = list.find(x => x.id === record.id)?.imageUrl || '';
+            if (savedImage.startsWith('data:image/')) showToast(index >= 0 ? 'บันทึกสติกเกอร์และไฟล์รูปแล้ว' : 'เพิ่มสติกเกอร์พร้อมไฟล์รูปแล้ว');
+            else showToast(index >= 0 ? 'แก้ไขสติกเกอร์แล้ว' : 'เพิ่มสติกเกอร์แล้ว');
         }
 
         function editFloatingDecoration(id) {
@@ -4292,9 +4460,18 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             document.getElementById('decorationName').value = item.name || '';
             document.getElementById('decorationEmoji').value = item.emoji || '';
             document.getElementById('decorationImageUrl').value = item.imageUrl || '';
+            const savedPreview = document.getElementById('decorationImageFilePreview');
+            const savedPlaceholder = document.getElementById('decorationImageFilePlaceholder');
+            const savedStatus = document.getElementById('decorationImageFileStatus');
+            const savedFileInput = document.getElementById('decorationImageFile'); if (savedFileInput) savedFileInput.value = '';
+            if (savedPreview && item.imageUrl) { savedPreview.src = normalizeDecorationImageUrl(item.imageUrl); savedPreview.classList.remove('hidden'); }
+            else if (savedPreview) { savedPreview.removeAttribute('src'); savedPreview.classList.add('hidden'); }
+            if (savedPlaceholder) savedPlaceholder.classList.toggle('hidden', !!item.imageUrl);
+            if (savedStatus) savedStatus.textContent = item.imageUrl ? (String(item.imageUrl).startsWith('data:image/') ? 'มีไฟล์รูปบันทึกไว้แล้ว · เลือกไฟล์ใหม่เพื่อเปลี่ยนรูป' : 'รูปเดิมเป็นลิงก์ภายนอก · เลือกไฟล์ใหม่เพื่อเปลี่ยนเป็นไฟล์รูป') : 'ยังไม่ได้เลือกรูป';
             document.getElementById('decorationLinkUrl').value = item.linkUrl || '';
             document.getElementById('decorationPosition').value = item.position || 'left';
             document.getElementById('decorationSize').value = item.size || 'medium';
+            const editPercent = document.getElementById('decorationSizePercent'); if (editPercent) { editPercent.value = Number(item.sizePercent || 100); document.getElementById('decorationSizePercentValue').textContent = `${editPercent.value}%`; }
             document.getElementById('decorationEnabled').checked = item.enabled !== false;
             document.getElementById('decorationName').focus();
         }
@@ -4307,7 +4484,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
         function resetFloatingDecorationForm() {
             ['decorationEditingId','decorationName','decorationEmoji','decorationImageUrl','decorationLinkUrl'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('decorationPosition').value = 'left'; document.getElementById('decorationSize').value = 'medium'; document.getElementById('decorationEnabled').checked = true;
+            const fileInput = document.getElementById('decorationImageFile'); if (fileInput) fileInput.value = '';
+            const filePreview = document.getElementById('decorationImageFilePreview'); if (filePreview) { filePreview.removeAttribute('src'); filePreview.classList.add('hidden'); }
+            document.getElementById('decorationImageFilePlaceholder')?.classList.remove('hidden');
+            const fileStatus = document.getElementById('decorationImageFileStatus'); if (fileStatus) fileStatus.textContent = 'เลือกรูปจากเครื่องได้โดยตรง ไม่ต้องใช้ลิงก์รูป';
+            document.getElementById('decorationPosition').value = 'diagonal-left'; document.getElementById('decorationSize').value = 'medium'; if(document.getElementById('decorationSizePercent')){document.getElementById('decorationSizePercent').value=100;document.getElementById('decorationSizePercentValue').textContent='100%';} document.getElementById('decorationEnabled').checked = true;
         }
 
         // Subtle scroll-linked zoom for the hero image, combined with hover zoom.
@@ -4317,13 +4498,21 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             img.style.transform = `scale(${scale})`;
         }, { passive: true });
 
+        function toggleFeedbackResolved(id, checked) {
+            const item = (appState.feedbacks || []).find(f => String(f.id) === String(id));
+            if (!item) return;
+            item.resolved = !!checked;
+            item.resolvedAt = checked ? new Date().toLocaleString('th-TH') : '';
+            saveState();
+            renderAdminFeedbacks();
+            showToast(checked ? 'ทำเครื่องหมายว่าปรับแก้แล้ว' : 'ยกเลิกเครื่องหมายปรับแก้แล้ว');
+        }
+
         function renderAdminFeedbacks() {
             const fbBox = document.getElementById('adminFeedbacksList');
             fbBox.innerHTML = appState.feedbacks.length ? appState.feedbacks.map(f => `
-                <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border">
-                    <span class="font-bold text-amber-600">${f.title}</span>
-                    <p class="mt-1">${f.text}</p>
-                    <span class="text-[9px] text-slate-400 block mt-1">${f.date}</span>
+                <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border ${f.resolved ? 'border-green-300 opacity-75' : ''}">
+                    <div class="flex items-start gap-2"><input type="checkbox" ${f.resolved ? 'checked' : ''} aria-label="ทำข้อเสนอแนะนี้แล้ว" onchange="toggleFeedbackResolved('${f.id}', this.checked)" class="mt-1 accent-green-600"><div class="flex-1 min-w-0"><span class="font-bold ${f.resolved ? 'text-green-700 line-through' : 'text-amber-600'}">${escapeHtml(f.title || '')}</span> ${f.resolved ? '<span class="text-[10px] text-green-600 font-bold">✓ ปรับแก้แล้ว</span>' : ''}<p class="mt-1">${escapeHtml(f.text || '')}</p><span class="text-[9px] text-slate-400 block mt-1">${escapeHtml(f.date || '')}</span></div></div>
                 </div>
             `).join('') : '<p class="text-slate-400 italic">ไม่มีข้อเสนอแนะในขณะนี้</p>';
 
@@ -4521,7 +4710,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 console.error('Supabase admin login failed:', err);
                 const message = String(err?.message || 'ไม่ทราบสาเหตุ');
                 if (/invalid login credentials/i.test(message)) {
-                    alert('เข้าสู่ระบบไม่สำเร็จ: ตรวจสอบรหัสผ่านและการยืนยันอีเมล\n\nหากใช้ชื่อ pao ต้องสร้างผู้ใช้ใน Supabase Auth ด้วยอีเมล s6741050006@kktech.ac.th และตั้งรหัสผ่านเดียวกันก่อน');
+                    alert('เข้าสู่ระบบไม่สำเร็จ: ตรวจสอบรหัสผ่านและการยืนยันอีเมล\n\nหากใช้ชื่อ pao ต้องสร้างผู้ใช้ใน Supabase Auth ด้วยอีเมล pao@wanderer-shop.com และตั้งรหัสผ่านเดียวกันก่อน');
                 } else if (/email not confirmed/i.test(message)) {
                     alert('บัญชีนี้ยังไม่ได้ยืนยันอีเมล กรุณายืนยันอีเมลหรือปรับสถานะยืนยันใน Supabase Authentication');
                 } else {
@@ -4587,17 +4776,20 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 const name=escapeHtml(w.name||'เว็บสำเร็จรูป');
                 const desc=escapeHtml(w.description||'ไม่มีรายละเอียดเพิ่มเติม');
                 const price=(Number(w.price)||0).toLocaleString('th-TH');
-                return `<article class="relative shrink-0 w-full sm:w-auto bg-white dark:bg-slate-800 rounded-3xl p-4 border border-purple-100 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition flex flex-col justify-between gap-3" style="background:${escapeHtml(w.cardBg||'#ffffff')};border-color:${escapeHtml(w.cardBorder||'#ddd6fe')}">
-                    <div class="flex flex-col items-center text-center pt-1">
-                        <img src="${logo}" onerror="this.style.display='none'" alt="${name}" class="w-14 h-14 rounded-2xl mb-3 object-cover shadow-sm bg-white">
-                        <h3 class="font-bold text-xs text-slate-800 dark:text-slate-100 line-clamp-1" style="color:${escapeHtml(w.titleColor||'#6d28d9')}">${name}</h3>
-                        <p class="text-[10px] text-slate-400 dark:text-slate-300 line-clamp-2 mt-1 whitespace-pre-line">${desc}</p>
+                return `<article class="relative w-full bg-slate-50 dark:bg-slate-800 rounded-2xl p-5 border border-purple-100 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition flex flex-col justify-between gap-3" style="background:${escapeHtml(w.cardBg||'#ffffff')};border-color:${escapeHtml(w.cardBorder||'#ddd6fe')}">
+                    <div class="flex items-start gap-4 pt-1">
+                        <img src="${logo}" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')" alt="${name}" class="w-16 h-16 shrink-0 rounded-2xl object-cover shadow-sm bg-white border border-slate-100">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex flex-wrap items-center gap-2 mb-1"><span class="inline-flex items-center px-2.5 py-1 rounded-full bg-purple-100 text-purple-700 text-[10px] font-bold">บริการเว็บ</span><span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-bold"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>พร้อมส่ง</span></div>
+                          <h3 class="font-extrabold text-base text-slate-800 dark:text-slate-100" style="color:${escapeHtml(w.titleColor||'#6d28d9')}">${name}</h3>
+                          <p class="text-xs text-slate-500 dark:text-slate-300 mt-2 whitespace-pre-line leading-relaxed">${desc}</p>
+                        </div>
                     </div>
-                    <div class="text-center text-base font-black text-pink-500">฿${price}</div>
+                    <div class="text-right text-xl font-black text-pink-500">฿${price}</div>
                     <div class="grid grid-cols-3 gap-2">
-                        <button type="button" onclick="openWebsiteReadyPopup('${sid}')" class="w-full py-1.5 bg-purple-50 dark:bg-slate-700 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-300 font-bold text-[11px] rounded-xl transition">รายละเอียด</button>
-                        <button type="button" onclick="addWebsiteServiceRecordToCart('${sid}')" class="w-full py-1.5 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 text-purple-700 dark:text-purple-200 font-bold text-[11px] rounded-xl transition">+ ตะกร้า</button>
-                        <button type="button" onclick="buyWebsiteServiceNow('${sid}')" class="w-full py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] rounded-xl transition">สั่งซื้อ</button>
+                        <button type="button" onclick="openWebsiteReadyPopup('${sid}')" class="w-full py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-purple-600 hover:text-white text-slate-700 dark:text-purple-200 font-bold text-xs rounded-2xl transition">รายละเอียด</button>
+                        <button type="button" onclick="addWebsiteServiceRecordToCart('${sid}')" class="w-full py-2.5 bg-purple-100 dark:bg-purple-900/40 hover:bg-purple-200 text-purple-700 dark:text-purple-200 font-bold text-xs rounded-2xl transition">+ ตะกร้า</button>
+                        <button type="button" onclick="buyWebsiteServiceNow('${sid}')" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-2xl transition">สั่งซื้อ</button>
                     </div>
                 </article>`;
             }).join('') || '<div class="col-span-full rounded-2xl border border-dashed p-8 text-center text-sm text-slate-500">ยังไม่มีเว็บสำเร็จรูปที่พร้อมขาย</div>';
@@ -4638,7 +4830,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function renderAdminWebsiteServiceList() {
             const root=document.getElementById('adminWebsiteServiceList'); if(!root) return;
             const services=getWebsiteServices();
-            root.innerHTML=services.map(w=>`<div class="rounded-2xl border border-indigo-100 dark:border-slate-700 p-3 flex gap-3 items-start"><img src="${escapeHtml(w.logoUrl || defaultState.websiteService.logoUrl)}" class="w-12 h-12 rounded-xl object-cover bg-white border" onerror="this.style.display='none'"><div class="min-w-0 flex-1"><div class="font-bold text-sm">${escapeHtml(w.name || 'บริการเว็บ')}</div><div class="text-xs text-slate-500 mt-1">฿${(Number(w.price)||0).toLocaleString('th-TH')} · ${w.inStock===false?'ไม่พร้อมขาย':'พร้อมขาย'}</div><p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(w.description||'')}</p><div class="flex gap-2 mt-3"><button type="button" onclick="editWebsiteServiceRecord('${String(w.id).replace(/'/g,'\\\'')}')" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">แก้ไข</button><button type="button" onclick="deleteWebsiteServiceRecord('${String(w.id).replace(/'/g,'\\\'')}')" class="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold">ลบ</button></div></div></div>`).join('') || '<p class="text-xs text-slate-500">ยังไม่มีรายการบริการ กด “เพิ่มรายการใหม่” เพื่อสร้างรายการ</p>';
+            root.innerHTML=services.map(w=>`<div class="rounded-2xl border border-indigo-100 dark:border-slate-700 p-3 flex gap-3 items-start"><img src="${escapeHtml(w.logoUrl || defaultState.websiteService.logoUrl)}" class="w-12 h-12 rounded-xl object-cover bg-white border" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')"><div class="min-w-0 flex-1"><div class="font-bold text-sm">${escapeHtml(w.name || 'บริการเว็บ')}</div><div class="text-xs text-slate-500 mt-1">฿${(Number(w.price)||0).toLocaleString('th-TH')} · ${w.inStock===false?'ไม่พร้อมขาย':'พร้อมขาย'}</div><p class="text-xs text-slate-500 mt-1 line-clamp-2">${escapeHtml(w.description||'')}</p><div class="flex gap-2 mt-3"><button type="button" onclick="editWebsiteServiceRecord('${String(w.id).replace(/'/g,'\\\'')}')" class="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold">แก้ไข</button><button type="button" onclick="deleteWebsiteServiceRecord('${String(w.id).replace(/'/g,'\\\'')}')" class="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 text-xs font-bold">ลบ</button></div></div></div>`).join('') || '<p class="text-xs text-slate-500">ยังไม่มีรายการบริการ กด “เพิ่มรายการใหม่” เพื่อสร้างรายการ</p>';
         }
         function resetWebsiteServiceForm() {
             const ids=['adminWebsiteName','adminWebsitePrice','adminWebsiteLogo','adminWebsiteDescription','adminWebsitePreviewUrl','adminWebsiteContact'];
@@ -4741,9 +4933,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         async function backupOrderToSheet(order) {
             const endpoint = String(appState.settings?.sheetBackupUrl || appState.settings?.sheetAppsScriptUrl || '').trim();
             if (!endpoint) return { skipped:true, reason:'Google Sheets backup endpoint not configured' };
-            const response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ type:'order_backup', action:'save_order', order }) , mode:'cors' });
+            const response = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify({ type:'order_backup', action:'save_order', order }) , mode:'cors' });
             if (!response.ok) throw new Error(`Sheets backup HTTP ${response.status}`);
-            return response;
+            const result = await response.json();
+            if (result && result.success === false) throw new Error(result.error || 'Google Sheets ปฏิเสธการบันทึกออเดอร์');
+            return result;
         }
         async function testWorkerNotification() {
             saveIntegrationSettings();
@@ -4989,6 +5183,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             if (supabaseClient) {
                 try { const { data } = await supabaseClient.auth.getSession(); supabaseAuthSession = data?.session || null; } catch (e) { console.warn('Supabase session restore failed', e); }
                 await loadSharedStoreState();
+                startSharedStateAutoRefresh();
             }
             normalizeCart();
             updateCartBadge();
@@ -5025,10 +5220,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         <div class="relative w-full max-w-sm rounded-3xl bg-white dark:bg-slate-800 border border-purple-100 dark:border-slate-700 shadow-2xl p-5 text-center space-y-4">
             <div class="flex items-center justify-between gap-3"><h3 id="decorationPopupPreviewName" class="font-bold text-purple-700 dark:text-purple-300">ตัวอย่างสติกเกอร์</h3><button type="button" onclick="closeFloatingDecorationPopupPreview()" class="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-700 font-bold" aria-label="ปิด">✕</button></div>
             <div class="min-h-40 rounded-2xl border border-dashed border-purple-200 dark:border-slate-600 bg-gradient-to-br from-purple-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4 overflow-hidden">
-                <div id="decorationPopupPreviewContent" class="flex items-center justify-center">₍ᐢ - ̫ - ᐢ₎🎀3.</div>
+                <div id="decorationPopupPreviewContent" class="block w-full">₍ᐢ - ̫ - ᐢ₎🎀3.</div>
                 <p id="decorationPreviewImageError" class="hidden text-sm text-rose-600">โหลดรูปไม่สำเร็จ กรุณาตรวจสอบ URL รูปภาพโดยตรง</p>
             </div>
-            <p class="text-xs text-slate-500">ตัวอย่างนี้แสดงในหน้าต่างป๊อปอัป และยังไม่บันทึกการเปลี่ยนแปลง</p>
+            <p class="text-xs text-slate-500">ดูตัวอย่างตำแหน่งและขนาดบนหน้าเว็บจำลองได้ก่อนบันทึกการเปลี่ยนแปลง</p>
             <button type="button" onclick="closeFloatingDecorationPopupPreview()" class="w-full rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold py-2.5">เข้าใจแล้ว</button>
         </div>
     </div>
