@@ -3408,20 +3408,30 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 packages: appState.packages || []
             };
             try {
-                const response = await fetch(endpoint, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload),
-                    mode: 'cors'
-                });
-                const result = await response.json();
+                let response;
+                try {
+                    response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify(payload),
+                        mode: 'cors',
+                        redirect: 'follow'
+                    });
+                } catch (networkError) {
+                    throw new Error('ส่งคำขอไป Apps Script ไม่สำเร็จ (URL/สิทธิ์ Deploy/CORS): ' + (networkError?.message || 'NetworkError'));
+                }
+                let result;
+                try { result = await response.json(); }
+                catch (_) { throw new Error('Apps Script ไม่ได้ส่ง JSON กลับมา ตรวจสอบว่า Deploy เป็น Web app และสิทธิ์เข้าถึงเป็น Anyone'); }
                 if (!response.ok || result.success !== true) throw new Error(result.error || ('HTTP ' + response.status));
                 recordSyncHistory({ok:true, action:'catalog_backup', message:'บันทึกหมวดหมู่ แอป และแพ็กเกจลงชีตแล้ว', at:new Date().toISOString()});
                 return result;
             } catch (error) {
                 recordSyncHistory({ok:false, action:'catalog_backup', message:String(error?.message || error)});
                 console.error('Google Sheets catalog backup failed:', error);
-                showToast('บันทึกในเว็บแล้ว แต่ส่งกลับ Google Sheets ไม่สำเร็จ');
+                showToast('Google Sheets ไม่สำเร็จ: ' + String(error?.message || error).slice(0, 100));
+                const status = document.getElementById('integrationStatusText');
+                if (status) status.textContent = 'ซิงค์ Google Sheets ไม่สำเร็จ: ' + (error?.message || error) + '\nตรวจสอบ Apps Script > Executions และ Deploy เวอร์ชันล่าสุด';
                 return { success:false, error:String(error?.message || error) };
             }
         }
