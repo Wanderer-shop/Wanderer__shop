@@ -1521,6 +1521,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 if (Array.isArray(cloud.reviews)) appState.reviews = cloud.reviews;
                 if (Array.isArray(cloud.orders)) appState.orders = cloud.orders;
                 if (Array.isArray(cloud.feedbacks)) appState.feedbacks = cloud.feedbacks;
+                removeKnownStaleCatalogRecords(appState);
                 sharedStateLastUpdatedAt = data.updated_at || cloud.updatedAt || null;
                 localStorage.setItem('wanderer_shop_state', JSON.stringify(appState));
                 return true;
@@ -1689,8 +1690,22 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
         let appState = JSON.parse(localStorage.getItem('wanderer_shop_state')) || defaultState;
 
+        // Remove specifically identified stale demo records (cat-3/app-1) and their dependent packages.
+        // Keep unrelated user-created catalog entries untouched.
+        function removeKnownStaleCatalogRecords(state) {
+            if (!state || typeof state !== 'object') return;
+            const staleCategoryIds = new Set(['cat-3']);
+            const staleAppIds = new Set(['app-1']);
+            const apps = Array.isArray(state.apps) ? state.apps : [];
+            const removedAppIds = new Set(apps.filter(a => staleAppIds.has(String(a?.id || ''))).map(a => String(a.id)));
+            state.categories = (Array.isArray(state.categories) ? state.categories : []).filter(c => !staleCategoryIds.has(String(c?.id || '')));
+            state.apps = apps.filter(a => !staleAppIds.has(String(a?.id || '')) && !staleCategoryIds.has(String(a?.categoryId || '')));
+            for (const a of apps) if (staleCategoryIds.has(String(a?.categoryId || ''))) removedAppIds.add(String(a.id));
+            state.packages = (Array.isArray(state.packages) ? state.packages : []).filter(pkg => !removedAppIds.has(String(pkg?.appId || '')) && !staleAppIds.has(String(pkg?.appId || '')));
+        }
         // Remove only known seeded demo records from older localStorage builds; preserve real/user-created records.
         try {
+            removeKnownStaleCatalogRecords(appState);
           const oldDemoCategoryIds=new Set(['cat-1','cat-2','cat-3']);
           const oldDemoAppIds=new Set(['app-1','app-2','app-3','app-4']);
           const oldDemoPkgIds=new Set(['pkg-1','pkg-2','pkg-3','pkg-4']);
@@ -1838,29 +1853,31 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 }
             }, 1200);
         }
+        let storageWarningShown = false;
         function saveState() {
-            // Browser storage is a cache, not the source of truth. Remove oversized embedded image data from the local cache
-            // while retaining URLs and all catalog/order fields in memory and sending the full state to shared storage.
+            // Google Sheets/Supabase remain the data services; browser storage is disposable cache only.
+            // Never persist embedded image bytes in localStorage.
             try {
                 const cacheState = JSON.parse(JSON.stringify(appState, (key, value) => {
-                    if (typeof value === 'string' && /^data:image\\//i.test(value) && value.length > 180000) {
-                        return '[รูปภาพฝังตัวถูกตัดออกจากแคชในเบราว์เซอร์ — กรุณาใช้ URL หรืออัปโหลดรูปที่บีบอัดแล้ว]';
-                    }
+                    if (typeof value === 'string' && /^data:image\//i.test(value)) return '';
                     return value;
                 }));
                 localStorage.setItem('wanderer_shop_state', JSON.stringify(cacheState));
+                storageWarningShown = false;
             } catch (e) {
-                console.error('Save state failed', e);
+                console.warn('Browser cache save failed; cloud sync will still be attempted:', e);
                 try {
-                    // Remove only disposable local cache keys; do not clear credentials or unrelated site data.
                     ['wanderer_shop_state_backup','wanderer_shop_last_snapshot','wanderer_shop_cache'].forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
-                    const compact = JSON.stringify(appState, (key, value) => typeof value === 'string' && /^data:image\\//i.test(value) ? '[รูปภาพไม่เก็บในแคช]' : value);
+                    const compact = JSON.stringify({settings:{},categories:[],apps:[],packages:[],orders:[],websiteServices:[],websiteService:{},bankAccounts:{},formTemplates:{},reviews:[],feedbacks:[]});
                     localStorage.setItem('wanderer_shop_state', compact);
-                    showToast('บันทึกแคชแบบย่อแล้ว รูป Base64 ขนาดใหญ่ไม่ถูกเก็บในเบราว์เซอร์');
-                } catch (e2) {
-                    try { showToast('พื้นที่จัดเก็บเบราว์เซอร์เต็ม: ข้อมูลหลักยังต้องซิงค์ไป Supabase/Google Sheets'); } catch (_) {}
+                } catch (_) {
+                    if (!storageWarningShown) {
+                        storageWarningShown = true;
+                        try { if (isAdminMode && isAdminMode()) showToast('แคชเบราว์เซอร์เต็ม แต่ระบบยังพยายามบันทึกข้อมูลไปฐานข้อมูลกลาง/Google Sheets'); } catch (_) {}
+                    }
                 }
             }
+            // Always attempt cloud / Sheets sync regardless of local cache outcome.
             scheduleSharedStoreSave();
             scheduleCatalogAutoBackup();
         }
@@ -2393,7 +2410,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             appState.orders.unshift(lineOrder);
             saveState();
             notifyOrderToWorker(lineOrder).catch(err => console.warn('Worker notification failed:', err));
-            backupOrderToSheet(lineOrder).catch(err => console.warn('Google Sheets backup failed:', err));
+            let lineSheetSaved = false;
+            try { const sheetResult = await backupOrderToSheet(lineOrder); lineSheetSaved = sheetResult?.success === true; }
+            catch (err) { console.error('Google Sheets order save failed:', err); showToast('บันทึกออเดอร์ LINE ลง Google Sheets ไม่สำเร็จ'); }
 
             const itemsText = itemsSnapshot.map((item, i) => {
                 const appName = item.appName || item.app || item.categoryName || item.category || item.name || 'สินค้า';
@@ -2409,7 +2428,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const tmpl = `🛒 รายการสั่งซื้อ (Wanderer_Shop)\n\nเลขออเดอร์ : ${orderId}\n---------------------------\n${itemsText}\n---------------------------\n💰 ยอดรวมทั้งสิ้น: ${total.toLocaleString('th-TH')}\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ`;
             const copied = await copyToClipboard(tmpl);
             if (copied) {
-                alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
+                alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\n' + (lineSheetSaved ? 'บันทึกออเดอร์ลง Google Sheets แล้ว\n' : 'คำเตือน: ยังยืนยันการบันทึกลง Google Sheets ไม่ได้\n') + '\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
                 const rawId = String(appState.settings.lineId || '@997pfoig').trim();
                 const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
                 window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
@@ -2804,7 +2823,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const total = getCartTotal();
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 const newOrder = {
                     id: orderId,
                     date: new Date().toLocaleString('th-TH'),
@@ -2820,7 +2839,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 appState.orders.unshift(newOrder);
                 notifyOrderToWorker(newOrder).catch(err => console.warn('Worker notification failed:', err));
                 onCustomerUploadSlip(orderId, total, newOrder.slipImg).catch(err => console.warn('Slip notification failed:', err));
-                backupOrderToSheet(newOrder).catch(err => console.warn('Google Sheets backup failed:', err));
+                let sheetSaved = false;
+                try { const sheetResult = await backupOrderToSheet(newOrder); sheetSaved = sheetResult?.success === true; }
+                catch (err) { console.error('Google Sheets order save failed:', err); showToast('บันทึกออเดอร์ลง Google Sheets ไม่สำเร็จ กรุณาแจ้งร้านก่อนโอน'); }
                 appState.cart = [];
                 appState.pendingCustomerRequirements = {};
                 saveState();
@@ -2829,7 +2850,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 navigateTo('order-tracking');
                 document.getElementById('trackOrderIdInput').value = orderId;
                 searchOrderManual();
-                showToast(`สร้างออเดอร์ ${orderId} สำเร็จ`);
+                showToast(sheetSaved ? `สร้างออเดอร์ ${orderId} และบันทึกลง Google Sheets แล้ว` : `สร้างออเดอร์ ${orderId} ในหน้านี้แล้ว แต่ต้องตรวจสอบการบันทึก Google Sheets`);
             };
             reader.readAsDataURL(fileInput.files[0]);
         }
@@ -4996,7 +5017,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
             Object.entries(values).forEach(([id,v]) => { const el=document.getElementById(id); if(el) el.value=v; });
         }
-        // Real-use visitor counter (local browser profile; reset to zero at launch).
+        // This counter is browser-local only; cross-device totals require a server-side visit endpoint/table.
         function getVisitorCount(){ return Math.max(0, Number(localStorage.getItem('wanderer_shop_visits') || 0)); }
         function renderVisitorCount(){ const el=document.getElementById('statVisits'); if(el) el.textContent=getVisitorCount().toLocaleString('th-TH'); }
         function resetVisitorCount(){ if(!confirm('ยืนยันรีเซ็ตจำนวนผู้เข้าชมเป็น 0 เพื่อเริ่มใช้งานจริงหรือไม่?')) return; localStorage.setItem('wanderer_shop_visits','0'); renderVisitorCount(); showToast('รีเซ็ตผู้เข้าชมเป็น 0 แล้ว'); }
