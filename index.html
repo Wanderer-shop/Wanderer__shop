@@ -63,7 +63,14 @@
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 10px; }
         #websiteServiceCard { background: var(--website-card-bg, #ffffff); border-color: var(--website-card-border, #ddd6fe); }
         #websiteServiceCard .website-service-title { color: var(--website-title-color, #6d28d9); }
-    </style>
+    /* Responsive entry notice and full-resolution image viewer */
+        #entryAnnouncementModal .entry-popup-panel { width:min(94vw, 920px); max-height:92dvh; overflow:auto; }
+        #entryAnnouncementModal img { max-width:100%; height:auto; object-fit:contain; image-rendering:auto; cursor:zoom-in; }
+        #entryPopupImageLightbox { position:fixed; inset:0; z-index:99999; display:none; align-items:center; justify-content:center; padding:2vw; background:rgba(15,12,25,.94); }
+        #entryPopupImageLightbox.open { display:flex; }
+        #entryPopupImageLightbox img { max-width:96vw; max-height:94dvh; width:auto; height:auto; object-fit:contain; image-rendering:auto; }
+        @media(max-width:640px){ #entryAnnouncementModal .entry-popup-panel { width:96vw; max-height:94dvh; padding:1rem; border-radius:1rem; } }
+        </style>
 <style>
 .product-card-carousel{scrollbar-width:thin;scrollbar-color:#c4b5fd transparent;-webkit-overflow-scrolling:touch}
 .product-card-carousel>*{min-height:100%}
@@ -473,6 +480,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         </div>
                     </div>
 
+                    <div class="mb-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <input id="adminProductTreeSearch" type="search" oninput="renderAdminProductsTree()" placeholder="ค้นหาหมวดหมู่ / แอป / แพ็กเกจ..." class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 text-sm">
+                        <select id="adminProductTreeCategoryFilter" onchange="renderAdminProductsTree()" class="w-full px-4 py-3 rounded-xl border dark:bg-slate-900 text-sm">
+                            <option value="">แสดงทุกหมวดหมู่</option>
+                        </select>
+                    </div>
                     <div id="adminProductsTreeView" class="space-y-6"></div>
                 </div>
             </div>
@@ -1618,7 +1631,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 popupDesc: 'ยินดีต้อนรับสู่ Wanderer Shop! กรุณาตรวจสอบโน้ตสลิปก่อนทำการโอนเงินทุกครั้ง',
                 floatingDecorations: [],
                 workerNotifyUrl: 'https://lineoa-001.s6741050006.workers.dev/', sheetBackupUrl: '',
-                sheetAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', sheetCategoriesUrl: '', sheetAppsUrl: '', sheetPackagesUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtNEuFBl6in-M2LkYJpfgbeP2_lyJwY3wTMGsPQStu-Dk6WEVMI_WjyPJ1ms9Nw6IHF9tECWbx2Wiz/pub?output=csv', autoSyncSheets: false, autoSyncMinutes: 15, syncHistory: [], notificationHistory: []
+                sheetAppsScriptUrl: 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', sheetCategoriesUrl: '', sheetAppsUrl: '', sheetPackagesUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRtNEuFBl6in-M2LkYJpfgbeP2_lyJwY3wTMGsPQStu-Dk6WEVMI_WjyPJ1ms9Nw6IHF9tECWbx2Wiz/pub?output=csv', autoSyncSheets: false, autoSyncMinutes: 15, syncHistory: [], notificationHistory: []
             },
             websiteServices: [],
             websiteService: {
@@ -1826,8 +1839,28 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             }, 1200);
         }
         function saveState() {
-            try { localStorage.setItem('wanderer_shop_state', JSON.stringify(appState)); }
-            catch (e) { console.error('Save state failed',e); try { showToast('บันทึกข้อมูลไม่สำเร็จ พื้นที่จัดเก็บอาจเต็ม'); } catch (_) {} }
+            // Browser storage is a cache, not the source of truth. Remove oversized embedded image data from the local cache
+            // while retaining URLs and all catalog/order fields in memory and sending the full state to shared storage.
+            try {
+                const cacheState = JSON.parse(JSON.stringify(appState, (key, value) => {
+                    if (typeof value === 'string' && /^data:image\\//i.test(value) && value.length > 180000) {
+                        return '[รูปภาพฝังตัวถูกตัดออกจากแคชในเบราว์เซอร์ — กรุณาใช้ URL หรืออัปโหลดรูปที่บีบอัดแล้ว]';
+                    }
+                    return value;
+                }));
+                localStorage.setItem('wanderer_shop_state', JSON.stringify(cacheState));
+            } catch (e) {
+                console.error('Save state failed', e);
+                try {
+                    // Remove only disposable local cache keys; do not clear credentials or unrelated site data.
+                    ['wanderer_shop_state_backup','wanderer_shop_last_snapshot','wanderer_shop_cache'].forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+                    const compact = JSON.stringify(appState, (key, value) => typeof value === 'string' && /^data:image\\//i.test(value) ? '[รูปภาพไม่เก็บในแคช]' : value);
+                    localStorage.setItem('wanderer_shop_state', compact);
+                    showToast('บันทึกแคชแบบย่อแล้ว รูป Base64 ขนาดใหญ่ไม่ถูกเก็บในเบราว์เซอร์');
+                } catch (e2) {
+                    try { showToast('พื้นที่จัดเก็บเบราว์เซอร์เต็ม: ข้อมูลหลักยังต้องซิงค์ไป Supabase/Google Sheets'); } catch (_) {}
+                }
+            }
             scheduleSharedStoreSave();
             scheduleCatalogAutoBackup();
         }
@@ -1852,10 +1885,25 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         function showToast(msg) {
+            const message = String(msg ?? '');
+            // Admin save/edit notifications must never appear on the customer storefront.
+            const adminOnlyNotice = /บันทึก|แก้ไข|ลบข้อมูล|ซิงค์|sync|supabase|google sheets|apps script|ข้อมูลสินค้า|การเชื่อมต่อ/i.test(message);
+            if (adminOnlyNotice && !appState.isAdminLoggedIn) return;
             const t = document.getElementById('toast');
-            document.getElementById('toastMessage').innerText = msg;
+            if (!t) return;
+            document.getElementById('toastMessage').innerText = message;
             t.classList.remove('hidden');
-            setTimeout(() => t.classList.add('hidden'), 2500);
+            clearTimeout(window.__wandererToastTimer);
+            window.__wandererToastTimer = setTimeout(() => t.classList.add('hidden'), 2500);
+        }
+
+        // Public-facing labels must not render raw internal IDs as product/app names.
+        function cleanPublicLabel(value) {
+            let text = String(value ?? '').trim();
+            if (!text) return '';
+            if (/^(?:app|pkg|product|category|cat|item|row)[-_ ]?[a-z0-9]{3,}|^[A-Z]{1,5}[-_]?\d{3,}|^[0-9a-f]{8}-[0-9a-f-]{20,}$/i.test(text)) return '';
+            text = text.replace(/\b(?:app|pkg|product|category|cat|item|row)[-_][a-z0-9-]{3,}\b/gi, '').replace(/\b[A-Z]{1,5}[-_]?\d{3,}\b/g, '').replace(/\s{2,}/g, ' ').trim();
+            return text;
         }
 
         async function copyToClipboard(value) {
@@ -2005,13 +2053,25 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
         function renderApps() {
             const grid = document.getElementById('appsGrid');
-            let filtered = appState.apps.filter(a => !a._websiteServiceId && !String(a.id).startsWith('app-websvc-') && isAppAvailableForDisplay(a));
+            // Google Sheets อาจมีหนึ่งแถวต่อแพ็กเกจ ทำให้ชื่อแอปเดียวกันถูกนำเข้าเป็นหลาย record
+            // หน้าร้านจึงแสดงและนับแอปแบบไม่ซ้ำ โดยใช้หมวดหมู่ + ชื่อแอปเป็น fallback key
+            // ไม่ลบข้อมูลต้นฉบับหรือเปลี่ยน ID ที่ใช้ซิงค์ใน appState
+            const seenAppKeys = new Set();
+            let filtered = (Array.isArray(appState.apps) ? appState.apps : []).filter(a => {
+                if (!a || a._websiteServiceId || String(a.id || '').startsWith('app-websvc-') || !isAppAvailableForDisplay(a)) return false;
+                const cleanName = cleanPublicLabel(a.name || '').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
+                if (!cleanName) return false;
+                const key = `${String(a.categoryId || '').trim()}::${cleanName}`;
+                if (seenAppKeys.has(key)) return false;
+                seenAppKeys.add(key);
+                return true;
+            });
 
             if (appState.currentSelectedCategory !== 'ALL') {
-                filtered = filtered.filter(a => a.categoryId === appState.currentSelectedCategory);
+                filtered = filtered.filter(a => String(a.categoryId) === String(appState.currentSelectedCategory));
             }
 
-            document.getElementById('appCountBadge').innerText = `${filtered.length} รายการ`;
+            document.getElementById('appCountBadge').innerText = `${filtered.length} แอป`;
 
             grid.innerHTML = filtered.map(app => `
                 <div onclick="navigateTo('app-detail', '${app.id}')" class="relative shrink-0 w-40 sm:w-48 md:w-52 bg-white dark:bg-slate-800 rounded-3xl p-4 border border-purple-100 dark:border-slate-700/80 shadow-sm hover:shadow-md hover:-translate-y-1 transition cursor-pointer flex flex-col justify-between">
@@ -2023,8 +2083,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     </div>
                     <div class="pt-1">
                         <img src="${app.iconUrl}" class="w-14 h-14 rounded-2xl mx-auto mb-3 object-cover shadow-sm">
-                        <h4 class="font-bold text-xs text-center text-slate-800 dark:text-slate-100 line-clamp-1">${app.name}</h4>
-                        <p class="text-[10px] text-slate-400 text-center line-clamp-2 mt-1">${app.description || ''}</p>
+                        <h4 class="font-bold text-xs text-center text-slate-800 dark:text-slate-100 line-clamp-1">${escapeHtml(cleanPublicLabel(app.name) || 'สินค้า')}</h4>
+                        <p class="text-[10px] text-slate-400 text-center line-clamp-2 mt-1">${escapeHtml(cleanPublicLabel(app.description || ''))}</p>
                     </div>
                     <button type="button" class="mt-3 w-full py-1.5 bg-purple-50 dark:bg-slate-700 hover:bg-purple-600 hover:text-white text-purple-600 dark:text-purple-300 font-bold text-[11px] rounded-xl transition">
                         เลือกแพ็กเกจ
@@ -2076,7 +2136,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const app = appState.apps.find(a => a.id === appId);
             if (!app) return;
 
-            document.getElementById('appDetailName').innerText = app.name;
+            document.getElementById('appDetailName').innerText = cleanPublicLabel(app.name) || 'สินค้า';
             document.getElementById('appDetailDescription').innerText = app.description || '';
             document.getElementById('appDetailLogo').innerHTML = `<img src="${app.iconUrl}" class="w-full h-full object-cover">`;
 
@@ -3000,7 +3060,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             grid.innerHTML = filtered.map(app => `
                 <div onclick="navigateTo('app-detail', '${app.id}')" class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-purple-100 shadow-sm cursor-pointer hover:shadow-md transition">
                     <img src="${app.iconUrl}" class="w-14 h-14 rounded-2xl mx-auto mb-2 object-cover">
-                    <h4 class="font-bold text-xs text-center line-clamp-1">${app.name}</h4>
+                    <h4 class="font-bold text-xs text-center line-clamp-1">${escapeHtml(cleanPublicLabel(app.name) || 'สินค้า')}</h4>
                 </div>
             `).join('');
         }
@@ -3307,7 +3367,23 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         // Product Tree Management
         function renderAdminProductsTree() {
             const tree = document.getElementById('adminProductsTreeView');
-            tree.innerHTML = appState.categories.map(cat => {
+            if (!tree) return;
+            const searchEl = document.getElementById('adminProductTreeSearch');
+            const filterEl = document.getElementById('adminProductTreeCategoryFilter');
+            const search = String(searchEl?.value || '').trim().toLowerCase();
+            const selectedCategory = String(filterEl?.value || '');
+            if (filterEl) {
+                const prior = filterEl.value;
+                const options = '<option value="">แสดงทุกหมวดหมู่</option>' + appState.categories.map(c => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`).join('');
+                if (filterEl.innerHTML !== options) filterEl.innerHTML = options;
+                if ([...filterEl.options].some(o => o.value === prior)) filterEl.value = prior;
+            }
+            tree.innerHTML = appState.categories.filter(cat => {
+                if (selectedCategory && String(cat.id) !== selectedCategory) return false;
+                const apps = appState.apps.filter(a => String(a.categoryId) === String(cat.id));
+                const searchable = [cat.name, cat.description, ...apps.flatMap(a => [a.name, a.description, ...appState.packages.filter(p => String(p.appId) === String(a.id)).flatMap(p => [p.name, p.description, p.groupName])])].join(' ').toLowerCase();
+                return !search || searchable.includes(search);
+            }).map(cat => {
                 const catApps = appState.apps.filter(a => a.categoryId === cat.id);
                 return `
                     <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border space-y-3">
@@ -3694,10 +3770,35 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         // Package CRUD
+        // Build a clean application list for package editing: ignore blank, duplicate, legacy-demo,
+        // and website-service records so unrelated/stale entries cannot remain in the selector.
+        function getCleanPackageApps(selectedAppId = '') {
+            const seenIds = new Set();
+            const seenNames = new Set();
+            return (Array.isArray(appState.apps) ? appState.apps : []).filter(a => {
+                if (!a || a.id == null || !String(a.id).trim()) return false;
+                const id = String(a.id).trim();
+                const name = String(a.name || '').trim();
+                if (!name || isLegacyDemoApp(a) || a.productType === 'website-service' || a._websiteServiceId) return false;
+                const normName = name.toLocaleLowerCase().replace(/\s+/g, ' ');
+                if (seenIds.has(id) || seenNames.has(normName)) return false;
+                seenIds.add(id); seenNames.add(normName);
+                return true;
+            });
+        }
+        function renderPackageAppOptions(select, selectedAppId = '') {
+            if (!select) return;
+            const apps = getCleanPackageApps(selectedAppId);
+            select.innerHTML = '<option value="">— เลือกแอปพลิเคชัน —</option>' + apps.map(a =>
+                `<option value="${escapeHtml(String(a.id))}">${escapeHtml(String(a.name).trim())}</option>`
+            ).join('');
+            select.value = apps.some(a => String(a.id) === String(selectedAppId)) ? String(selectedAppId) : '';
+            if (!apps.length) select.innerHTML = '<option value="">ยังไม่มีแอปที่ใช้งานได้ — เพิ่มแอปก่อน</option>';
+        }
         function openAddPackageModal() {
             currentEditingPkgId = null;
             const sel = document.getElementById('packageAppSelect');
-            sel.innerHTML = appState.apps.map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+            renderPackageAppOptions(sel);
             document.getElementById('pkgGroupInput').value = '';
             document.getElementById('pkgNameInput').value = '';
             document.getElementById('pkgPriceInput').value = '';
@@ -3712,7 +3813,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             currentEditingPkgId = id;
             const sel = document.getElementById('packageAppSelect');
-            sel.innerHTML = appState.apps.map(a => `<option value="${a.id}" ${a.id === pkg.appId ? 'selected' : ''}>${a.name}</option>`).join('');
+            renderPackageAppOptions(sel, pkg.appId);
             document.getElementById('pkgGroupInput').value = pkg.groupName || '';
             document.getElementById('pkgNameInput').value = pkg.name || '';
             document.getElementById('pkgPriceInput').value = pkg.price ?? 0;
@@ -3740,6 +3841,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             ensureCustomerRequirementTemplates();
             const template = appState.formTemplates.customerRequirementTemplates.find(t => t.id === templateId);
 
+            if (!appId || !getCleanPackageApps().some(a => String(a.id) === String(appId))) return alert('กรุณาเลือกแอปพลิเคชันที่ถูกต้องก่อนบันทึก');
             if (!name) return alert('กรุณาระบุชื่อแพ็กเกจ');
             if (!template) return alert('ไม่พบแบบฟอร์มข้อมูลลูกค้าที่เลือก');
 
@@ -4891,7 +4993,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
         function loadIntegrationSettings() {
             const s = appState.settings || {};
-            const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbxmWobgS-KNIVvgv9WLYApErPpn62miTe4sKpURGuBrb0AGIIsJ4mFYCELogHMNM2xMZw/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
+            const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
             Object.entries(values).forEach(([id,v]) => { const el=document.getElementById(id); if(el) el.value=v; });
         }
         // Real-use visitor counter (local browser profile; reset to zero at launch).
@@ -5238,5 +5340,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         </div>
     </div>
 
+<div id="entryPopupImageLightbox" role="dialog" aria-modal="true" aria-label="ดูรูปประกาศขนาดใหญ่" onclick="closeEntryPopupImageLightbox()"><button type="button" aria-label="ปิดรูป" style="position:absolute;top:16px;right:20px;color:white;font-size:32px;background:transparent;border:0" onclick="closeEntryPopupImageLightbox();event.stopPropagation()">×</button><img id="entryPopupImageLightboxImg" alt="รูปประกาศขนาดเต็ม" onclick="event.stopPropagation()"></div>
+<script>
+function openEntryPopupImageLightbox(src){const box=document.getElementById('entryPopupImageLightbox'),img=document.getElementById('entryPopupImageLightboxImg');if(!box||!img||!src)return;img.src=src;box.classList.add('open');}
+function closeEntryPopupImageLightbox(){const box=document.getElementById('entryPopupImageLightbox'),img=document.getElementById('entryPopupImageLightboxImg');if(box)box.classList.remove('open');if(img)img.removeAttribute('src');}
+document.addEventListener('click',function(e){const img=e.target.closest('#entryAnnouncementModal img');if(img&&img.src)openEntryPopupImageLightbox(img.currentSrc||img.src);});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEntryPopupImageLightbox();});
+</script>
 </body>
 </html>
