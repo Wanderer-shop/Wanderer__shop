@@ -368,8 +368,13 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <i class="fa-solid fa-receipt text-purple-500"></i> ตรวจสอบสถานะคำสั่งซื้อ
                 </h2>
                 <div class="flex gap-2 mb-4">
-                    <input type="text" id="trackOrderIdInput" placeholder="Order ID (เช่น ORD-090819)" class="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                    <input type="text" id="trackOrderIdInput" placeholder="Order ID (เช่น ORD-20261013-45961)" class="flex-1 px-4 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
                     <button onclick="searchOrderManual()" class="px-5 py-2 bg-purple-600 text-white text-xs font-bold rounded-xl hover:bg-purple-700">ค้นหาออเดอร์</button>
+                </div>
+                <div class="mt-3 rounded-xl bg-purple-50/70 dark:bg-slate-900/50 p-3 text-xs">
+                    <p class="font-bold text-purple-700 dark:text-purple-300 mb-1">ออเดอร์ของฉันในเบราว์เซอร์นี้</p>
+                    <div id="ownedOrdersList" class="space-y-1 text-slate-600 dark:text-slate-300">กำลังโหลด...</div>
+                    <p class="text-[10px] text-slate-500 mt-2">ไม่ต้องกรอกรหัสยาว ระบบเก็บสิทธิ์ดูออเดอร์ไว้ในเบราว์เซอร์นี้ แม้รีเฟรชก็ยังดูได้ (เว้นแต่ล้างข้อมูลเว็บไซต์)</p>
                 </div>
                 <div id="orderSearchResult" class="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                     <p class="text-xs text-slate-400 text-center">กรอก Order ID เพื่อดูข้อมูลคำสั่งซื้อและรับสินค้า</p>
@@ -1474,6 +1479,46 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             async signOut(){try{await centralRequest('/auth/logout','POST',{});}finally{sessionStorage.removeItem('wanderer_admin_session');appState.orders=[];}}
         }};
         function orderTokens(){try{return JSON.parse(localStorage.getItem('wanderer_order_tokens')||'{}');}catch{return {};}}
+        // Friendly order numbers use the Bangkok calendar date and a random five-digit suffix.
+        // A secret access token (kept on this device) still protects private order details.
+        function makeOrderId() {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone:'Asia/Bangkok', year:'numeric', month:'2-digit', day:'2-digit'
+            }).formatToParts(new Date());
+            const datePart = ['year','month','day'].map(key => parts.find(p => p.type === key)?.value || '').join('');
+            const digits = crypto.getRandomValues(new Uint32Array(1))[0] % 90000 + 10000;
+            return `ORD-${datePart}-${digits}`;
+        }
+        function ownedOrderIds() {
+            return Object.keys(orderTokens()).filter(id => /^ORD-[A-Za-z0-9_-]+$/.test(id));
+        }
+        function renderOwnedOrderLinks() {
+            const root = document.getElementById('ownedOrdersList');
+            if (!root) return;
+            const ids = ownedOrderIds().slice(-20).reverse();
+            root.replaceChildren();
+            if (!ids.length) {
+                root.textContent = 'ยังไม่มีออเดอร์ที่บันทึกไว้บนเบราว์เซอร์นี้';
+                return;
+            }
+            for (const id of ids) {
+                const wrap = document.createElement('div');
+                wrap.className = 'flex flex-wrap items-center gap-2 py-1';
+                const view = document.createElement('button');
+                view.type = 'button'; view.textContent = id;
+                view.className = 'text-purple-700 dark:text-purple-300 font-bold hover:underline';
+                view.addEventListener('click', () => {
+                    document.getElementById('trackOrderIdInput').value = id;
+                    searchOrderManual();
+                });
+                const copy = document.createElement('button');
+                copy.type = 'button'; copy.textContent = 'คัดลอก';
+                copy.className = 'bg-purple-100 text-purple-700 rounded-lg px-2 py-1';
+                copy.addEventListener('click', () => copyToClipboard(id));
+                wrap.append(view,copy);root.appendChild(wrap);
+            }
+        }
+
         async function persistCentralOrder(order) {
             const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({items:order.items,total:order.total,paymentMethod:order.paymentMethod,requirements:order.customerRequirements,slip:order.slipImg})))),b=>b.toString(16).padStart(2,'0')).join('');
             let pending;try{pending=JSON.parse(sessionStorage.getItem('wanderer_pending_order')||'null');}catch{}
@@ -1492,12 +1537,17 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             catch(e){console.warn('Central orders:',e.message);showToast('ดึงออเดอร์ส่วนกลางไม่สำเร็จ: '+e.message);}
             finally{orderRefreshBusy=false;}
         }
-        async function loadCentralOrder(id){const tokens=orderTokens();let token=tokens[id];if(!appState.isAdminLoggedIn&&!token){token=prompt('กรอกรหัสเข้าถึงออเดอร์จากเครื่องที่สั่งซื้อ');if(!token)throw new Error('ต้องใช้รหัสเข้าถึงออเดอร์');}
-            const r=await centralRequest('/orders/'+encodeURIComponent(id),'GET',undefined,token);
-            if(token){tokens[id]=token;localStorage.setItem('wanderer_order_tokens',JSON.stringify(tokens));}
+        async function loadCentralOrder(id){
+            const token = orderTokens()[id];
+            if (!appState.isAdminLoggedIn && !token) throw new Error('ดูรายละเอียดออเดอร์ได้จากเบราว์เซอร์ที่สั่งซื้อ หรือเข้าสู่ระบบแอดมินเท่านั้น');
+            const r = await centralRequest('/orders/'+encodeURIComponent(id),'GET',undefined,token);
             const index=appState.orders.findIndex(o=>o.id===id);if(index<0)appState.orders.unshift(r.order);else appState.orders[index]=r.order;return r.order;
         }
-        function showOrderAccessCode(id){const code=orderTokens()[id];if(code)alert('บันทึกข้อมูลนี้ไว้สำหรับตรวจออเดอร์จากเครื่องอื่น\nOrder ID: '+id+'\nรหัสเข้าถึง: '+code+'\nอย่าส่งรหัสนี้ให้บุคคลอื่น');}
+        function showOrderAccessCode(id){
+            // No long code is shown to shoppers. The secret is held in browser storage.
+            renderOwnedOrderLinks();
+        }
+        setTimeout(renderOwnedOrderLinks,0);
         setInterval(refreshCentralOrders,10000);
         // Only publish catalog and storefront configuration. Orders, slips, delivery credentials,
         // carts, customer requirements and admin session are deliberately excluded.
@@ -2433,7 +2483,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             const itemsSnapshot = appState.cart.map(item => ({ ...item, qty: getCartQuantity(item) }));
             const total = getCartTotal();
-            const orderId = 'ORD-' + crypto.randomUUID().replace(/-/g,'');
+            const orderId = makeOrderId();
             const lineOrder = { id: orderId, date: new Date().toLocaleString('th-TH'), items: itemsSnapshot, total, paymentMethod: 'LINE OA', source: 'LINE', status: 'AWAITING_PAYMENT', deliveryData: '', customerRequirements: appState.pendingCustomerRequirements || {} };
             try { await persistCentralOrder(lineOrder); } catch(e){alert('ยังไม่ได้สร้างออเดอร์: '+e.message);return;}
             appState.orders.unshift(lineOrder);
@@ -2852,7 +2902,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const fileInput = document.getElementById('slipFileInput');
             if (!fileInput.files || fileInput.files.length === 0) return alert('กรุณาเลือกรูปสลิป');
 
-            const orderId = 'ORD-' + crypto.randomUUID().replace(/-/g,'');
+            const orderId = makeOrderId();
             const total = getCartTotal();
 
             const reader = new FileReader();
@@ -2962,7 +3012,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             resBox.innerHTML = `
                 <div class="p-4 bg-purple-50/50 dark:bg-slate-900 rounded-2xl border space-y-3 text-xs">
                     <div class="flex justify-between items-center border-b pb-2">
-                        <span class="font-bold text-purple-600">${ord.id}</span>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="font-bold text-purple-600">${escapeHtml(ord.id)}</span>
+                            <button type="button" id="copyTrackedOrderId" class="rounded-lg bg-purple-600 px-2 py-1 text-white font-bold text-[10px]">คัดลอกเลขออเดอร์</button>
+                        </div>
                         ${statusBadge}
                     </div>
                     <p><strong>วันที่:</strong> ${ord.date}</p>
@@ -2983,6 +3036,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     ` : ''}
                 </div>
             `;
+            document.getElementById('copyTrackedOrderId')?.addEventListener('click', () => copyToClipboard(ord.id));
         }
 
         // Contact & Modals
@@ -3187,7 +3241,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             tbody.innerHTML = filtered.map(o => `
                 <tr class="hover:bg-purple-50/50 dark:hover:bg-slate-700/50">
                     <td class="p-3 text-[11px]">${o.date || '-'}</td>
-                    <td class="p-3 font-bold text-purple-600">${o.id}</td>
+                    <td class="p-3 font-bold text-purple-600"><span>${escapeHtml(String(o.id))}</span>
+                       <button type="button" data-order-copy="${escapeHtml(String(o.id))}" class="ml-1 text-[10px] rounded-lg px-2 py-1 bg-purple-100 text-purple-700">คัดลอก</button></td>
                     <td class="p-3">${o.paymentMethod || '-'}</td>
                     <td class="p-3 line-clamp-1">${(o.items || []).map(i => `${i.name}${Number(i.qty || i.quantity || 1) > 1 ? ` x${Number(i.qty || i.quantity || 1)}` : ''}`).join(', ')}</td>
                     <td class="p-3 font-bold">฿${getOrderTotal(o).toLocaleString('th-TH', { maximumFractionDigits: 2 })}</td>
@@ -3196,6 +3251,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <td class="p-3 text-center"><button onclick="openAdminOrderEditModal('${o.id}')" class="px-2.5 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold">จัดการส่งงาน</button></td>
                 </tr>
             `).join('');
+            tbody.querySelectorAll('[data-order-copy]').forEach(button => {
+                button.addEventListener('click', () => copyToClipboard(button.dataset.orderCopy));
+            });
         }
 
         function formatCustomerRequirementValue(key, value) {
@@ -4880,12 +4938,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 document.getElementById('adminUsernameShow').innerText = appState.adminUser;
                 navigateTo('admin');
                 showToast(saved ? 'เข้าสู่ระบบแอดมินและบันทึกฐานข้อมูลกลางแล้ว' : 'เข้าสู่ระบบสำเร็จ แต่บันทึกฐานข้อมูลกลางไม่สำเร็จ กรุณาตรวจตาราง/RLS');
-                if (!saved) {
-    alert(
-        'เข้าสู่ระบบสำเร็จ แต่บันทึกข้อมูลร้านลง Appwrite ไม่สำเร็จ\n' +
-        'กรุณาตรวจสอบ Cloudflare Worker, API Key และตาราง catalog'
-    );
-}
+                if (!saved) alert('เข้าสู่ระบบสำเร็จ แต่เขียนข้อมูลลง wanderer_store_state ไม่สำเร็จ กรุณาตรวจสอบว่ารัน SQL setup แล้วและนโยบาย RLS อนุญาตบัญชีแอดมิน');
             } catch (err) {
                 console.error('Appwrite admin login failed:', err);
                 const message = String(err?.message || 'ไม่ทราบสาเหตุ');
@@ -5064,11 +5117,49 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const values = { adminWorkerNotifyUrl:s.workerNotifyUrl || 'https://lineoa-001.s6741050006.workers.dev/', adminSheetBackupUrl:s.sheetBackupUrl || s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', adminSheetAppsScriptUrl:s.sheetAppsScriptUrl || 'https://script.google.com/macros/s/AKfycbwdOQuh2FWyfT24o4WBuC_PeZi4iu06IjlPn8JlOMtsfwOQldGA5Da7H5ObsOMPO8n5gg/exec', adminSheetCategoriesUrl:s.sheetCategoriesUrl || '', adminSheetAppsUrl:s.sheetAppsUrl || '', adminSheetPackagesUrl:s.sheetPackagesUrl || '' };
             Object.entries(values).forEach(([id,v]) => { const el=document.getElementById(id); if(el) el.value=v; });
         }
-        // This counter is browser-local only; cross-device totals require a server-side visit endpoint/table.
-        function getVisitorCount(){ return Math.max(0, Number(localStorage.getItem('wanderer_shop_visits') || 0)); }
-        function renderVisitorCount(){ const el=document.getElementById('statVisits'); if(el) { el.textContent=getVisitorCount().toLocaleString('th-TH'); el.title='ตัวเลขนี้นับเฉพาะเบราว์เซอร์เครื่องนี้ ยังไม่ใช่ยอดรวมทุกอุปกรณ์'; } }
-        function resetVisitorCount(){ if(!confirm('ยืนยันรีเซ็ตจำนวนผู้เข้าชมเป็น 0 เพื่อเริ่มใช้งานจริงหรือไม่?')) return; localStorage.setItem('wanderer_shop_visits','0'); renderVisitorCount(); showToast('รีเซ็ตผู้เข้าชมเป็น 0 แล้ว'); }
-        (function countVisitOncePerTab(){ try { if(!sessionStorage.getItem('wanderer_visit_counted')) { localStorage.setItem('wanderer_shop_visits', String(getVisitorCount()+1)); sessionStorage.setItem('wanderer_visit_counted','1'); } } catch(e){} })();
+        // Central visit counter: shared by all browsers via Cloudflare Durable Object.
+        // Count one visit per browser tab session, matching the old counter's semantics.
+        let sharedVisitCount = null;
+        async function renderVisitorCount(){
+            const el = document.getElementById('statVisits');
+            if(!el) return;
+            try {
+                const data = await centralRequest('/visits');
+                sharedVisitCount = Number(data.count) || 0;
+                el.textContent = sharedVisitCount.toLocaleString('th-TH');
+                el.title = 'ยอดการเข้าชมรวมจากทุกอุปกรณ์ (หนึ่งครั้งต่อหนึ่งแท็บ/เซสชัน)';
+            } catch (e) {
+                el.textContent = sharedVisitCount === null ? '—' : sharedVisitCount.toLocaleString('th-TH');
+                el.title = 'ไม่สามารถอัปเดตยอดผู้เข้าชมส่วนกลางได้: ' + e.message;
+                console.warn('Central visitor counter:', e.message);
+            }
+        }
+        async function resetVisitorCount(){
+            if(!appState.isAdminLoggedIn){ showToast('กรุณาเข้าสู่ระบบแอดมิน'); return; }
+            if(!confirm('ยืนยันรีเซ็ตยอดผู้เข้าชมส่วนกลางทุกอุปกรณ์เป็น 0 หรือไม่?')) return;
+            try {
+                const result = await centralRequest('/visits/reset', 'POST', {});
+                sharedVisitCount = Number(result.count) || 0;
+                await renderVisitorCount();
+                showToast('รีเซ็ตยอดผู้เข้าชมส่วนกลางแล้ว');
+            } catch(e){ alert('รีเซ็ตจำนวนผู้เข้าชมไม่สำเร็จ: '+e.message); }
+        }
+        (async function registerCentralVisit(){
+            try {
+                let visitId = sessionStorage.getItem('wanderer_visit_id');
+                if (!visitId) {
+                    visitId = crypto.randomUUID();
+                    sessionStorage.setItem('wanderer_visit_id', visitId);
+                }
+                const result = await centralRequest('/visits', 'POST', {visitId});
+                sharedVisitCount = Number(result.count) || 0;
+                await renderVisitorCount();
+            } catch(e){
+                console.warn('Failed to register central visit:',e.message);
+                await renderVisitorCount();
+            }
+        })();
+        setInterval(() => { if (appState.isAdminLoggedIn) renderVisitorCount(); }, 15000);
 
         // Website-wide appearance editor
         const websiteThemeDefaults={pageBg:'#f8f7ff',textColor:'#334155',headingColor:'#6d28d9',buttonColor:'#7c3aed',cardBg:'#ffffff',cardBorder:'#e9d5ff',fontFamily:'system'};
