@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WANDERER SHOP - ร้านค้าสินค้าดิจิทัล</title>
+    <!-- Patched v61: privacy-safe shared state and non-destructive browser-cache recovery -->
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -1493,8 +1494,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 bankAccounts: appState.bankAccounts || {},
                 formTemplates: appState.formTemplates || {},
                 reviews: appState.reviews || [],
-                orders: appState.orders || [],
-                feedbacks: appState.feedbacks || [],
+                // Orders, payment slips, customer-submitted fields, delivery credentials, and feedback
+                // must live in separately protected tables; never put them in the public shared-state row.
                 updatedAt: new Date().toISOString()
             };
         }
@@ -1519,8 +1520,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 if (cloud.bankAccounts) appState.bankAccounts = { ...appState.bankAccounts, ...cloud.bankAccounts };
                 if (cloud.formTemplates) appState.formTemplates = { ...appState.formTemplates, ...cloud.formTemplates };
                 if (Array.isArray(cloud.reviews)) appState.reviews = cloud.reviews;
-                if (Array.isArray(cloud.orders)) appState.orders = cloud.orders;
-                if (Array.isArray(cloud.feedbacks)) appState.feedbacks = cloud.feedbacks;
+                // Do not hydrate orders or customer feedback from a public catalog payload.
+                // Load them only from protected tables after order-level authorization is implemented.
                 removeKnownStaleCatalogRecords(appState);
                 sharedStateLastUpdatedAt = data.updated_at || cloud.updatedAt || null;
                 localStorage.setItem('wanderer_shop_state', JSON.stringify(appState));
@@ -1868,8 +1869,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 console.warn('Browser cache save failed; cloud sync will still be attempted:', e);
                 try {
                     ['wanderer_shop_state_backup','wanderer_shop_last_snapshot','wanderer_shop_cache'].forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
-                    const compact = JSON.stringify({settings:{},categories:[],apps:[],packages:[],orders:[],websiteServices:[],websiteService:{},bankAccounts:{},formTemplates:{},reviews:[],feedbacks:[]});
-                    localStorage.setItem('wanderer_shop_state', compact);
+                    // Do not replace the existing cache with an empty state: that could hide unsynced edits.
+                    // Keep the last saved value intact and continue attempting remote persistence below.
+                    console.warn('Browser storage quota exceeded; preserved the last saved cache instead of clearing catalog data.');
                 } catch (_) {
                     if (!storageWarningShown) {
                         storageWarningShown = true;
@@ -2410,9 +2412,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             appState.orders.unshift(lineOrder);
             saveState();
             notifyOrderToWorker(lineOrder).catch(err => console.warn('Worker notification failed:', err));
-            let lineSheetSaved = false;
-            try { const sheetResult = await backupOrderToSheet(lineOrder); lineSheetSaved = sheetResult?.success === true; }
-            catch (err) { console.error('Google Sheets order save failed:', err); showToast('บันทึกออเดอร์ LINE ลง Google Sheets ไม่สำเร็จ'); }
+            backupOrderToSheet(lineOrder).catch(err => console.warn('Google Sheets backup failed:', err));
 
             const itemsText = itemsSnapshot.map((item, i) => {
                 const appName = item.appName || item.app || item.categoryName || item.category || item.name || 'สินค้า';
@@ -2428,7 +2428,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const tmpl = `🛒 รายการสั่งซื้อ (Wanderer_Shop)\n\nเลขออเดอร์ : ${orderId}\n---------------------------\n${itemsText}\n---------------------------\n💰 ยอดรวมทั้งสิ้น: ${total.toLocaleString('th-TH')}\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ`;
             const copied = await copyToClipboard(tmpl);
             if (copied) {
-                alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\n' + (lineSheetSaved ? 'บันทึกออเดอร์ลง Google Sheets แล้ว\n' : 'คำเตือน: ยังยืนยันการบันทึกลง Google Sheets ไม่ได้\n') + '\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
+                alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
                 const rawId = String(appState.settings.lineId || '@997pfoig').trim();
                 const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
                 window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
@@ -2823,7 +2823,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const total = getCartTotal();
 
             const reader = new FileReader();
-            reader.onload = async function(e) {
+            reader.onload = function(e) {
                 const newOrder = {
                     id: orderId,
                     date: new Date().toLocaleString('th-TH'),
@@ -2839,9 +2839,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 appState.orders.unshift(newOrder);
                 notifyOrderToWorker(newOrder).catch(err => console.warn('Worker notification failed:', err));
                 onCustomerUploadSlip(orderId, total, newOrder.slipImg).catch(err => console.warn('Slip notification failed:', err));
-                let sheetSaved = false;
-                try { const sheetResult = await backupOrderToSheet(newOrder); sheetSaved = sheetResult?.success === true; }
-                catch (err) { console.error('Google Sheets order save failed:', err); showToast('บันทึกออเดอร์ลง Google Sheets ไม่สำเร็จ กรุณาแจ้งร้านก่อนโอน'); }
+                backupOrderToSheet(newOrder).catch(err => console.warn('Google Sheets backup failed:', err));
                 appState.cart = [];
                 appState.pendingCustomerRequirements = {};
                 saveState();
@@ -2850,7 +2848,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 navigateTo('order-tracking');
                 document.getElementById('trackOrderIdInput').value = orderId;
                 searchOrderManual();
-                showToast(sheetSaved ? `สร้างออเดอร์ ${orderId} และบันทึกลง Google Sheets แล้ว` : `สร้างออเดอร์ ${orderId} ในหน้านี้แล้ว แต่ต้องตรวจสอบการบันทึก Google Sheets`);
+                showToast(`สร้างออเดอร์ ${orderId} สำเร็จ`);
             };
             reader.readAsDataURL(fileInput.files[0]);
         }
@@ -5019,7 +5017,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
         // This counter is browser-local only; cross-device totals require a server-side visit endpoint/table.
         function getVisitorCount(){ return Math.max(0, Number(localStorage.getItem('wanderer_shop_visits') || 0)); }
-        function renderVisitorCount(){ const el=document.getElementById('statVisits'); if(el) el.textContent=getVisitorCount().toLocaleString('th-TH'); }
+        function renderVisitorCount(){ const el=document.getElementById('statVisits'); if(el) { el.textContent=getVisitorCount().toLocaleString('th-TH'); el.title='ตัวเลขนี้นับเฉพาะเบราว์เซอร์เครื่องนี้ ยังไม่ใช่ยอดรวมทุกอุปกรณ์'; } }
         function resetVisitorCount(){ if(!confirm('ยืนยันรีเซ็ตจำนวนผู้เข้าชมเป็น 0 เพื่อเริ่มใช้งานจริงหรือไม่?')) return; localStorage.setItem('wanderer_shop_visits','0'); renderVisitorCount(); showToast('รีเซ็ตผู้เข้าชมเป็น 0 แล้ว'); }
         (function countVisitOncePerTab(){ try { if(!sessionStorage.getItem('wanderer_visit_counted')) { localStorage.setItem('wanderer_shop_visits', String(getVisitorCount()+1)); sessionStorage.setItem('wanderer_visit_counted','1'); } } catch(e){} })();
 
