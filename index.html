@@ -4880,7 +4880,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 document.getElementById('adminUsernameShow').innerText = appState.adminUser;
                 navigateTo('admin');
                 showToast(saved ? 'เข้าสู่ระบบแอดมินและบันทึกฐานข้อมูลกลางแล้ว' : 'เข้าสู่ระบบสำเร็จ แต่บันทึกฐานข้อมูลกลางไม่สำเร็จ กรุณาตรวจตาราง/RLS');
-                if (!saved) alert('เข้าสู่ระบบสำเร็จ แต่เขียนข้อมูลลง wanderer_store_state ไม่สำเร็จ กรุณาตรวจสอบว่ารัน SQL setup แล้วและนโยบาย RLS อนุญาตบัญชีแอดมิน');
+                if (!saved) {
+    alert(
+        'เข้าสู่ระบบสำเร็จ แต่บันทึกข้อมูลร้านลง Appwrite ไม่สำเร็จ\n' +
+        'กรุณาตรวจสอบ Cloudflare Worker, API Key และตาราง catalog'
+    );
+}
             } catch (err) {
                 console.error('Appwrite admin login failed:', err);
                 const message = String(err?.message || 'ไม่ทราบสาเหตุ');
