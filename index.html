@@ -181,8 +181,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <button onclick="openContactModal(); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
                         <i class="fa-solid fa-comments text-cyan-500 w-5"></i> ช่องทางติดต่อร้านค้า
                     </button>
-                    <button onclick="openLoginModal(); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
-                        <i class="fa-solid fa-user text-amber-500 w-5"></i> เข้าสู่ระบบ - สมัครสมาชิก
+                    <button onclick="openCustomerEntry(); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
+                        <i class="fa-solid fa-user text-amber-500 w-5"></i> <span id="customerMenuLabel">เข้าสู่ระบบ - สมัครสมาชิก</span>
                     </button>
                 </nav>
             </div>
@@ -247,6 +247,14 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
                 <div id="categoryDescriptionBox" class="mt-3 p-3 bg-purple-50/50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line border border-purple-100 dark:border-slate-700 hidden"></div>
             </div>
+
+            <section id="androidPromoPanel" class="hidden bg-white dark:bg-slate-800 rounded-3xl border border-pink-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
+                <div><h3 class="font-bold text-pink-600 text-lg">📱 โปรโมชั่นแอพ Android</h3><p class="text-xs text-slate-500 mt-1">เลือกแอพไม่ซ้ำกัน 3, 6 หรือ 9 แอพ เพื่อคำนวณราคาชุดโปรโมชั่น</p></div>
+                <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold"><div class="rounded-xl bg-pink-50 dark:bg-slate-700 p-3">3 แอพ<br><strong class="text-pink-600 text-lg">90฿</strong></div><div class="rounded-xl bg-pink-50 dark:bg-slate-700 p-3">6 แอพ<br><strong class="text-pink-600 text-lg">170฿</strong></div><div class="rounded-xl bg-pink-50 dark:bg-slate-700 p-3">9 แอพ<br><strong class="text-pink-600 text-lg">250฿</strong></div></div>
+                <div id="androidPromoChoices" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t dark:border-slate-700 pt-3"><p id="androidPromoResult" class="text-sm font-bold">เลือกแล้ว 0 แอพ</p><button type="button" onclick="androidPromoSelected.clear();renderAndroidPromo()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-xs font-bold">ล้างการเลือก</button></div>
+                <p class="text-[11px] text-slate-500">เป็นเครื่องคำนวณราคาโปรโมชั่นเท่านั้น ยังไม่สร้างคำสั่งซื้อหรือหักเงินอัตโนมัติ</p>
+            </section>
 
             <div>
                 <div class="flex justify-between items-center mb-4">
@@ -381,6 +389,15 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
             </div>
         </div>
+
+        <!-- CUSTOMER ACCOUNT: profile and purchase history only -->
+        <section id="viewCustomerProfile" class="hidden space-y-5">
+            <div class="flex flex-wrap justify-between items-center gap-3"><div><p class="text-pink-600 font-semibold text-sm">Profile Information</p><h2 class="text-2xl font-bold">โปรไฟล์ของคุณ</h2></div><button onclick="customerLogout()" class="px-4 py-2 rounded-xl border border-red-200 text-red-500 text-sm font-bold">ออกจากระบบ</button></div>
+            <div class="rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
+                <div class="flex items-center gap-3"><div id="customerProfileAvatar" class="w-14 h-14 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-2xl font-bold">U</div><div><div id="customerProfileName" class="font-bold text-lg"></div><div class="text-sm text-slate-400">บัญชีสมาชิก</div></div></div>
+                <div><h3 class="font-bold mb-3">ประวัติสินค้าที่ซื้อ</h3><div id="customerPurchaseHistory" class="space-y-3 text-sm text-slate-500">กำลังโหลด...</div></div>
+            </div>
+        </section>
 
         <!-- VIEW 4: ADMIN PANEL -->
         <div id="viewAdmin" class="hidden space-y-6">
@@ -2044,6 +2061,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             document.getElementById('viewWebsiteServices')?.classList.add('hidden');
             document.getElementById('viewOrderTracking').classList.add('hidden');
             document.getElementById('viewAdmin').classList.add('hidden');
+            document.getElementById('viewCustomerProfile').classList.add('hidden');
             document.getElementById('backButtonContainer').classList.add('hidden');
 
             if (view === 'home') {
@@ -2063,6 +2081,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             } else if (view === 'order-tracking') {
                 document.getElementById('viewOrderTracking').classList.remove('hidden');
                 document.getElementById('backButtonContainer').classList.remove('hidden');
+            } else if (view === 'customer-profile') {
+                if (!customerSessionName()) { openLoginModal(); document.getElementById('viewHome').classList.remove('hidden'); return; }
+                document.getElementById('viewCustomerProfile').classList.remove('hidden');
+                document.getElementById('backButtonContainer').classList.remove('hidden');
+                renderCustomerProfile();
             } else if (view === 'admin') {
                 if (!appState.isAdminLoggedIn) {
                     openLoginModal('ADMIN');
@@ -2125,6 +2148,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             appState.currentSelectedCategory = catId;
             renderCategories();
             renderApps();
+            renderAndroidPromo();
         }
 
 
@@ -2189,6 +2213,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             renderBestSellers();
             renderReviews();
+            renderAndroidPromo();
         }
 
         function renderBestSellers() {
@@ -2488,6 +2513,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             try { await persistCentralOrder(lineOrder); } catch(e){alert('ยังไม่ได้สร้างออเดอร์: '+e.message);return;}
             appState.orders.unshift(lineOrder);
             showOrderAccessCode(lineOrder.id);
+            rememberCustomerOrder(lineOrder.id);
             saveState();
             notifyOrderToWorker(lineOrder).catch(err => console.warn('Worker notification failed:', err));
             backupOrderToSheet(lineOrder).catch(err => console.warn('Google Sheets backup failed:', err));
@@ -2922,6 +2948,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 try { await persistCentralOrder(newOrder); } catch(err){alert('ยังไม่ได้สร้างออเดอร์ กรุณาลองใหม่: '+err.message);return;}
                 appState.orders.unshift(newOrder);
                 showOrderAccessCode(newOrder.id);
+                rememberCustomerOrder(newOrder.id);
                 notifyOrderToWorker(newOrder).catch(err => console.warn('Worker notification failed:', err));
                 onCustomerUploadSlip(newOrder.id, total, newOrder.slipImg).catch(err => console.warn('Slip notification failed:', err));
                 backupOrderToSheet(newOrder).catch(err => console.warn('Google Sheets backup failed:', err));
@@ -4901,17 +4928,25 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             else if (tab === 'ADMIN') document.getElementById('adminLoginForm').classList.remove('hidden');
         }
 
-        function handleCustomerLogin(e) {
-            e.preventDefault();
-            showToast('เข้าสู่ระบบสำเร็จ');
-            closeLoginModal();
+        // Browser-scoped customer accounts. Do not confuse these with server-side Appwrite authentication.
+        function customerAccounts(){try{return JSON.parse(localStorage.getItem('wanderer_customer_accounts_v1')||'{}');}catch{return {};}}
+        function customerSessionName(){return sessionStorage.getItem('wanderer_customer_name_v1')||'';}
+        function customerOrderMap(){try{return JSON.parse(localStorage.getItem('wanderer_customer_orders_v1')||'{}');}catch{return {};}}
+        function rememberCustomerOrder(id){const name=customerSessionName();if(!name||!id)return;const map=customerOrderMap();map[name]=Array.isArray(map[name])?map[name]:[];if(!map[name].includes(id))map[name].push(id);localStorage.setItem('wanderer_customer_orders_v1',JSON.stringify(map));}
+        async function passwordDigest(username,password,salt){const bytes=new TextEncoder().encode(username.toLowerCase()+':'+salt+':'+password);const hash=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');}
+        function updateCustomerMenu(){const el=document.getElementById('customerMenuLabel');if(el)el.textContent=customerSessionName()?'โปรไฟล์ของฉัน':'เข้าสู่ระบบ - สมัครสมาชิก';}
+        function openCustomerEntry(){if(customerSessionName())navigateTo('customer-profile');else openLoginModal();}
+        function customerLogout(){sessionStorage.removeItem('wanderer_customer_name_v1');updateCustomerMenu();navigateTo('home');showToast('ออกจากระบบแล้ว');}
+        function renderCustomerProfile(){const name=customerSessionName();if(!name)return;document.getElementById('customerProfileName').textContent=name;document.getElementById('customerProfileAvatar').textContent=name.charAt(0).toUpperCase();const root=document.getElementById('customerPurchaseHistory');const ids=customerOrderMap()[name]||[];root.replaceChildren();if(!ids.length){root.textContent='ยังไม่มีประวัติการซื้อในบัญชีนี้บนอุปกรณ์นี้';return;}
+            for(const id of [...ids].reverse()) {const row=document.createElement('div');row.className='rounded-xl border dark:border-slate-700 p-3 space-y-1';const title=document.createElement('p');title.textContent=id;title.className='font-bold text-purple-600';const details=document.createElement('p');details.textContent='กำลังดึงรายละเอียดออเดอร์...';row.append(title,details);root.appendChild(row);loadCentralOrder(id).then(order=>{const items=(order.items||[]).map(it=>[it.appName||it.app||'',it.name||it.packageName||'สินค้า'].filter(Boolean).join(' — ')).join(', ');details.textContent=(items||'สินค้า')+' | '+Number(order.total||0).toLocaleString('th-TH')+' บาท | '+(order.status||'');}).catch(()=>{details.textContent='ไม่สามารถโหลดรายละเอียดออเดอร์นี้ได้บนอุปกรณ์นี้';});}
         }
+        async function handleCustomerLogin(e){e.preventDefault();const name=document.getElementById('custLoginUser').value.trim();const pass=document.getElementById('custLoginPass').value;const account=customerAccounts()[name.toLowerCase()];if(!account||await passwordDigest(name,pass,account.salt)!==account.hash){showToast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');return;}sessionStorage.setItem('wanderer_customer_name_v1',account.name);closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('เข้าสู่ระบบสำเร็จ');}
+        async function handleCustomerRegister(e){e.preventDefault();const name=document.getElementById('custRegUser').value.trim();const pass=document.getElementById('custRegPass').value;if(name.length<3||pass.length<8){showToast('ชื่อผู้ใช้อย่างน้อย 3 ตัวอักษร และรหัสผ่านอย่างน้อย 8 ตัวอักษร');return;}const accounts=customerAccounts();if(accounts[name.toLowerCase()]){showToast('ชื่อผู้ใช้นี้ถูกใช้แล้ว');return;}const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');accounts[name.toLowerCase()]={name,salt,hash:await passwordDigest(name,pass,salt)};localStorage.setItem('wanderer_customer_accounts_v1',JSON.stringify(accounts));sessionStorage.setItem('wanderer_customer_name_v1',name);closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('สมัครสมาชิกสำเร็จ');}
 
-        function handleCustomerRegister(e) {
-            e.preventDefault();
-            showToast('สมัครสมาชิกสำเร็จ');
-            closeLoginModal();
-        }
+        const androidPromoSelected=new Set();
+        function androidPromoApps(){const category=appState.categories.find(c=>/แอ[พป].*android|android.*แอ[พป]/i.test(c.name||''));if(!category)return [];const seen=new Set();return (appState.apps||[]).filter(a=>{if(String(a.categoryId)!==String(category.id)||!isAppAvailableForDisplay(a))return false;const key=String(a.name||'').trim().toLowerCase();if(!key||seen.has(key))return false;seen.add(key);return true;});}
+        function toggleAndroidPromo(id){if(androidPromoSelected.has(id))androidPromoSelected.delete(id);else if(androidPromoSelected.size>=9){showToast('เลือกได้สูงสุด 9 แอพ');return;}else androidPromoSelected.add(id);renderAndroidPromo();}
+        function renderAndroidPromo(){const box=document.getElementById('androidPromoPanel');if(!box)return;const selectedCat=appState.categories.find(c=>String(c.id)===String(appState.currentSelectedCategory));const visible=selectedCat&&/แอ[พป].*android|android.*แอ[พป]/i.test(selectedCat.name||'');box.classList.toggle('hidden',!visible);if(!visible)return;const apps=androidPromoApps();const ids=new Set(apps.map(a=>String(a.id)));for(const id of [...androidPromoSelected])if(!ids.has(id))androidPromoSelected.delete(id);document.getElementById('androidPromoChoices').innerHTML=apps.length?apps.map(a=>`<label class="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 p-2 cursor-pointer text-xs"><input type="checkbox" ${androidPromoSelected.has(String(a.id))?'checked':''} onchange="toggleAndroidPromo('${String(a.id).replace(/'/g,"\'")}')" class="accent-pink-500"><span>${escapeHtml(a.name)}</span></label>`).join(''):'<p class="col-span-full text-slate-500 text-sm">ยังไม่มีแอพในหมวดนี้</p>';const n=androidPromoSelected.size;const prices={3:90,6:170,9:250};document.getElementById('androidPromoResult').textContent=`เลือกแล้ว ${n} แอพ — ${prices[n]!==undefined?'ราคาโปรโมชั่น '+prices[n]+' บาท':'เลือกให้ครบ 3, 6 หรือ 9 แอพ'}`;}
 
         async function handleAdminLogin(e) {
             e.preventDefault();
@@ -5461,6 +5496,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             renderCategories();
             renderApps();
             renderWebsiteService();
+            updateCustomerMenu();
             const autoSync=document.getElementById('adminAutoSyncSheets'); if(autoSync)autoSync.checked=!!appState.settings?.autoSyncSheets;
             const autoMins=document.getElementById('adminAutoSyncMinutes'); if(autoMins)autoMins.value=String(appState.settings?.autoSyncMinutes||15);
             setupAutoSyncSheets();
