@@ -1505,11 +1505,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         let supabaseAuthSession = null; // Legacy variable name retained for UI compatibility.
         let sharedStateWriteTimer = null, sharedStateLastUpdatedAt = null, sharedRevision = null;
         let orderRefreshBusy = false;
-        async function centralRequest(path, method='GET', body, token) {
+        async function centralRequest(path, method='GET', body, token, customerJwt) {
             const headers = {};
             const session = sessionStorage.getItem('wanderer_admin_session');
             if (session) headers.Authorization = 'Bearer ' + session;
             if (token) headers['X-Order-Token'] = token;
+            if (customerJwt) headers['X-Customer-JWT'] = customerJwt;
             if (body !== undefined) headers['Content-Type'] = 'application/json';
             let response;
             try { response = await fetch(CENTRAL_API_URL + path, {method, headers, body:body===undefined?undefined:JSON.stringify(body), cache:'no-store'}); }
@@ -1571,7 +1572,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             else sessionStorage.setItem('wanderer_pending_order',JSON.stringify({fingerprint,id:order.id}));
             const tokens=orderTokens();
             if(!tokens[order.id]) {tokens[order.id]=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');localStorage.setItem('wanderer_order_tokens',JSON.stringify(tokens));}
-            const result=await centralRequest('/orders','POST',{order,token:tokens[order.id]});Object.assign(order,result.order);
+            const jwt=customerIdentity ? await getCustomerJwt() : null;
+            const result=await centralRequest('/orders','POST',{order,token:tokens[order.id]},undefined,jwt);Object.assign(order,result.order);
             sessionStorage.removeItem('wanderer_pending_order');
             return order;
         }
@@ -2375,7 +2377,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         // At most one unit of each distinct app can join a promo; extra quantities pay normally.
         function getAndroidCartPricing() {
             const categoryIds = new Set((appState.categories || [])
-                .filter(c => /แอ[พป].*android|android.*แอ[พป]/i.test(c.name || ''))
+                .filter(c => /android|แอนดรอยด์|แอนดรอย/i.test(c.name || ''))
                 .map(c => String(c.id)));
             const appsById = new Map((appState.apps || []).map(a => [String(a.id), a]));
             const byApp = new Map();
@@ -5020,6 +5022,16 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             if (!response.ok) throw new Error(result.message || `Appwrite HTTP ${response.status}`);
             return result;
         }
+        async function getCustomerJwt(){
+            if(!customerIdentity) return null;
+            const response=await customerAppwrite('/account/jwts','POST',{});
+            if(!response.jwt)throw new Error('ไม่สามารถยืนยันตัวตนสมาชิก');
+            return response.jwt;
+        }
+        async function fetchCustomerOrders(){
+            const jwt=await getCustomerJwt();
+            return (await centralRequest('/customer/orders','GET',undefined,undefined,jwt)).orders||[];
+        }
         function customerSessionName(){return customerIdentity?.name || '';}
         function customerOrderMap(){try{return JSON.parse(localStorage.getItem('wanderer_customer_orders_v1')||'{}');}catch{return {};}}
         function rememberCustomerOrder(id){
@@ -5041,23 +5053,25 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             catch {customerIdentity=null;}
             updateCustomerMenu();
         }
-        function renderCustomerProfile(){
-            const name=customerSessionName();if(!name)return;
+        async function renderCustomerProfile(){
+            if(!customerIdentity)return;
+            const name=customerSessionName()||customerIdentity.email||'สมาชิก';
             document.getElementById('customerProfileName').textContent=name;
             document.getElementById('customerProfileAvatar').textContent=name.charAt(0).toUpperCase();
             const root=document.getElementById('customerPurchaseHistory');root.replaceChildren();
-            const warning=document.createElement('p');warning.className='rounded-xl bg-amber-50 text-amber-800 p-3 text-xs';
-            warning.textContent='ประวัติข้ามอุปกรณ์ยังต้องเปิด API รายการออเดอร์ของสมาชิกใน Cloudflare Worker; รายการด้านล่างเป็นออเดอร์ที่บันทึกไว้ในเบราว์เซอร์นี้เท่านั้น';
-            root.appendChild(warning);
-            const ids=customerOrderMap()[customerIdentity.$id]||[];
-            if(!ids.length){const p=document.createElement('p');p.textContent='ยังไม่มีประวัติออเดอร์บนอุปกรณ์นี้';root.appendChild(p);return;}
-            for(const id of [...ids].reverse()) {
-                const row=document.createElement('div');row.className='rounded-xl border dark:border-slate-700 p-3 space-y-1';
-                const title=document.createElement('p');title.textContent=id;title.className='font-bold text-purple-600';
-                const details=document.createElement('p');details.textContent='กำลังดึงรายละเอียดออเดอร์...';
-                row.append(title,details);root.appendChild(row);
-                loadCentralOrder(id).then(order=>{const items=(order.items||[]).map(it=>[it.appName||it.app||'',it.name||it.packageName||'สินค้า'].filter(Boolean).join(' — ')).join(', ');details.textContent=(items||'สินค้า')+' | '+Number(order.total||0).toLocaleString('th-TH')+' บาท | '+(order.status||'');}).catch(()=>{details.textContent='ไม่สามารถโหลดรายละเอียดออเดอร์นี้ได้บนอุปกรณ์นี้';});
-            }
+            const status=document.createElement('p');status.textContent='กำลังโหลดประวัติการซื้อจากเซิร์ฟเวอร์...';root.append(status);
+            try{
+                const orders=await fetchCustomerOrders();
+                if(!customerIdentity)return;
+                root.replaceChildren();
+                if(!orders.length){const p=document.createElement('p');p.textContent='ยังไม่มีประวัติสินค้าที่ซื้อด้วยบัญชีนี้';root.append(p);return;}
+                for(const order of orders){
+                    const card=document.createElement('div');card.className='rounded-xl border dark:border-slate-700 p-3 space-y-1';
+                    const title=document.createElement('p');title.className='font-bold text-purple-600';title.textContent=order.id||'';
+                    const desc=document.createElement('p');desc.textContent=(order.items||[]).map(x=>x.name||'สินค้า').join(', ')+' | '+Number(order.total||0).toLocaleString('th-TH')+' บาท | '+(order.status||'');
+                    card.append(title,desc);root.append(card);
+                }
+            }catch(err){status.textContent='ไม่สามารถโหลดประวัติการซื้อจากเซิร์ฟเวอร์: '+err.message;}
         }
         async function handleCustomerLogin(e){
             e.preventDefault();const email=document.getElementById('custLoginUser').value.trim();const password=document.getElementById('custLoginPass').value;
