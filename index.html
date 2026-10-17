@@ -247,15 +247,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
                 <div id="categoryDescriptionBox" class="mt-3 p-3 bg-purple-50/50 dark:bg-slate-800/50 rounded-xl text-xs text-slate-600 dark:text-slate-300 whitespace-pre-line border border-purple-100 dark:border-slate-700 hidden"></div>
             </div>
-
-            <section id="androidPromoPanel" class="hidden bg-white dark:bg-slate-800 rounded-3xl border border-pink-200 dark:border-slate-700 p-5 shadow-sm space-y-4">
-                <div><h3 class="font-bold text-pink-600 text-lg">📱 โปรโมชั่นแอพ Android</h3><p class="text-xs text-slate-500 mt-1">เลือกแอพไม่ซ้ำกัน 3, 6 หรือ 9 แอพ เพื่อคำนวณราคาชุดโปรโมชั่น</p></div>
-                <div class="grid grid-cols-3 gap-2 text-center text-xs font-bold"><div class="rounded-xl bg-pink-50 dark:bg-slate-700 p-3">3 แอพ<br><strong class="text-pink-600 text-lg">90฿</strong></div><div class="rounded-xl bg-pink-50 dark:bg-slate-700 p-3">6 แอพ<br><strong class="text-pink-600 text-lg">170฿</strong></div><div class="rounded-xl bg-pink-50 dark:bg-slate-700 p-3">9 แอพ<br><strong class="text-pink-600 text-lg">250฿</strong></div></div>
-                <div id="androidPromoChoices" class="grid grid-cols-2 sm:grid-cols-3 gap-2"></div>
-                <div class="flex flex-wrap items-center justify-between gap-3 border-t dark:border-slate-700 pt-3"><p id="androidPromoResult" class="text-sm font-bold">เลือกแล้ว 0 แอพ</p><button type="button" onclick="androidPromoSelected.clear();renderAndroidPromo()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-xs font-bold">ล้างการเลือก</button></div>
-                <p class="text-[11px] text-slate-500">เป็นเครื่องคำนวณราคาโปรโมชั่นเท่านั้น ยังไม่สร้างคำสั่งซื้อหรือหักเงินอัตโนมัติ</p>
+            <section id="comboPromotionsPanel" class="hidden bg-white dark:bg-slate-800 rounded-3xl border border-purple-200 p-5 space-y-3">
+              <h3 class="font-bold text-purple-700 dark:text-purple-300 text-lg">🎁 โปรโมชั่นจับคู่แอพ</h3>
+              <div id="comboPromotionsCards" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"></div>
             </section>
-
             <div>
                 <div class="flex justify-between items-center mb-4">
                     <h3 id="currentCategoryTitle" class="text-lg font-bold text-slate-800 dark:text-slate-100">รายการสินค้า</h3>
@@ -419,6 +414,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             <div class="flex flex-wrap gap-2 bg-white dark:bg-slate-800 p-2 rounded-2xl border border-purple-100 dark:border-slate-700 shadow-sm">
                 <button onclick="switchAdminTab('dashboard-orders')" id="adminTabBtn-dashboard-orders" class="px-4 py-2 text-xs font-bold rounded-xl transition">📊 แดชบอร์ด & ออเดอร์</button>
                 <button onclick="switchAdminTab('products')" id="adminTabBtn-products" class="px-4 py-2 text-xs font-bold rounded-xl transition">🗂️ จัดการสินค้า & แพ็กเกจ</button>
+                <button onclick="switchAdminTab('promotions')" id="adminTabBtn-promotions" class="px-4 py-2 text-xs font-bold rounded-xl transition">🎁 โปรโมชั่น</button>
                 <button onclick="switchAdminTab('bank-accounts')" id="adminTabBtn-bank-accounts" class="px-4 py-2 text-xs font-bold rounded-xl transition">🏦 บัญชีชำระเงิน</button>
                 <button onclick="switchAdminTab('form-templates')" id="adminTabBtn-form-templates" class="px-4 py-2 text-xs font-bold rounded-xl transition">📝 แบบฟอร์มส่งงาน & สั่งซื้อ LINE</button>
                 <button onclick="switchAdminTab('feedbacks')" id="adminTabBtn-feedbacks" class="px-4 py-2 text-xs font-bold rounded-xl transition">💡 ข้อเสนอแนะ & รีวิว</button>
@@ -511,6 +507,32 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     </div>
                     <div id="adminProductsTreeView" class="space-y-6"></div>
                 </div>
+            </div>
+
+            <!-- Promotion management: isolated from existing product/admin screens -->
+            <div id="adminTab-promotions" class="hidden space-y-5">
+              <div class="bg-white dark:bg-slate-800 rounded-2xl border p-5 space-y-4">
+                <h3 class="font-bold text-lg">🎁 จัดการโปรโมชั่น</h3>
+                <p class="text-xs text-slate-500">ตั้งราคาชุดแอพ Android และสร้างโปรโมชั่นจับคู่จากแพ็กเกจที่มีในร้าน</p>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                  <label>3 แอพ / บาท<input id="promoAndroid3" type="number" min="0" class="w-full mt-1 p-2 rounded-lg border dark:bg-slate-900"></label>
+                  <label>6 แอพ / บาท<input id="promoAndroid6" type="number" min="0" class="w-full mt-1 p-2 rounded-lg border dark:bg-slate-900"></label>
+                  <label>9 แอพ / บาท<input id="promoAndroid9" type="number" min="0" class="w-full mt-1 p-2 rounded-lg border dark:bg-slate-900"></label>
+                </div>
+                <button onclick="saveAndroidPromoSettings()" class="bg-pink-600 text-white rounded-xl px-4 py-2 text-sm font-bold">บันทึกราคาชุด Android</button>
+              </div>
+              <div class="bg-white dark:bg-slate-800 rounded-2xl border p-5 space-y-3">
+                <h3 class="font-bold">สร้างโปรโมชั่นจับคู่ / ชุดแพ็กเกจ</h3>
+                <label class="block text-xs">ชื่อโปรโมชั่น<input id="promoComboName" class="w-full p-2 mt-1 border rounded-lg dark:bg-slate-900" placeholder="เช่น WETV 30วัน หาร4 + iQIYI Gold 30วัน หาร4"></label>
+                <div class="grid sm:grid-cols-2 gap-3">
+                  <label class="block text-xs">แพ็กเกจที่ 1<select id="promoComboPkg1" class="w-full p-2 mt-1 border rounded-lg dark:bg-slate-900"></select></label>
+                  <label class="block text-xs">แพ็กเกจที่ 2<select id="promoComboPkg2" class="w-full p-2 mt-1 border rounded-lg dark:bg-slate-900"></select></label>
+                </div>
+                <label class="block text-xs">ราคาโปรโมชั่น (บาท)<input id="promoComboPrice" type="number" min="0" step="0.01" class="w-full p-2 mt-1 border rounded-lg dark:bg-slate-900" placeholder="55"></label>
+                <button onclick="saveComboPromotion()" class="bg-purple-600 text-white rounded-xl px-4 py-2 text-sm font-bold">+ เพิ่มโปรโมชั่นจับคู่</button>
+                <div id="adminPromoComboList" class="space-y-2"></div>
+                <p class="text-xs text-amber-600">ยังต้องติดตั้งการตรวจสอบราคาและโปรโมชั่นใน Cloudflare Worker ก่อนเปิดใช้รับชำระเงินจริง</p>
+              </div>
             </div>
 
             <!-- TAB 3: BANK ACCOUNTS -->
@@ -1399,8 +1421,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             <form id="customerLoginForm" onsubmit="handleCustomerLogin(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-medium mb-1">ชื่อผู้ใช้งาน:</label>
-                    <input type="text" id="custLoginUser" autocomplete="off" required class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <label class="block font-medium mb-1">อีเมลสมาชิก:</label>
+                    <input type="email" id="custLoginUser" autocomplete="off" required class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
                     <label class="block font-medium mb-1">รหัสผ่าน:</label>
@@ -1413,6 +1435,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <div>
                     <label class="block font-medium mb-1">ชื่อผู้ใช้งานใหม่:</label>
                     <input type="text" id="custRegUser" autocomplete="off" required class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                </div>
+                <div>
+                    <label class="block font-medium mb-1">อีเมลสมาชิก:</label>
+                    <input type="email" id="custRegEmail" required autocomplete="email" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
                     <label class="block font-medium mb-1">รหัสผ่าน:</label>
@@ -1479,13 +1505,16 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         let supabaseAuthSession = null; // Legacy variable name retained for UI compatibility.
         let sharedStateWriteTimer = null, sharedStateLastUpdatedAt = null, sharedRevision = null;
         let orderRefreshBusy = false;
-        async function centralRequest(path, method='GET', body, token) {
+        async function centralRequest(path, method='GET', body, token, customerJwt) {
             const headers = {};
             const session = sessionStorage.getItem('wanderer_admin_session');
             if (session) headers.Authorization = 'Bearer ' + session;
             if (token) headers['X-Order-Token'] = token;
+            if (customerJwt) headers['X-Customer-JWT'] = customerJwt;
             if (body !== undefined) headers['Content-Type'] = 'application/json';
-            const response = await fetch(CENTRAL_API_URL + path, {method, headers, body:body===undefined?undefined:JSON.stringify(body), cache:'no-store'});
+            let response;
+            try { response = await fetch(CENTRAL_API_URL + path, {method, headers, body:body===undefined?undefined:JSON.stringify(body), cache:'no-store'}); }
+            catch (err) { throw new Error('ไม่สามารถเชื่อมต่อ Cloudflare Worker (' + CENTRAL_API_URL + ') กรุณาตรวจ URL, การ deploy, เครือข่าย และ CORS: ' + (err?.message || err)); }
             const result = await response.json();
             if (!response.ok || result.error) throw new Error(result.error || 'HTTP '+response.status);
             return result;
@@ -1543,7 +1572,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             else sessionStorage.setItem('wanderer_pending_order',JSON.stringify({fingerprint,id:order.id}));
             const tokens=orderTokens();
             if(!tokens[order.id]) {tokens[order.id]=Array.from(crypto.getRandomValues(new Uint8Array(32)),b=>b.toString(16).padStart(2,'0')).join('');localStorage.setItem('wanderer_order_tokens',JSON.stringify(tokens));}
-            const result=await centralRequest('/orders','POST',{order,token:tokens[order.id]});Object.assign(order,result.order);
+            const jwt=customerIdentity ? await getCustomerJwt() : null;
+            const result=await centralRequest('/orders','POST',{order,token:tokens[order.id]},undefined,jwt);Object.assign(order,result.order);
             sessionStorage.removeItem('wanderer_pending_order');
             return order;
         }
@@ -2148,7 +2178,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             appState.currentSelectedCategory = catId;
             renderCategories();
             renderApps();
-            renderAndroidPromo();
+            renderComboPromotions();
         }
 
 
@@ -2213,7 +2243,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             renderBestSellers();
             renderReviews();
-            renderAndroidPromo();
+            renderComboPromotions();
         }
 
         function renderBestSellers() {
@@ -2343,10 +2373,50 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             return appState.cart.reduce((sum, item) => sum + getCartQuantity(item), 0);
         }
 
+        // Android promotions: optimize all non-overlapping 3/6/9-app groups.
+        // At most one unit of each distinct app can join a promo; extra quantities pay normally.
+        function getAndroidCartPricing() {
+            const categoryIds = new Set((appState.categories || [])
+                .filter(c => /แอ[พป].*android|android.*แอ[พป]/i.test(c.name || ''))
+                .map(c => String(c.id)));
+            const appsById = new Map((appState.apps || []).map(a => [String(a.id), a]));
+            const byApp = new Map();
+            for (const item of (appState.cart || [])) {
+                if (item.promotionType || getCartQuantity(item) < 1) continue;
+                const app = appsById.get(String(item.appId));
+                if (!app || !categoryIds.has(String(app.categoryId)) || !isPackageAvailableForPurchase(item)) continue;
+                const price = Number(item.price);
+                if (!Number.isFinite(price) || price < 0) continue;
+                const id = String(app.id), existing = byApp.get(id);
+                if (!existing || price > existing.price) byApp.set(id, { id, name:app.name || item.name, price });
+            }
+            const eligible = [...byApp.values()].sort((a,b) => b.price-a.price);
+            const tiers = promoConfig().androidPrices;
+            // Use the cheapest applicable groups for the customer: DP searches all tier combinations.
+            const n = eligible.length, prefix = [0];
+            for (const x of eligible) prefix.push(prefix[prefix.length-1]+x.price);
+            const dp = Array(n+1).fill(null); dp[0] = {saved:0, applied:[]};
+            for (let i=0; i<=n; i++) {
+                if (!dp[i]) continue;
+                if (i<n && (!dp[i+1] || dp[i].saved>dp[i+1].saved)) dp[i+1]=dp[i];
+                for (const tier of [3,6,9]) {
+                    if (i+tier>n) continue;
+                    const promoPrice=Number(tiers[tier]);
+                    if (!Number.isFinite(promoPrice) || promoPrice<0) continue;
+                    const regular=prefix[i+tier]-prefix[i];
+                    const discount=Math.max(0,regular-promoPrice);
+                    const candidate={saved:dp[i].saved+discount,applied:[...dp[i].applied,...(discount>0?[{count:tier,regular,price:promoPrice,discount,appIds:eligible.slice(i,i+tier).map(x=>x.id)}]:[])]};
+                    if (!dp[i+tier] || candidate.saved>dp[i+tier].saved) dp[i+tier]=candidate;
+                }
+            }
+            return {saved:dp[n]?.saved||0,applied:dp[n]?.applied||[],eligibleCount:n};
+        }
+        function getCartSubtotal() {
+            return (appState.cart || []).reduce((sum, item) =>
+                sum + (Number(item.price) || 0) * getCartQuantity(item), 0);
+        }
         function getCartTotal() {
-            return appState.cart.reduce((sum, item) => {
-                return sum + (Number(item.price) || 0) * getCartQuantity(item);
-            }, 0);
+            return Math.max(0, getCartSubtotal() - getAndroidCartPricing().saved);
         }
 
         function isStoreClosedForPurchases() {
@@ -2469,7 +2539,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl text-xs border space-y-3">
                             <div class="flex justify-between items-start gap-3">
                                 <div class="min-w-0">
-                                    <h5 class="font-bold text-slate-800 dark:text-white leading-relaxed">${item.name}</h5>
+                                    <h5 class="font-bold text-slate-800 dark:text-white leading-relaxed">${escapeHtml(String(item.name || 'สินค้า'))}</h5>
                                     <span class="text-purple-600 font-bold">฿${unitPrice.toLocaleString('th-TH')} / ชิ้น</span>
                                 </div>
                                 <button onclick="removeFromCart(${index})" title="ลบสินค้า" class="text-red-500 hover:text-red-700 p-1 shrink-0">
@@ -2491,6 +2561,14 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         </div>`;
                 }).join('');
 
+                const pricing = getAndroidCartPricing();
+                if (pricing.applied.length) {
+                    container.insertAdjacentHTML('beforeend', `<div class="rounded-xl border border-pink-200 bg-pink-50 dark:bg-slate-800 p-3 space-y-1 text-xs">
+                      <div class="font-bold text-pink-700 dark:text-pink-300">🎁 ส่วนลด Android อัตโนมัติ</div>
+                      ${pricing.applied.map(x => `<div class="flex justify-between"><span>ชุด ${x.count} แอพ (${x.price.toLocaleString('th-TH')}฿)</span><b class="text-emerald-700">−฿${x.discount.toLocaleString('th-TH')}</b></div>`).join('')}
+                      <div class="border-t pt-1 flex justify-between"><span>ยอดก่อนลด ฿${getCartSubtotal().toLocaleString('th-TH')}</span><b>ประหยัด ฿${pricing.saved.toLocaleString('th-TH')}</b></div>
+                    </div>`);
+                }
                 document.getElementById('cartDrawerTotal').innerText = `฿${getCartTotal().toLocaleString('th-TH')}`;
             }
 
@@ -3215,7 +3293,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         function switchAdminTab(tabName) {
-            const tabs = ['dashboard-orders', 'products', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations'];
+            const tabs = ['dashboard-orders', 'products', 'promotions', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations'];
             tabs.forEach(t => {
                 document.getElementById(`adminTab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`adminTabBtn-${t}`);
@@ -3227,6 +3305,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             if (tabName === 'dashboard-orders') renderAdminOrdersTable();
             else if (tabName === 'products') renderAdminProductsTree();
+            else if (tabName === 'promotions') renderPromotionAdmin();
             else if (tabName === 'bank-accounts') loadAdminBankAccountsForm();
             else if (tabName === 'form-templates') populateFormTemplateCategorySelect();
             else if (tabName === 'feedbacks') renderAdminFeedbacks();
@@ -4928,25 +5007,134 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             else if (tab === 'ADMIN') document.getElementById('adminLoginForm').classList.remove('hidden');
         }
 
-        // Browser-scoped customer accounts. Do not confuse these with server-side Appwrite authentication.
-        function customerAccounts(){try{return JSON.parse(localStorage.getItem('wanderer_customer_accounts_v1')||'{}');}catch{return {};}}
-        function customerSessionName(){return sessionStorage.getItem('wanderer_customer_name_v1')||'';}
-        function customerOrderMap(){try{return JSON.parse(localStorage.getItem('wanderer_customer_orders_v1')||'{}');}catch{return {};}}
-        function rememberCustomerOrder(id){const name=customerSessionName();if(!name||!id)return;const map=customerOrderMap();map[name]=Array.isArray(map[name])?map[name]:[];if(!map[name].includes(id))map[name].push(id);localStorage.setItem('wanderer_customer_orders_v1',JSON.stringify(map));}
-        async function passwordDigest(username,password,salt){const bytes=new TextEncoder().encode(username.toLowerCase()+':'+salt+':'+password);const hash=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(hash),b=>b.toString(16).padStart(2,'0')).join('');}
-        function updateCustomerMenu(){const el=document.getElementById('customerMenuLabel');if(el)el.textContent=customerSessionName()?'โปรไฟล์ของฉัน':'เข้าสู่ระบบ - สมัครสมาชิก';}
-        function openCustomerEntry(){if(customerSessionName())navigateTo('customer-profile');else openLoginModal();}
-        function customerLogout(){sessionStorage.removeItem('wanderer_customer_name_v1');updateCustomerMenu();navigateTo('home');showToast('ออกจากระบบแล้ว');}
-        function renderCustomerProfile(){const name=customerSessionName();if(!name)return;document.getElementById('customerProfileName').textContent=name;document.getElementById('customerProfileAvatar').textContent=name.charAt(0).toUpperCase();const root=document.getElementById('customerPurchaseHistory');const ids=customerOrderMap()[name]||[];root.replaceChildren();if(!ids.length){root.textContent='ยังไม่มีประวัติการซื้อในบัญชีนี้บนอุปกรณ์นี้';return;}
-            for(const id of [...ids].reverse()) {const row=document.createElement('div');row.className='rounded-xl border dark:border-slate-700 p-3 space-y-1';const title=document.createElement('p');title.textContent=id;title.className='font-bold text-purple-600';const details=document.createElement('p');details.textContent='กำลังดึงรายละเอียดออเดอร์...';row.append(title,details);root.appendChild(row);loadCentralOrder(id).then(order=>{const items=(order.items||[]).map(it=>[it.appName||it.app||'',it.name||it.packageName||'สินค้า'].filter(Boolean).join(' — ')).join(', ');details.textContent=(items||'สินค้า')+' | '+Number(order.total||0).toLocaleString('th-TH')+' บาท | '+(order.status||'');}).catch(()=>{details.textContent='ไม่สามารถโหลดรายละเอียดออเดอร์นี้ได้บนอุปกรณ์นี้';});}
+        // Customer authentication is separate from the existing admin Worker authentication.
+        // Appwrite Web platform must allow the shop's actual domain; no API key is placed in HTML.
+        const CUSTOMER_APPWRITE_ENDPOINT = 'https://tor.cloud.appwrite.io/v1';
+        const CUSTOMER_APPWRITE_PROJECT = '6ad1f7430028abd24f22';
+        let customerIdentity = null;
+        async function customerAppwrite(path, method='GET', data) {
+            const response = await fetch(CUSTOMER_APPWRITE_ENDPOINT + path, {
+                method, credentials:'include', cache:'no-store',
+                headers:{'X-Appwrite-Project':CUSTOMER_APPWRITE_PROJECT,...(data!==undefined?{'Content-Type':'application/json'}:{})},
+                body:data===undefined?undefined:JSON.stringify(data)
+            });
+            const result = await response.json().catch(()=>({}));
+            if (!response.ok) throw new Error(result.message || `Appwrite HTTP ${response.status}`);
+            return result;
         }
-        async function handleCustomerLogin(e){e.preventDefault();const name=document.getElementById('custLoginUser').value.trim();const pass=document.getElementById('custLoginPass').value;const account=customerAccounts()[name.toLowerCase()];if(!account||await passwordDigest(name,pass,account.salt)!==account.hash){showToast('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง');return;}sessionStorage.setItem('wanderer_customer_name_v1',account.name);closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('เข้าสู่ระบบสำเร็จ');}
-        async function handleCustomerRegister(e){e.preventDefault();const name=document.getElementById('custRegUser').value.trim();const pass=document.getElementById('custRegPass').value;if(name.length<3||pass.length<8){showToast('ชื่อผู้ใช้อย่างน้อย 3 ตัวอักษร และรหัสผ่านอย่างน้อย 8 ตัวอักษร');return;}const accounts=customerAccounts();if(accounts[name.toLowerCase()]){showToast('ชื่อผู้ใช้นี้ถูกใช้แล้ว');return;}const salt=Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('');accounts[name.toLowerCase()]={name,salt,hash:await passwordDigest(name,pass,salt)};localStorage.setItem('wanderer_customer_accounts_v1',JSON.stringify(accounts));sessionStorage.setItem('wanderer_customer_name_v1',name);closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('สมัครสมาชิกสำเร็จ');}
+        async function getCustomerJwt(){
+            if(!customerIdentity) return null;
+            const response=await customerAppwrite('/account/jwts','POST',{});
+            if(!response.jwt)throw new Error('ไม่สามารถยืนยันตัวตนสมาชิก');
+            return response.jwt;
+        }
+        async function fetchCustomerOrders(){
+            const jwt=await getCustomerJwt();
+            return (await centralRequest('/customer/orders','GET',undefined,undefined,jwt)).orders||[];
+        }
+        function customerSessionName(){return customerIdentity?.name || '';}
+        function customerOrderMap(){try{return JSON.parse(localStorage.getItem('wanderer_customer_orders_v1')||'{}');}catch{return {};}}
+        function rememberCustomerOrder(id){
+            if (!customerIdentity?.$id || !id) return;
+            // Device cache only; backend ownership is NOT established by this client-side list.
+            const map=customerOrderMap(), key=customerIdentity.$id;
+            map[key]=Array.isArray(map[key])?map[key]:[];
+            if (!map[key].includes(id))map[key].push(id);
+            localStorage.setItem('wanderer_customer_orders_v1',JSON.stringify(map));
+        }
+        function updateCustomerMenu(){const el=document.getElementById('customerMenuLabel');if(el)el.textContent=customerIdentity?'โปรไฟล์ของฉัน':'เข้าสู่ระบบ - สมัครสมาชิก';}
+        function openCustomerEntry(){if(customerIdentity)navigateTo('customer-profile');else openLoginModal();}
+        async function customerLogout(){
+            try {await customerAppwrite('/account/sessions/current','DELETE');}catch(err){console.warn('Customer logout:',err);}
+            customerIdentity=null;sessionStorage.removeItem('wanderer_customer_name_v1');updateCustomerMenu();navigateTo('home');showToast('ออกจากระบบแล้ว');
+        }
+        async function restoreCustomerSession(){
+            try {customerIdentity=await customerAppwrite('/account');}
+            catch {customerIdentity=null;}
+            updateCustomerMenu();
+        }
+        async function renderCustomerProfile(){
+            if(!customerIdentity)return;
+            const name=customerSessionName()||customerIdentity.email||'สมาชิก';
+            document.getElementById('customerProfileName').textContent=name;
+            document.getElementById('customerProfileAvatar').textContent=name.charAt(0).toUpperCase();
+            const root=document.getElementById('customerPurchaseHistory');root.replaceChildren();
+            const status=document.createElement('p');status.textContent='กำลังโหลดประวัติการซื้อจากเซิร์ฟเวอร์...';root.append(status);
+            try{
+                const orders=await fetchCustomerOrders();
+                if(!customerIdentity)return;
+                root.replaceChildren();
+                if(!orders.length){const p=document.createElement('p');p.textContent='ยังไม่มีประวัติสินค้าที่ซื้อด้วยบัญชีนี้';root.append(p);return;}
+                for(const order of orders){
+                    const card=document.createElement('div');card.className='rounded-xl border dark:border-slate-700 p-3 space-y-1';
+                    const title=document.createElement('p');title.className='font-bold text-purple-600';title.textContent=order.id||'';
+                    const desc=document.createElement('p');desc.textContent=(order.items||[]).map(x=>x.name||'สินค้า').join(', ')+' | '+Number(order.total||0).toLocaleString('th-TH')+' บาท | '+(order.status||'');
+                    card.append(title,desc);root.append(card);
+                }
+            }catch(err){status.textContent='ไม่สามารถโหลดประวัติการซื้อจากเซิร์ฟเวอร์: '+err.message;}
+        }
+        async function handleCustomerLogin(e){
+            e.preventDefault();const email=document.getElementById('custLoginUser').value.trim();const password=document.getElementById('custLoginPass').value;
+            try{
+                await customerAppwrite('/account/sessions/email','POST',{email,password});
+                customerIdentity=await customerAppwrite('/account');
+                closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('เข้าสู่ระบบสำเร็จ');
+            }catch(err){showToast('ล็อกอินลูกค้าไม่สำเร็จ: '+err.message);}
+        }
+        async function handleCustomerRegister(e){
+            e.preventDefault();const name=document.getElementById('custRegUser').value.trim(),email=document.getElementById('custRegEmail').value.trim(),password=document.getElementById('custRegPass').value;
+            if(name.length<3||password.length<8)return showToast('ชื่ออย่างน้อย 3 ตัวอักษร และรหัสผ่านอย่างน้อย 8 ตัวอักษร');
+            try{
+                await customerAppwrite('/account','POST',{userId:'unique()',name,email,password});
+                await customerAppwrite('/account/sessions/email','POST',{email,password});
+                customerIdentity=await customerAppwrite('/account');
+                closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('สมัครสมาชิกสำเร็จ');
+            }catch(err){showToast('สมัครสมาชิกไม่สำเร็จ: '+err.message);}
+        }
 
-        const androidPromoSelected=new Set();
-        function androidPromoApps(){const category=appState.categories.find(c=>/แอ[พป].*android|android.*แอ[พป]/i.test(c.name||''));if(!category)return [];const seen=new Set();return (appState.apps||[]).filter(a=>{if(String(a.categoryId)!==String(category.id)||!isAppAvailableForDisplay(a))return false;const key=String(a.name||'').trim().toLowerCase();if(!key||seen.has(key))return false;seen.add(key);return true;});}
-        function toggleAndroidPromo(id){if(androidPromoSelected.has(id))androidPromoSelected.delete(id);else if(androidPromoSelected.size>=9){showToast('เลือกได้สูงสุด 9 แอพ');return;}else androidPromoSelected.add(id);renderAndroidPromo();}
-        function renderAndroidPromo(){const box=document.getElementById('androidPromoPanel');if(!box)return;const selectedCat=appState.categories.find(c=>String(c.id)===String(appState.currentSelectedCategory));const visible=selectedCat&&/แอ[พป].*android|android.*แอ[พป]/i.test(selectedCat.name||'');box.classList.toggle('hidden',!visible);if(!visible)return;const apps=androidPromoApps();const ids=new Set(apps.map(a=>String(a.id)));for(const id of [...androidPromoSelected])if(!ids.has(id))androidPromoSelected.delete(id);document.getElementById('androidPromoChoices').innerHTML=apps.length?apps.map(a=>`<label class="flex items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 p-2 cursor-pointer text-xs"><input type="checkbox" ${androidPromoSelected.has(String(a.id))?'checked':''} onchange="toggleAndroidPromo('${String(a.id).replace(/'/g,"\'")}')" class="accent-pink-500"><span>${escapeHtml(a.name)}</span></label>`).join(''):'<p class="col-span-full text-slate-500 text-sm">ยังไม่มีแอพในหมวดนี้</p>';const n=androidPromoSelected.size;const prices={3:90,6:170,9:250};document.getElementById('androidPromoResult').textContent=`เลือกแล้ว ${n} แอพ — ${prices[n]!==undefined?'ราคาโปรโมชั่น '+prices[n]+' บาท':'เลือกให้ครบ 3, 6 หรือ 9 แอพ'}`;}
+        // Promotion settings are stored with the shop state; backend must independently validate final prices.
+        function promoConfig(){
+          if(!appState.promotions || typeof appState.promotions!=='object') appState.promotions={};
+          const p=appState.promotions;
+          if(!p.androidPrices || typeof p.androidPrices!=='object')p.androidPrices={3:90,6:170,9:250};
+          if(!Array.isArray(p.combos))p.combos=[];
+          return p;
+        }
+        function addPromoCartItem(item){
+          if(isStoreClosedForPurchases())return showToast('ขณะนี้ร้านปิดอยู่');
+          normalizeCart();appState.cart.push({...item,qty:1});saveState();updateCartBadge();showToast('เพิ่มโปรโมชั่นลงตะกร้าแล้ว');openCartDrawer();
+        }
+        function renderPromotionAdmin(){
+          const p=promoConfig();[3,6,9].forEach(n=>document.getElementById('promoAndroid'+n).value=p.androidPrices[n]);
+          const opts='<option value="">เลือกแพ็กเกจ</option>'+appState.packages.map(pkg=>{
+            const app=appState.apps.find(a=>String(a.id)===String(pkg.appId));
+            return `<option value="${escapeHtml(String(pkg.id))}">${escapeHtml((app?.name||'แอพ')+' — '+pkg.name+' ('+pkg.price+'฿)')}</option>`;
+          }).join('');
+          ['promoComboPkg1','promoComboPkg2'].forEach(id=>document.getElementById(id).innerHTML=opts);
+          document.getElementById('adminPromoComboList').innerHTML=p.combos.length?p.combos.map(c=>`<div class="flex items-center justify-between gap-2 border rounded-xl p-3 text-sm"><span>${escapeHtml(c.name)} — <b>${Number(c.price)}฿</b></span><button class="text-red-600" onclick="removeComboPromotion('${c.id}')">ลบ</button></div>`).join(''):'<p class="text-sm text-slate-500">ยังไม่มีโปรโมชั่นจับคู่</p>';
+        }
+        function saveAndroidPromoSettings(){
+          const values={};for(const n of [3,6,9]){const el=document.getElementById('promoAndroid'+n),v=Number(el.value);if(!el.value.trim()||!Number.isFinite(v)||v<0)return showToast('กรุณาระบุราคาที่ถูกต้อง');values[n]=v;}
+          promoConfig().androidPrices=values;saveState();renderComboPromotions();showToast('บันทึกโปรโมชั่น Android แล้ว');
+        }
+        function saveComboPromotion(){
+          const name=document.getElementById('promoComboName').value.trim(),a=document.getElementById('promoComboPkg1').value,b=document.getElementById('promoComboPkg2').value,el=document.getElementById('promoComboPrice'),price=Number(el.value);
+          if(!name||!a||!b||a===b||!el.value.trim()||!Number.isFinite(price)||price<0)return showToast('กรอกชื่อ เลือก 2 แพ็กเกจที่ไม่ซ้ำกัน และระบุราคา');
+          promoConfig().combos.push({id:'combo-'+Date.now(),name,packageIds:[a,b],price,enabled:true});saveState();renderPromotionAdmin();renderComboPromotions();showToast('เพิ่มโปรโมชั่นจับคู่แล้ว');
+        }
+        function removeComboPromotion(id){if(!confirm('ลบโปรโมชั่นนี้หรือไม่?'))return;promoConfig().combos=promoConfig().combos.filter(c=>c.id!==id);saveState();renderPromotionAdmin();renderComboPromotions();}
+        function renderComboPromotions(){
+          const box=document.getElementById('comboPromotionsPanel');if(!box)return;
+          const combos=promoConfig().combos.filter(c=>c.enabled!==false&&Array.isArray(c.packageIds)&&c.packageIds.every(id=>appState.packages.some(p=>String(p.id)===String(id)&&isPackageAvailableForPurchase(p))));
+          box.classList.toggle('hidden',!combos.length||appState.currentSelectedCategory!=='ALL');
+          document.getElementById('comboPromotionsCards').innerHTML=combos.map(c=>`<div class="rounded-xl border dark:border-slate-700 p-4 space-y-2"><h4 class="font-bold text-sm">${escapeHtml(c.name)}</h4><p class="text-pink-600 text-xl font-black">${Number(c.price)}฿</p><button class="w-full bg-purple-600 text-white text-xs rounded-xl py-2 font-bold" onclick="addComboPromotionToCart('${c.id}')">เพิ่มลงตะกร้า</button></div>`).join('');
+        }
+        function addComboPromotionToCart(id){
+          const c=promoConfig().combos.find(c=>c.id===id);if(!c)return;
+          const pkgs=c.packageIds.map(id=>appState.packages.find(p=>String(p.id)===String(id)));
+          if(pkgs.some(p=>!p||!isPackageAvailableForPurchase(p)))return showToast('แพ็กเกจในโปรโมชั่นไม่พร้อมขาย');
+          addPromoCartItem({id:'promo-combo-'+Date.now(),appId:'promo-combo',appName:'โปรโมชั่นจับคู่',name:c.name,price:Number(c.price),promotionType:'combo',promotionId:c.id,promotionPackageIds:c.packageIds});
+        }
 
         async function handleAdminLogin(e) {
             e.preventDefault();
@@ -5497,6 +5685,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             renderApps();
             renderWebsiteService();
             updateCustomerMenu();
+            restoreCustomerSession();
             const autoSync=document.getElementById('adminAutoSyncSheets'); if(autoSync)autoSync.checked=!!appState.settings?.autoSyncSheets;
             const autoMins=document.getElementById('adminAutoSyncMinutes'); if(autoMins)autoMins.value=String(appState.settings?.autoSyncMinutes||15);
             setupAutoSyncSheets();
