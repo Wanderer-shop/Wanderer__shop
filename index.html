@@ -1616,6 +1616,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 apps: appState.apps || [],
                 packages: appState.packages || [],
                 settings,
+                promotions: appState.promotions || { androidPrices: {3:90,6:170,9:250}, combos: [] },
                 websiteService: appState.websiteService || {},
                 websiteServices: appState.websiteServices || [],
                 bankAccounts: appState.bankAccounts || {},
@@ -1637,6 +1638,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 if (Array.isArray(cloud.categories)) appState.categories = cloud.categories;
                 if (Array.isArray(cloud.apps)) appState.apps = cloud.apps;
                 if (Array.isArray(cloud.packages)) appState.packages = cloud.packages;
+                if (cloud.promotions && typeof cloud.promotions === 'object') appState.promotions = cloud.promotions;
                 if (cloud.settings && typeof cloud.settings === 'object') appState.settings = { ...appState.settings, ...cloud.settings };
                 if (cloud.websiteService) appState.websiteService = { ...appState.websiteService, ...cloud.websiteService };
                 if (Array.isArray(cloud.websiteServices)) appState.websiteServices = cloud.websiteServices;
@@ -2374,8 +2376,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         // Android promotions: optimize all non-overlapping 3/6/9-app groups.
-        // At most one unit of each distinct app can join a promo; extra quantities pay normally.
-        function getAndroidCartPricing() {
+        // At most one unit per distinct Android package can join; extra quantities pay normally.
+        function androidPrices() {
             const categoryIds = new Set((appState.categories || [])
                 .filter(c => /android|แอนดรอยด์|แอนดรอย/i.test(c.name || ''))
                 .map(c => String(c.id)));
@@ -2387,8 +2389,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 if (!app || !categoryIds.has(String(app.categoryId)) || !isPackageAvailableForPurchase(item)) continue;
                 const price = Number(item.price);
                 if (!Number.isFinite(price) || price < 0) continue;
-                const id = String(app.id), existing = byApp.get(id);
-                if (!existing || price > existing.price) byApp.set(id, { id, name:app.name || item.name, price });
+                // A single parent app (e.g. 'แอพ/เกม') may contain many distinct Android games as packages.
+                // Count distinct purchasable package IDs, not only the parent app ID.
+                const id = String(item.id), existing = byApp.get(id);
+                if (!existing || price > existing.price) byApp.set(id, { id, name:item.name || app.name, price });
             }
             const eligible = [...byApp.values()].sort((a,b) => b.price-a.price);
             const tiers = promoConfig().androidPrices;
@@ -2416,7 +2420,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 sum + (Number(item.price) || 0) * getCartQuantity(item), 0);
         }
         function getCartTotal() {
-            return Math.max(0, getCartSubtotal() - getAndroidCartPricing().saved);
+            return Math.max(0, getCartSubtotal() - androidPrices().saved);
         }
 
         function isStoreClosedForPurchases() {
@@ -2561,7 +2565,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         </div>`;
                 }).join('');
 
-                const pricing = getAndroidCartPricing();
+                const pricing = androidPrices();
                 if (pricing.applied.length) {
                     container.insertAdjacentHTML('beforeend', `<div class="rounded-xl border border-pink-200 bg-pink-50 dark:bg-slate-800 p-3 space-y-1 text-xs">
                       <div class="font-bold text-pink-700 dark:text-pink-300">🎁 ส่วนลด Android อัตโนมัติ</div>
