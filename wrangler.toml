@@ -1,0 +1,23 @@
+name = "wanderer-central"
+main = "worker.mjs"
+compatibility_date = "2026-10-16"
+[vars]
+APPWRITE_ENDPOINT = "https://tor.cloud.appwrite.io/v1"
+APPWRITE_PROJECT_ID = "6ad1f7430028abd24f22"
+APPWRITE_DATABASE_ID = "6ad1f83200302b87314d"
+CATALOG_TABLE_ID = "catalog"
+ORDERS_TABLE_ID = "orders"
+ADMIN_USER_IDS = "6ad1fb800016441a8326"
+ALLOWED_ORIGINS = "https://wanderer.wanderershop001.workers.dev"
+[[durable_objects.bindings]]
+name = "STORE"
+class_name = "Store"
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Store"]
+# Secrets: wrangler secret put APPWRITE_API_KEY ; wrangler secret put SYNC_SHARED_SECRET
+
+[[ratelimits]]
+name = "RATE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
