@@ -1283,8 +1283,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             </div>
             <p id="adminSlipOrderIdDisplay" class="text-xs font-bold text-slate-500">ORDER ID: -</p>
             <div class="p-2 bg-slate-50 dark:bg-slate-900 rounded-2xl border flex items-center justify-center min-h-[250px]">
-                <img id="adminSlipImgDisplay" src="" class="max-h-[60vh] w-full object-contain rounded-xl">
+                <img id="adminSlipImgDisplay" alt="สลิปการชำระเงิน" class="max-h-[60vh] w-full object-contain rounded-xl">
             </div>
+            <p id="adminSlipLoadStatus" role="status" class="hidden text-xs text-rose-600"></p>
 
             <div class="p-3 bg-purple-50/70 dark:bg-slate-900 rounded-2xl border border-purple-100 dark:border-slate-700 text-left">
                 <div class="flex items-center gap-2 mb-2">
@@ -3361,13 +3362,16 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <td class="p-3">${o.paymentMethod || '-'}</td>
                     <td class="p-3"><div class="min-w-[150px] space-y-1">${(o.items || []).map(i => `<div><span class="font-bold text-slate-800 dark:text-slate-100">${escapeHtml(i.appName || i.productName || (appState.apps.find(a => String(a.id) === String(i.appId)) || {}).name || i.name || 'สินค้า')}</span><div class="text-[10px] text-slate-500">แพ็กเกจ: ${escapeHtml(i.name || i.packageName || '-')} · ${Number(i.qty || i.quantity || 1)} ชิ้น</div></div>`).join('') || '-'}</div></td>
                     <td class="p-3 font-bold">฿${getOrderTotal(o).toLocaleString('th-TH', { maximumFractionDigits: 2 })}</td>
-                    <td class="p-3">${o.slipImg ? `<button onclick="openAdminSlipModal('${o.id}')" class="text-xs text-indigo-600 hover:underline">ดูสลิป</button>` : `<span class="text-slate-400">ยังไม่มีสลิป</span>`}</td>
+                    <td class="p-3">${(o.hasSlip === true || (typeof o.slipImg === 'string' && o.slipImg.trim().length > 0)) ? `<button type="button" data-order-slip="${escapeHtml(String(o.id || ''))}" class="text-xs text-indigo-600 hover:underline">ดูสลิป</button>` : `<span class="text-slate-400">ยังไม่มีสลิป</span>`}</td>
                     <td class="p-3"><span class="px-2 py-0.5 text-[10px] rounded-full font-bold ${o.status === 'READY_FOR_DELIVERY' ? 'bg-green-100 text-green-700' : o.status === 'CANCELLED' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">${o.status}</span></td>
                     <td class="p-3 text-center"><button onclick="openAdminOrderEditModal('${o.id}')" class="px-2.5 py-1 bg-purple-600 text-white rounded-lg text-[10px] font-bold">จัดการส่งงาน</button></td>
                 </tr>
             `).join('');
             tbody.querySelectorAll('[data-order-copy]').forEach(button => {
                 button.addEventListener('click', () => copyToClipboard(button.dataset.orderCopy));
+            });
+            tbody.querySelectorAll('[data-order-slip]').forEach(button => {
+                button.addEventListener('click', () => openAdminSlipModal(button.dataset.orderSlip));
             });
         }
 
@@ -3420,21 +3424,46 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         async function openAdminSlipModal(orderId) {
-            try{await loadCentralOrder(orderId);}catch(e){alert(e.message);return;}
+            try { await loadCentralOrder(orderId); }
+            catch (e) { alert('ไม่สามารถดึงข้อมูลสลิป: ' + e.message); return; }
             const ord = appState.orders.find(o => o.id === orderId);
             if (!ord) return;
 
             document.getElementById('adminSlipOrderIdDisplay').innerText = `ORDER ID: ${ord.id}`;
             const slipImage = document.getElementById('adminSlipImgDisplay');
-            slipImage.onerror = () => { slipImage.removeAttribute('src'); slipImage.alt = 'โหลดรูปสลิปไม่สำเร็จ กรุณาตรวจสอบว่าออเดอร์มีรูปสลิปในฐานข้อมูลส่วนกลาง'; };
-            slipImage.onload = () => { slipImage.alt = 'สลิปการชำระเงิน'; };
-            slipImage.alt = ord.slipImg ? 'กำลังโหลดรูปสลิป...' : 'ไม่พบรูปสลิปในข้อมูลออเดอร์';
-            slipImage.src = ord.slipImg || '';
+            const status = document.getElementById('adminSlipLoadStatus');
+            const slipSource = typeof ord.slipImg === 'string' ? ord.slipImg.trim() : '';
+            slipImage.onload = () => {
+                slipImage.alt = 'สลิปการชำระเงิน';
+                status.classList.add('hidden');
+            };
+            slipImage.onerror = () => {
+                slipImage.removeAttribute('src');
+                slipImage.alt = 'ไม่สามารถโหลดรูปสลิป';
+                status.textContent = 'โหลดรูปสลิปไม่สำเร็จ กรุณาตรวจสอบข้อมูลรูปสลิปที่บันทึกไว้';
+                status.classList.remove('hidden');
+            };
+            status.classList.add('hidden');
+            if (slipSource) {
+                slipImage.alt = 'กำลังโหลดรูปสลิป...';
+                slipImage.src = slipSource;
+            } else {
+                slipImage.removeAttribute('src');
+                slipImage.alt = 'ไม่พบรูปสลิป';
+                status.textContent = 'ไม่พบรูปสลิปในข้อมูลออเดอร์ที่โหลดจากเซิร์ฟเวอร์';
+                status.classList.remove('hidden');
+            }
             renderAdminSlipCustomerRequirements(ord);
             document.getElementById('adminSlipModal').classList.remove('hidden');
-            if (!ord.slipImg) showToast('ไม่พบรูปสลิปในข้อมูลออเดอร์ที่โหลดจากเซิร์ฟเวอร์');
         }
-        function closeAdminSlipModal() { document.getElementById('adminSlipModal').classList.add('hidden'); }
+        function closeAdminSlipModal() {
+            document.getElementById('adminSlipModal').classList.add('hidden');
+            const image = document.getElementById('adminSlipImgDisplay');
+            image.onload = null;
+            image.onerror = null;
+            image.removeAttribute('src');
+            document.getElementById('adminSlipLoadStatus').classList.add('hidden');
+        }
 
 
         function renderAdminOrderCustomerRequirements(order) {
