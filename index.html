@@ -104,6 +104,18 @@
 <style id="wandererWebsiteThemeStyle">
 :root { --ws-page-bg:#f8f7ff; --ws-text:#334155; --ws-heading:#6d28d9; --ws-button:#7c3aed; --ws-card-bg:#ffffff; --ws-card-border:#e9d5ff; --ws-font:system-ui,sans-serif; }
 body { background-color:var(--ws-page-bg) !important; color:var(--ws-text); font-family:var(--ws-font); }
+html.dark { --ws-page-bg:#0f172a; --ws-text:#e2e8f0; --ws-heading:#c4b5fd; --ws-button:#7c3aed; --ws-card-bg:#1e293b; --ws-card-border:#475569; color-scheme:dark; }
+html.dark body, html.dark #viewAdmin { color:#e2e8f0; }
+html.dark body { background-color:#0f172a !important; }
+html.dark body .bg-white,html.dark body .dark\:bg-slate-800 { background-color:#1e293b !important; }
+html.dark body h1, html.dark body h2, html.dark body h3, html.dark body h4 { color:#c4b5fd; }
+html.dark .text-slate-600, html.dark .text-slate-700, html.dark .text-slate-800 { color:#cbd5e1 !important; }
+html.dark .text-slate-400, html.dark .text-slate-500 { color:#94a3b8 !important; }
+html.dark .bg-slate-50, html.dark .bg-slate-100 { background-color:#334155 !important; }
+html.dark input, html.dark select, html.dark textarea { color:#f1f5f9; background-color:#1e293b; border-color:#64748b; }
+html.dark #hamburgerDrawer > div:last-child { background-color:#1e293b !important; }
+html.dark #hamburgerDrawer nav button { color:#e2e8f0 !important; }
+html.dark #adminTab-floating-decorations .bg-white,html.dark #adminTab-floating-decorations .bg-slate-50 {background-color:#334155 !important;}
 body h1, body h2, body h3, body h4 { color:var(--ws-heading); }
 body .bg-white:not(.keep-original-theme), body .dark\:bg-slate-800:not(.keep-original-theme) { background-color:var(--ws-card-bg); }
 body .border-purple-100, body .border-indigo-100, body .border-slate-200 { border-color:var(--ws-card-border); }
@@ -1427,8 +1439,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             <form id="customerLoginForm" onsubmit="handleCustomerLogin(event)" class="space-y-3 text-xs">
                 <div>
-                    <label class="block font-medium mb-1">อีเมลสมาชิก:</label>
-                    <input type="email" id="custLoginUser" autocomplete="off" required class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <label class="block font-medium mb-1">ชื่อผู้ใช้:</label>
+                    <input type="text" id="custLoginUser" autocomplete="username" placeholder="ชื่อผู้ใช้ (บัญชีเดิมใช้อีเมลได้)" required class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
                     <label class="block font-medium mb-1">รหัสผ่าน:</label>
@@ -1441,10 +1453,6 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <div>
                     <label class="block font-medium mb-1">ชื่อผู้ใช้งานใหม่:</label>
                     <input type="text" id="custRegUser" autocomplete="off" required class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
-                </div>
-                <div>
-                    <label class="block font-medium mb-1">อีเมลสมาชิก:</label>
-                    <input type="email" id="custRegEmail" required autocomplete="email" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
                     <label class="block font-medium mb-1">รหัสผ่าน:</label>
@@ -1504,8 +1512,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
     
     <!-- JAVASCRIPT CORE LOGIC -->
     <script>
-        // Set this to the deployed central Cloudflare Worker URL.  
-       const CENTRAL_API_URL = 'https://wanderer-central-test.wanderer-shop.workers.dev';
+        // Set this to the deployed central Cloudflare Worker URL.
+        const CENTRAL_API_URL = 'https://wanderer-central-test.wanderer-shop.workers.dev';
         const ADMIN_USERNAME_ALIAS = 'pao';
         const ADMIN_USERNAME_EMAIL = 's6741050006@kktech.ac.th';
         let supabaseAuthSession = null; // Legacy variable name retained for UI compatibility.
@@ -1638,7 +1646,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         async function loadSharedStoreState() {
             if (!supabaseClient) return false;
             try {
-                const data = await centralRequest('/catalog');
+                const data = await centralRequest('/catalog?_fresh=' + Date.now());
                 if (!data?.payload || typeof data.payload !== 'object') return false;
                 const cloud = data.payload;
                 if (Array.isArray(cloud.categories)) appState.categories = cloud.categories;
@@ -1667,7 +1675,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         async function pushSharedStoreState() {
-            if (!supabaseClient || !supabaseAuthSession?.user) return false;
+            
+if (!sessionStorage.getItem('wanderer_admin_session')) {
+    showToast('กรุณาเข้าสู่ระบบแอดมินก่อนบันทึก');
+    return false;
+}
+
             try {
                 const payload = getSharedStorePayload();
                 const result = await centralRequest('/catalog','PUT',{payload,expectedRevision:sharedRevision});
@@ -2149,8 +2162,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const isDark = html.classList.contains('dark');
             document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun text-yellow-400' : 'fa-solid fa-moon text-purple-600';
             document.getElementById('themeTextLabel').innerText = isDark ? 'มืด' : 'สว่าง';
+            localStorage.setItem('wanderer_dark_mode', isDark ? '1' : '0');
         }
 
+        try { if (localStorage.getItem('wanderer_dark_mode') === '1') { document.documentElement.classList.add('dark'); document.getElementById('themeIcon').className='fa-solid fa-sun text-yellow-400';document.getElementById('themeTextLabel').innerText='มืด'; } } catch(e) {}
         // Render Functions
         function renderCategories() {
             const tabs = document.getElementById('categoryTabs');
@@ -2187,7 +2202,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function filterCategory(catId) {
             appState.currentSelectedCategory = catId;
             renderCategories();
-            renderApps();
+            if (document.getElementById('searchInput')?.value.trim()) handleGlobalSearch(); else renderApps();
             renderComboPromotions();
         }
 
@@ -2613,7 +2628,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 const app = appState.apps.find(a => a.id === item.appId);
                 const appName = app ? app.name : (item.appName || item.app || 'สินค้า');
                 const packageName = item.name || 'แพ็กเกจ';
-                const groupName = item.groupName || item.packageGroup || '';
+                const groupName = item.groupName || item.packageGroup || item.group || '';
                 const qty = getCartQuantity(item);
                 const unitPrice = Number(item.price) || 0;
                 
@@ -2621,10 +2636,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     ? `\n   กลุ่มแพ็กเกจ : ${groupName}` : '';
                 const qtyLine = qty > 1 ? `\n   จำนวน : ${qty}` : '';
                 
-                return `${i+1}. ชื่อแอพ : ${appName}\n   แพ็กเกจย่อย : ${packageName}${groupLine}${qtyLine}\n   ราคา: ${unitPrice.toLocaleString('th-TH')}`;
+                return `${i+1}. ชื่อแอพ : ${appName}\n   แพ็กเกจย่อย : ${packageName}${groupLine}${qtyLine}\n   ราคา: ${unitPrice.toLocaleString('th-TH')}฿`;
             }).join('\n---------------------------\n'); // ปรับให้มีขีดคั่นระหว่างรายการถ้ามีหลายรายการ
 
-            const tmpl = `🛒 รายการสั่งซื้อ (Wanderer_Shop)\n\nเลขออเดอร์ : ${lineOrder.id}\n---------------------------\n${itemsText}\n---------------------------\n💰 ยอดรวมทั้งสิ้น: ${total.toLocaleString('th-TH')}\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ`;
+            const tmpl = `🛒 รายการสั่งซื้อ (Wanderer_Shop)\n\nเลขออเดอร์ : ${lineOrder.id}\n---------------------------\n${itemsText}\n---------------------------\n💰 ยอดรวมทั้งสิ้น: ${total.toLocaleString('th-TH')}฿\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ`;
             const copied = await copyToClipboard(tmpl);
             if (copied) {
                 alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
@@ -3009,7 +3024,28 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             }
         }
 
-        function handleSlipSubmit(event) {
+        async function compressOrderSlip(file) {
+            if (!file || !file.type.startsWith('image/')) throw new Error('กรุณาเลือกรูปภาพ');
+            if (file.size > 15 * 1024 * 1024) throw new Error('รูปภาพต้องไม่เกิน 15 MB');
+            const image = await createImageBitmap(file);
+            try {
+                const scale = Math.min(1, 1200 / Math.max(image.width,image.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.width * scale));
+                canvas.height = Math.max(1, Math.round(image.height * scale));
+                canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+                let quality = .75;
+                let blob = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',quality));
+                while (blob && blob.size > 180000 && quality > .37) {
+                    quality -= .1;
+                    blob = await new Promise(resolve => canvas.toBlob(resolve,'image/jpeg',quality));
+                }
+                if (!blob || blob.size > 250000) throw new Error('รูปใหญ่เกินไปหลังย่อ กรุณาใช้ภาพที่เล็กลง');
+                return blob;
+            } finally { image.close(); }
+        }
+
+        async function handleSlipSubmit(event) {
             event.preventDefault();
             normalizeCart();
 
@@ -3052,7 +3088,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 searchOrderManual();
                 showToast(`สร้างออเดอร์ ${newOrder.id} สำเร็จ`);
             };
-            reader.readAsDataURL(fileInput.files[0]);
+            try {
+                const compact = await compressOrderSlip(fileInput.files[0]);
+                reader.readAsDataURL(compact);
+            } catch(e) { alert('เตรียมรูปสลิปไม่สำเร็จ: '+e.message); }
         }
 
         // Bank Accounts Customer Modal
@@ -3276,18 +3315,24 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             showToast('ส่งข้อเสนอแนะถึงทางร้านแล้ว ขอบคุณครับ');
         }
 
-        // Global Search
+        // Global Search: find both app names and package titles (including Android).
         function handleGlobalSearch() {
-            const q = document.getElementById('searchInput').value.toLowerCase().trim();
-            if (!q) return renderApps();
-            const filtered = appState.apps.filter(a => a.name.toLowerCase().includes(q) || a.description.toLowerCase().includes(q));
+            const q = String(document.getElementById('searchInput')?.value || '').trim().toLocaleLowerCase();
+            if (!q) { renderApps(); return; }
+            const category = String(appState.currentSelectedCategory || 'ALL');
+            const apps = (appState.apps || []).filter(a => a && isAppAvailableForDisplay(a) && (category === 'ALL' || String(a.categoryId) === category));
+            const packages = appState.packages || [];
+            const matches = apps.filter(a => {
+                const appMatch = [a.name,a.description].some(v => String(v||'').toLocaleLowerCase().includes(q));
+                const packageMatch = packages.some(p => String(p.appId) === String(a.id) && [p.name,p.groupName,p.description].some(v => String(v||'').toLocaleLowerCase().includes(q)));
+                return appMatch || packageMatch;
+            });
+            const seen = new Set();
+            const distinct = matches.filter(a => { const key = String(a.categoryId)+'::'+String(a.name).trim().toLocaleLowerCase();if(seen.has(key))return false;seen.add(key);return true; });
+            document.getElementById('appCountBadge').textContent = distinct.length + ' แอป';
             const grid = document.getElementById('appsGrid');
-            grid.innerHTML = filtered.map(app => `
-                <div onclick="navigateTo('app-detail', '${app.id}')" class="bg-white dark:bg-slate-800 rounded-3xl p-4 border border-purple-100 shadow-sm cursor-pointer hover:shadow-md transition">
-                    <img src="${app.iconUrl}" class="w-14 h-14 rounded-2xl mx-auto mb-2 object-cover">
-                    <h4 class="font-bold text-xs text-center line-clamp-1">${escapeHtml(cleanPublicLabel(app.name) || 'สินค้า')}</h4>
-                </div>
-            `).join('');
+            grid.innerHTML = distinct.length ? distinct.map(a => `<div data-search-app-id="${escapeHtml(String(a.id))}" class="shrink-0 w-40 sm:w-48 rounded-3xl bg-white dark:bg-slate-800 p-4 border border-purple-100 dark:border-slate-700 cursor-pointer hover:shadow-md"><img src="${escapeHtml(String(a.iconUrl||''))}" class="w-14 h-14 rounded-xl mx-auto mb-2 object-contain" onerror="this.style.display='none'"><div class="font-bold text-sm text-center">${escapeHtml(cleanPublicLabel(a.name)||'สินค้า')}</div></div>`).join('') : '<div class="p-4 text-sm text-slate-500">ไม่พบแอปหรือแพ็กเกจที่ค้นหาในหมวดนี้</div>';
+            grid.querySelectorAll('[data-search-app-id]').forEach(el => el.addEventListener('click', () => navigateTo('app-detail',el.dataset.searchAppId)));
         }
 
         // Admin Back Office
@@ -3315,13 +3360,13 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const activeBtn = document.getElementById(`adminTabBtn-${tabName}`);
             if (activeBtn) activeBtn.className = 'px-4 py-2 text-xs font-bold rounded-xl transition bg-purple-600 text-white shadow-md';
 
-            if (tabName === 'dashboard-orders') renderAdminOrdersTable();
+            if (tabName === 'dashboard-orders') { renderAdminOrdersTable(); refreshCentralOrders(); }
             else if (tabName === 'products') renderAdminProductsTree();
             else if (tabName === 'promotions') renderPromotionAdmin();
             else if (tabName === 'bank-accounts') loadAdminBankAccountsForm();
             else if (tabName === 'form-templates') populateFormTemplateCategorySelect();
             else if (tabName === 'feedbacks') renderAdminFeedbacks();
-            else if (tabName === 'settings-store') loadStoreSettingsForm();
+            else if (tabName === 'settings-store') { loadStoreSettingsForm(); renderShopIdentityAndStatus(); }
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
             else if (tabName === 'website-theme') loadWebsiteThemeForm();
             else if (tabName === 'floating-decorations') { renderAdminFloatingDecorations(); loadFloatingDecorationDisplayControls(); }
@@ -3784,31 +3829,62 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             }
         }
 
-        function saveCategoryModal() {
-            const name = document.getElementById('catNameInput').value;
+        // Save only after D1 confirms success; never persist a failed edit locally.
+        async function commitCatalogEdit(kind, mutate, onSuccess) {
+            if (!sessionStorage.getItem('wanderer_admin_session')) {
+                showToast('กรุณาเข้าสู่ระบบแอดมินก่อนแก้ไขสินค้า');
+                return false;
+            }
+            const snapshot = {
+                categories: JSON.parse(JSON.stringify(appState.categories)),
+                apps: JSON.parse(JSON.stringify(appState.apps)),
+                packages: JSON.parse(JSON.stringify(appState.packages))
+            };
+            try {
+                mutate();
+                const saved = await pushSharedStoreState();
+                if (!saved) {
+                    appState.categories=snapshot.categories;
+                    appState.apps=snapshot.apps;
+                    appState.packages=snapshot.packages;
+                    renderAdminProductsTree(); renderCategories(); renderApps();
+                    return false;
+                }
+                saveLocalCatalogCache();
+                if (onSuccess) onSuccess();
+                renderAdminProductsTree(); renderCategories(); renderApps();
+                showToast(kind+' บันทึกลง D1 แล้ว (ตรวจผลสำรอง Google Sheets ใน Network หากจำเป็น)');
+                return true;
+            } catch(e) {
+                appState.categories=snapshot.categories;
+                appState.apps=snapshot.apps;
+                appState.packages=snapshot.packages;
+                console.error('Catalog edit failed',e);
+                showToast('บันทึกไม่สำเร็จ: '+(e.message||e));
+                return false;
+            }
+        }
+        async function saveCategoryModal() {
+            const name = document.getElementById('catNameInput').value.trim();
             const icon = document.getElementById('catIconInput').value;
             const desc = document.getElementById('catDescInput').value;
             if (!name) return alert('กรุณาระบุชื่อหมวดหมู่');
-
-            if (currentEditingCatId) {
-                const cat = appState.categories.find(c => c.id === currentEditingCatId);
-                if (cat) { cat.name = name; cat.icon = icon; cat.description = desc; }
-            } else {
-                appState.categories.push({ id: 'cat-' + Date.now(), name, icon, description: desc });
-            }
-            saveState();
-            backupCatalogToSheet('save_category');
-            closeModalCategory();
-            renderAdminProductsTree();
-            renderCategories();
+            await commitCatalogEdit('หมวดหมู่', () => {
+                if (currentEditingCatId) {
+                    const cat=appState.categories.find(c=>c.id===currentEditingCatId);
+                    if (!cat) throw Error('ไม่พบหมวดหมู่');
+                    Object.assign(cat,{name,icon,description:desc});
+                } else appState.categories.push({id:'cat-'+Date.now(),name,icon,description:desc});
+            },closeModalCategory);
         }
-        function deleteCategory(id) {
-            if (confirm('ยืนยันลบหมวดหมู่นี้?')) {
-                appState.categories = appState.categories.filter(c => c.id !== id);
-                saveState();
-                backupCatalogToSheet('delete_category');
-                renderAdminProductsTree();
+        async function deleteCategory(id) {
+            if (!confirm('ยืนยันลบหมวดหมู่นี้?')) return;
+            if (appState.apps.some(a=>String(a.categoryId)===String(id))) {
+                alert('หมวดหมู่นี้ยังมีแอปอยู่ กรุณาย้ายหรือลบแอปก่อน');return;
             }
+            await commitCatalogEdit('ลบหมวดหมู่',()=>{
+                appState.categories=appState.categories.filter(c=>c.id!==id);
+            });
         }
 
         // App CRUD
@@ -3836,50 +3912,31 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             document.getElementById('modalApp').classList.remove('hidden');
         }
         function closeModalApp() { document.getElementById('modalApp').classList.add('hidden'); }
-        function saveAppModal() {
-            const catId = document.getElementById('appCategorySelect').value;
-            const name = document.getElementById('appNameInput').value.trim();
-            const osType = document.getElementById('appOsTypeSelect').value;
-            const iconUrl = document.getElementById('appIconUrlInput').value.trim();
-            const desc = document.getElementById('appDescInput').value.trim();
-
-            if (!name) return alert('กรุณาระบุชื่อแอป');
-
-            if (currentEditingAppId) {
-                const app = appState.apps.find(a => a.id === currentEditingAppId);
-                if (app) {
-                    app.categoryId = catId;
-                    app.name = name;
-                    app.osType = osType;
-                    app.iconUrl = iconUrl;
-                    app.description = desc;
-                }
-            } else {
-                appState.apps.push({
-                    id: 'app-' + Date.now(),
-                    categoryId: catId,
-                    name,
-                    osType,
-                    iconUrl,
-                    description: desc
-                });
-            }
-
-            saveState();
-            backupCatalogToSheet('save_app');
-            closeModalApp();
-            renderAdminProductsTree();
-            renderApps();
+        async function saveAppModal() {
+            const catId=document.getElementById('appCategorySelect').value;
+            const name=document.getElementById('appNameInput').value.trim();
+            const osType=document.getElementById('appOsTypeSelect').value;
+            const iconUrl=document.getElementById('appIconUrlInput').value.trim();
+            const desc=document.getElementById('appDescInput').value.trim();
+            if(!name)return alert('กรุณาระบุชื่อแอป');
+            if(!appState.categories.some(c=>String(c.id)===String(catId)))return alert('กรุณาเลือกหมวดหมู่ที่ถูกต้อง');
+            await commitCatalogEdit('แอป',()=>{
+                if(currentEditingAppId){
+                    const app=appState.apps.find(a=>a.id===currentEditingAppId);
+                    if(!app)throw Error('ไม่พบแอปที่กำลังแก้ไข');
+                    Object.assign(app,{categoryId:catId,name,osType,iconUrl,description:desc});
+                } else appState.apps.push({id:'app-'+Date.now(),categoryId:catId,name,osType,iconUrl,description:desc});
+            },closeModalApp);
         }
-        function deleteApp(id) {
-            if (confirm('ยืนยันลบแอปนี้?')) {
-                appState.apps = appState.apps.filter(a => a.id !== id);
-                saveState();
-                backupCatalogToSheet('delete_app');
-                renderAdminProductsTree();
+        async function deleteApp(id) {
+            if(!confirm('ยืนยันลบแอปนี้?'))return;
+            if(appState.packages.some(p=>String(p.appId)===String(id))){
+                alert('แอปนี้ยังมีแพ็กเกจอยู่ กรุณาย้ายหรือลบแพ็กเกจก่อน');return;
             }
+            await commitCatalogEdit('ลบแอป',()=>{
+                appState.apps=appState.apps.filter(a=>a.id!==id);
+            });
         }
-
 
         const CUSTOMER_LOGIN_METHOD_LABELS = {
             APP: 'แอพ',
@@ -4101,7 +4158,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             document.getElementById('modalPackage').classList.remove('hidden');
         }
         function closeModalPackage() { document.getElementById('modalPackage').classList.add('hidden'); }
-        function savePackageModal() {
+        async function savePackageModal() {
             const appId = document.getElementById('packageAppSelect').value;
             const groupName = document.getElementById('pkgGroupInput').value.trim();
             const name = document.getElementById('pkgNameInput').value.trim();
@@ -4125,6 +4182,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             const fieldsSnapshot = JSON.parse(JSON.stringify(template.fields || []));
             const loginOptionsSnapshot = JSON.parse(JSON.stringify(template.loginOptions || []));
+            const previousPackages = JSON.parse(JSON.stringify(appState.packages));
 
             if (currentEditingPkgId) {
                 const pkg = appState.packages.find(p => p.id === currentEditingPkgId);
@@ -4162,24 +4220,38 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 });
             }
 
-            saveState();
-            backupCatalogToSheet('save_package');
+            
+            // Save to Cloudflare D1 and then Google Sheets.
+            const saved = await pushSharedStoreState();
+
+            if (!saved) {
+                appState.packages = previousPackages;
+                showToast('บันทึก D1 ไม่สำเร็จ กรุณาตรวจสอบข้อผิดพลาด');
+                return;
+            }
+
+            // Update local cache only after D1 succeeds.
+            saveLocalCatalogCache();
+
             closeModalPackage();
             renderAdminProductsTree();
             renderCategories();
             renderApps();
-            if (currentSelectedAppId) renderAppDetailPage(currentSelectedAppId);
-            showToast('บันทึกแพ็กเกจเรียบร้อยแล้ว');
-        }
-        function deletePackage(id) {
-            if (confirm('ยืนยันลบแพ็กเกจนี้?')) {
-                appState.packages = appState.packages.filter(p => p.id !== id);
-                saveState();
-                backupCatalogToSheet('delete_package');
-                renderAdminProductsTree();
-            }
-        }
 
+            if (currentSelectedAppId) {
+                renderAppDetailPage(currentSelectedAppId);
+            }
+
+            showToast('บันทึกแพ็กเกจลง D1 แล้ว กรุณาตรวจสถานะ Google Sheets');
+
+        }
+        async function deletePackage(id) {
+            if(!confirm('ยืนยันลบแพ็กเกจนี้?'))return;
+            await commitCatalogEdit('ลบแพ็กเกจ',()=>{
+                appState.packages=appState.packages.filter(p=>p.id!==id);
+            });
+            if(currentSelectedAppId)renderAppDetailPage(currentSelectedAppId);
+        }
 
         function populateCustomerFormTemplateAdmin() {
             ensureCustomerRequirementTemplates();
@@ -4462,9 +4534,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             const settings = appState.settings || {};
             const manual = settings.manualStatus || 'ONLINE';
 
-            // Manual status overrides schedule for OFFLINE / PAUSED / SLOW_REPLY.
+            // When automatic scheduling is OFF, ALWAYS use the administrator's manual choice.
+            // When ON, schedule controls opening hours; a non-ONLINE manual status
+            // (paused / slow reply / closed) still explicitly overrides it.
+            if (settings.autoSchedule === false || settings.autoSchedule === 0 || settings.autoSchedule === 'false') return manual;
             if (manual !== 'ONLINE') return manual;
-            if (!settings.autoSchedule) return 'ONLINE';
 
             const start = String(settings.startTime || '00:00');
             const end = String(settings.endTime || '23:59');
@@ -4506,7 +4580,15 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 bannerImage.onerror = function () { this.style.display = 'none'; };
             }
             renderFloatingDecorations();
-            const status = getEffectiveStoreStatus();
+            const settingsPanel = document.getElementById('adminTab-settings-store');
+            const editingSettings = settingsPanel && !settingsPanel.classList.contains('hidden');
+            const manualEl = document.getElementById('adminManualStatusSelect');
+            const autoEl = document.getElementById('adminAutoScheduleEnableToggle');
+            // The editor shows the unsaved selection immediately; the storefront
+            // on another device only sees settings after the D1 write succeeds.
+            const status = editingSettings && manualEl && autoEl && !autoEl.checked
+                ? (manualEl.value || 'ONLINE')
+                : getEffectiveStoreStatus();
 
             const statusMap = {
                 ONLINE: { text: 'เปิดร้าน', dot: 'bg-green-500', indicator: 'bg-slate-100', pulse: true },
@@ -4537,26 +4619,13 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function bindStoreSettingsLivePreview() {
             const nameInput = document.getElementById('adminInputShopName');
             const statusSelect = document.getElementById('adminManualStatusSelect');
-            if (!nameInput || !statusSelect) return;
-
-            if (nameInput.dataset.previewBound !== '1') {
-                nameInput.addEventListener('input', () => {
-                    const old = appState.settings.shopName;
-                    appState.settings.shopName = nameInput.value.trim() || 'WANDERER SHOP';
+            const autoToggle = document.getElementById('adminAutoScheduleEnableToggle');
+            for (const control of [nameInput, statusSelect, autoToggle]) {
+                if (!control || control.dataset.previewBound === '1') continue;
+                control.addEventListener(control === nameInput ? 'input' : 'change', () => {
                     renderShopIdentityAndStatus();
-                    appState.settings.shopName = old;
                 });
-                nameInput.dataset.previewBound = '1';
-            }
-
-            if (statusSelect.dataset.previewBound !== '1') {
-                statusSelect.addEventListener('change', () => {
-                    const old = appState.settings.manualStatus;
-                    appState.settings.manualStatus = statusSelect.value;
-                    renderShopIdentityAndStatus();
-                    appState.settings.manualStatus = old;
-                });
-                statusSelect.dataset.previewBound = '1';
+                control.dataset.previewBound = '1';
             }
         }
 
@@ -4586,8 +4655,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             bindStoreSettingsLivePreview();
         }
 
-        function saveAllMergedSettings() {
-            const previous = appState.settings || {};
+        async function saveAllMergedSettings() {
+            const previous = JSON.parse(JSON.stringify(appState.settings || {}));
 
             appState.settings = {
                 ...previous,
@@ -4614,8 +4683,25 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 floatingDecorationOptions: { speed: 6, count: 12, opacity: 16, ...(previous.floatingDecorationOptions || {}) }
             };
 
+            const expectedManual = appState.settings.manualStatus;
+            const expectedAuto = appState.settings.autoSchedule;
+            const saved = await pushSharedStoreState();
+            if (!saved) {
+                appState.settings = previous;
+                saveState();
+                renderShopIdentityAndStatus();
+                showToast('บันทึกการตั้งค่าร้านไม่สำเร็จ กรุณาลองใหม่');
+                return;
+            }
+            // Re-read the committed status from D1, instead of trusting the local preview.
+            const loadedFromD1 = await loadSharedStoreState();
+            if (!loadedFromD1 || appState.settings.manualStatus !== expectedManual ||
+                    Boolean(appState.settings.autoSchedule) !== expectedAuto) {
+                showToast('บันทึกแล้ว แต่ตรวจสอบสถานะจาก D1 ไม่ตรง กรุณาโหลดข้อมูลกลางอีกครั้ง');
+                return;
+            }
+            loadStoreSettingsForm();
             saveState();
-            scheduleSharedStoreSave();
             renderFloatingDecorations();
             renderShopIdentityAndStatus();
 
@@ -5101,19 +5187,19 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             }catch(err){status.textContent='ไม่สามารถโหลดประวัติการซื้อจากเซิร์ฟเวอร์: '+err.message;}
         }
         async function handleCustomerLogin(e){
-            e.preventDefault();const email=document.getElementById('custLoginUser').value.trim();const password=document.getElementById('custLoginPass').value;
+            e.preventDefault();const username=document.getElementById('custLoginUser').value.trim();const password=document.getElementById('custLoginPass').value;
             try{
-                const signed=await centralRequest('/auth/login','POST',{email,password});
+                const signed=await centralRequest('/auth/login','POST',{username,password});
                 sessionStorage.setItem('wanderer_customer_session',signed.session);customerIdentity=signed.user;
                 closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('เข้าสู่ระบบสำเร็จ');
             }catch(err){showToast('ล็อกอินลูกค้าไม่สำเร็จ: '+err.message);}
         }
         async function handleCustomerRegister(e){
-            e.preventDefault();const name=document.getElementById('custRegUser').value.trim(),email=document.getElementById('custRegEmail').value.trim(),password=document.getElementById('custRegPass').value;
-            if(name.length<3||password.length<10)return showToast('ชื่ออย่างน้อย 3 ตัวอักษร และรหัสผ่านอย่างน้อย 10 ตัวอักษร');
+            e.preventDefault();const username=document.getElementById('custRegUser').value.trim(),password=document.getElementById('custRegPass').value;
+            if(username.length<3||username.length>32||password.length<10)return showToast('ชื่อผู้ใช้ 3–32 ตัวอักษร และรหัสผ่านอย่างน้อย 10 ตัวอักษร');
             try{
-                await centralRequest('/auth/register','POST',{name,email,password});
-                const signed=await centralRequest('/auth/login','POST',{email,password});
+                await centralRequest('/auth/register','POST',{username,password});
+                const signed=await centralRequest('/auth/login','POST',{username,password});
                 sessionStorage.setItem('wanderer_customer_session',signed.session);customerIdentity=signed.user;
                 closeLoginModal();updateCustomerMenu();navigateTo('customer-profile');showToast('สมัครสมาชิกสำเร็จ');
             }catch(err){showToast('สมัครสมาชิกไม่สำเร็จ: '+err.message);}
