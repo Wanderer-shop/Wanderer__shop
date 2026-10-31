@@ -1,43 +1,25 @@
-const enc = s => encodeURIComponent(s);
-const fail = (message,status=400) => { throw Object.assign(new Error(message),{status}); };
-const json = (body,status=200) => new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});
-export default {async fetch(request,env){
-  const origin=request.headers.get('Origin');
-  const allowed=(env.ALLOWED_ORIGINS||'').split(',').map(s=>s.trim());
-  if(origin&&!allowed.includes(origin)) return json({error:'Origin denied'},403);
-  const headers={'Access-Control-Allow-Origin':origin||allowed[0]||'', 'Vary':'Origin','Access-Control-Allow-Headers':'Content-Type,Authorization,X-Order-Token,X-Sync-Secret,X-Customer-JWT','Access-Control-Allow-Methods':'GET,POST,PUT,PATCH,DELETE,OPTIONS'};
-  if(request.method==='OPTIONS') return new Response(null,{status:204,headers});
-  if(request.method==='POST'&&['/orders','/auth/login'].includes(new URL(request.url).pathname)&&env.RATE_LIMITER){const check=await env.RATE_LIMITER.limit({key:(request.headers.get('CF-Connecting-IP')||'unknown')+':'+new URL(request.url).pathname});if(!check.success)return new Response(JSON.stringify({error:'ส่งคำขอบ่อยเกินไป กรุณารอสักครู่'}),{status:429,headers:{...headers,'Content-Type':'application/json'}});}
-  const stub=env.STORE.get(env.STORE.idFromName('wanderer-central'));
-  const result=await stub.fetch(request);
-  const response=new Response(result.body,result);Object.entries(headers).forEach(([k,v])=>response.headers.set(k,v));return response;
-}};
-export class Store {
- constructor(state,env){this.state=state;this.env=env;}
- async fetch(request){return this.state.blockConcurrencyWhile(async()=>{try{return await this.route(request);}catch(e){return json({error:e.status?e.message:'Central server unavailable; check Worker logs'},e.status||502);}});}
- async aw(path,{method='GET',body,session}={}){
-  const e=this.env;const headers={'X-Appwrite-Project':e.APPWRITE_PROJECT_ID};
-  if(session) headers['X-Appwrite-Session']=session;else headers['X-Appwrite-Key']=e.APPWRITE_API_KEY;
-  if(body!==undefined)headers['Content-Type']='application/json';
-  const r=await fetch(e.APPWRITE_ENDPOINT.replace(/\/$/,'')+path,{method,headers,body:body===undefined?undefined:JSON.stringify(body)});
-  const data=r.status===204?{}:await r.json(); if(!r.ok)throw Object.assign(new Error(data.message||'Appwrite error'),{status:r.status});return data;
- }
- base(table){return `/tablesdb/${enc(this.env.APPWRITE_DATABASE_ID)}/tables/${enc(table)}/rows`;}
- async row(table,id){try{return await this.aw(this.base(table)+'/'+enc(id));}catch(e){if(e.status===404)return null;throw e;}}
- async put(table,id,payload,existing){const data={payload:JSON.stringify(payload)};if(data.payload.length>3900000)fail('ข้อมูลหรือรูปภาพใหญ่เกินไป กรุณาลดขนาด');return this.aw(this.base(table)+(existing?'/'+enc(id):''),{method:existing?'PATCH':'POST',body:existing?{data}:{rowId:id,data,permissions:[]}});}
- async body(r){const t=await r.text();if(t.length>3900000)fail('ไฟล์ใหญ่เกินไป',413);try{return JSON.parse(t);}catch{fail('Invalid JSON');}}
- async admin(r){const token=(r.headers.get('Authorization')||'').replace(/^Bearer /,'');if(!token)fail('กรุณาเข้าสู่ระบบแอดมิน',401);const user=await this.aw('/account',{session:token});if(!(this.env.ADMIN_USER_IDS||'').split(',').map(s=>s.trim()).includes(user.$id))fail('ไม่มีสิทธิ์แอดมิน',403);return user;}
-  async customer(r,{optional=false}={}){
-    const jwt=r.headers.get('X-Customer-JWT');
-    if(!jwt){if(optional)return null;fail('กรุณาเข้าสู่ระบบสมาชิก',401);}
-    const response=await fetch(this.env.APPWRITE_ENDPOINT.replace(/\/$/,'')+'/account',{
-      headers:{'X-Appwrite-Project':this.env.APPWRITE_PROJECT_ID,'X-Appwrite-JWT':jwt}
-    });
-    if(!response.ok)fail('เซสชันสมาชิกหมดอายุ กรุณาเข้าสู่ระบบใหม่',401);
-    const user=await response.json();
-    if(!user.$id)fail('ไม่สามารถตรวจสอบสมาชิก',401);
-    return user;
-  }
+// WANDERER_SHOP Cloudflare D1 API — no Appwrite or Supabase
+const respond=(data,status=200,extra={})=>new Response(JSON.stringify(data),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...extra}});
+const err=(msg,status=400)=>{throw Object.assign(new Error(msg),{status})};
+const fail = err;
+const clean=(v)=>JSON.parse(JSON.stringify(v));
+const encode=s=>new TextEncoder().encode(s);
+const hex=b=>Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('');
+const hash=async s=>hex(await crypto.subtle.digest('SHA-256',encode(s)));
+const passwordHash=async(password,salt)=>hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:encode(salt),iterations:100000},await crypto.subtle.importKey('raw',encode(password),'PBKDF2',false,['deriveBits']),256));
+const token=()=>crypto.randomUUID()+'.'+crypto.randomUUID();
+const safeCompare=(a,b)=>{if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;let d=0;for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0};
+class Shop {
+ constructor(env){this.env=env;this.db=env.DB}
+ async body(r){const t=await r.text();if(t.length>2500000)err('ข้อมูลใหญ่เกินไป',413);try{return JSON.parse(t)}catch{err('รูปแบบ JSON ไม่ถูกต้อง')}}
+ async user(r,optional=false){const raw=(r.headers.get('Authorization')||r.headers.get('X-Customer-JWT')||'').replace(/^Bearer\s+/i,'');if(!raw){if(optional)return null;err('กรุณาเข้าสู่ระบบ',401)}const h=await hash(raw);const x=await this.db.prepare('SELECT users.id,users.email,users.name,users.role FROM sessions JOIN users ON users.id=sessions.user_id WHERE sessions.token_hash=? AND sessions.expires_at>?').bind(h,Date.now()).first();if(!x){if(optional)return null;err('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่',401)}return x}
+ async admin(r){const u=await this.user(r);if(u.role!=='admin')err('ไม่มีสิทธิ์แอดมิน',403);return u}
+ publicCatalog(c){const x=clean(c||{});for(const k of ['orders','cart','pendingCustomerRequirements','customerFeedbacks','isAdminLoggedIn','adminUser','users','adminPassword'])delete x[k];if(x.settings)for(const k of ['workerNotifyUrl','sheetBackupUrl','sheetAppsScriptUrl','syncToken','notificationHistory','syncHistory','adminToken'])delete x.settings[k];return x}
+ async catalog(){const c=await this.db.prepare('SELECT payload FROM catalog WHERE id=1').first();return c?JSON.parse(c.payload):null}
+ async createSession(u){const t=token();await this.db.prepare('INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)').bind(await hash(t),u.id,Date.now()+7*86400000).run();return t}
+ async authCreate(b,role='customer'){const email=String(b.email||'').trim().toLowerCase(),name=String(b.name||'').trim(),pw=String(b.password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||pw.length<10||pw.length>128||name.length>120)err('อีเมลหรือรหัสผ่านไม่ถูกต้อง (อย่างน้อย 10 ตัวอักษร)');if(role==='customer'&&name.length<3)err('กรุณากรอกชื่ออย่างน้อย 3 ตัวอักษร');const id=crypto.randomUUID(),salt=crypto.randomUUID();try{await this.db.prepare('INSERT INTO users (id,email,name,password_hash,salt,role) VALUES (?,?,?,?,?,?)').bind(id,email,name||email,await passwordHash(pw,salt),salt,role).run()}catch(e){if(String(e).includes('UNIQUE'))err('อีเมลนี้ถูกใช้แล้ว',409);throw e}return {id,email,name:name||email,role}}
+ customerOrder(o){const x=clean(o);delete x.token;delete x.adminNote;return x}
+ async sheetSync(c){const e=this.env;if(!e.SHEETS_WEBAPP_URL||!e.SYNC_SHARED_SECRET)return {status:'not_configured'};const res=await fetch(e.SHEETS_WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync_catalog_to_sheets',syncToken:e.SYNC_SHARED_SECRET,updatedAt:c.updatedAt,categories:c.categories||[],apps:c.apps||[],packages:c.packages||[],idempotencyKey:c.revision})});const raw=await res.text();let result;try{result=JSON.parse(raw)}catch{throw Error('Google Apps Script response ไม่ใช่ JSON')}if(!res.ok||!result.success)throw Error(result.error||'Google Sheets sync failed');return {status:'saved',result}}
   available(pkg){
     const status=String(pkg.status??pkg.stockStatus??pkg.availability??'').trim().toLowerCase().replace(/[\s-]+/g,'_');
     if(['out_of_stock','not_ready','waiting','unavailable','notready','not_ready_to_send'].includes(status))return false;
@@ -91,82 +73,95 @@ export class Store {
     const total=Math.max(0,subtotal-Math.max(0,dp[n]));
     return {items,total:total/100,subtotal:subtotal/100,discount:Math.max(0,dp[n])/100};
   }
- async catalog(){const row=await this.row(this.env.CATALOG_TABLE_ID,'store');return row?JSON.parse(row.payload):null;}
- publicCatalog(p){const copy=structuredClone(p||{});for(const k of ['orders','cart','pendingCustomerRequirements','customerFeedbacks','isAdminLoggedIn','adminUser'])delete copy[k];if(copy.settings)for(const k of ['workerNotifyUrl','sheetBackupUrl','sheetAppsScriptUrl','syncToken','notificationHistory','syncHistory'])delete copy.settings[k];return copy;}
- async route(r){
-  const u=new URL(r.url),p=u.pathname.replace(/\/$/,'')||'/',m=r.method,e=this.env;
-  // Shared visitor counter. Uses existing Durable Object storage.
-  if(p==='/visits'&&m==='GET'){
-   return json({count:Number(await this.state.storage.get('visits:count')||0)});
-  }
-  if(p==='/visits'&&m==='POST'){
-   const b=await this.body(r);
-   if(typeof b.visitId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(b.visitId))fail('Invalid visit ID');
-   const epoch=await this.state.storage.get('visits:epoch')||'initial';
-   const seenKey='visits:seen:'+epoch+':'+b.visitId;
-   let count=Number(await this.state.storage.get('visits:count')||0);
-   if(!await this.state.storage.get(seenKey)){
-    count++;
-    await this.state.storage.put({[seenKey]:true,'visits:count':count});
-   }
-   return json({count});
-  }
-  if(p==='/visits/reset'&&m==='POST'){
-   await this.admin(r);
-   await this.state.storage.put({'visits:epoch':crypto.randomUUID(),'visits:count':0});
-   return json({count:0});
-  }
-  if(p==='/health')return json({ok:true,backend:'appwrite'});
-  if(p==='/auth/login'&&m==='POST'){
-   const b=await this.body(r);const session=await this.aw('/account/sessions/email',{method:'POST',body:{email:b.email,password:b.password}});
-   try{const user=await this.admin(new Request(r.url,{headers:{Authorization:'Bearer '+session.secret}}));return json({session:session.secret,user:{id:user.$id,email:user.email}});}catch(err){await this.aw('/account/sessions/current',{method:'DELETE',session:session.secret});throw err;}
-  }
-  if(p==='/auth/me'){const user=await this.admin(r);return json({user:{id:user.$id,email:user.email}});}
-  if(p==='/auth/logout'&&m==='POST'){await this.admin(r);await this.aw('/account/sessions/current',{method:'DELETE',session:r.headers.get('Authorization').slice(7)});return json({ok:true});}
-  if(p==='/catalog'&&m==='GET'){const c=await this.catalog();return json({payload:c?this.publicCatalog(c):null,updated_at:c?.updatedAt||null});}
-  if(p==='/catalog'&&m==='PUT'){
-   const sync=r.headers.get('X-Sync-Secret');if(!sync||sync!==e.SYNC_SHARED_SECRET)await this.admin(r);
-   const b=await this.body(r),old=await this.row(e.CATALOG_TABLE_ID,'store');const current=old?JSON.parse(old.payload):null;
-   if((b.expectedRevision??null)!==(current?.revision??null))fail('ข้อมูลร้านเปลี่ยนจากเครื่องอื่น กรุณาดึงข้อมูลล่าสุดก่อนบันทึก',409);
-   const c={...this.publicCatalog(b.payload),revision:crypto.randomUUID(),updatedAt:new Date().toISOString()};await this.put(e.CATALOG_TABLE_ID,'store',c,old);return json({payload:c,updated_at:c.updatedAt});
-  }
-  if(p==='/orders'&&m==='POST'){
-   const b=await this.body(r),o=b.order;if(!o||!Array.isArray(o.items)||!o.items.length||o.items.length>100)fail('รายการสินค้าไม่ถูกต้อง');
-   if(!/^[a-f0-9]{64}$/.test(b.token||''))fail('Missing order access token');
-   if(!/^[A-Za-z0-9_-]{1,36}$/.test(o.id||''))fail('Order ID invalid');
-   const old=await this.row(e.ORDERS_TABLE_ID,o.id);
-   if(old){const saved=JSON.parse(old.payload);if(saved.token!==b.token)fail('Order ID exists',409);return json({order:this.customerOrder(saved)});}
-   const c=await this.catalog();if(!c)fail('ยังไม่ได้นำเข้าสินค้าส่วนกลาง',503);
-    const priced=this.calculateCart(c,o.items);
-    if(!Number.isFinite(Number(o.total))||Math.round(Number(o.total)*100)!==Math.round(priced.total*100))fail('ราคาโปรโมชั่นเปลี่ยน กรุณารีเฟรชตะกร้าแล้วสั่งซื้อใหม่',409);
-    const customer=await this.customer(r,{optional:true});
-    const {items}=priced,total=priced.total;
-   if(o.slipImg&&!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(o.slipImg))fail('รองรับสลิป PNG JPG WEBP เท่านั้น');
-   const order={id:o.id,date:new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'}),createdAt:new Date().toISOString(),items,total,paymentMethod:String(o.paymentMethod||''),source:String(o.source||'WEBSITE'),customerRequirements:o.customerRequirements||{},slipImg:o.slipImg||'',status:o.slipImg?'VERIFYING_SLIP':'AWAITING_PAYMENT',deliveryData:'',deliveryImages:[],revision:crypto.randomUUID(),token:b.token,...(customer?{userId:customer.$id}:{})};
-   await this.put(e.ORDERS_TABLE_ID,order.id,order,false);if(customer){const key='customer:orders:'+customer.$id;const ids=await this.state.storage.get(key)||[];if(!ids.includes(order.id))await this.state.storage.put(key,[...ids,order.id]);}return json({order:this.customerOrder(order)},201);
-  }
-   if(p==='/customer/orders'&&m==='GET'){
-    const user=await this.customer(r),ids=await this.state.storage.get('customer:orders:'+user.$id)||[];
-    const orders=[];
-    for(const id of ids.slice(-100).reverse()){
-      const row=await this.row(e.ORDERS_TABLE_ID,id);
-      if(!row)continue;
-      const o=JSON.parse(row.payload);
-      if(o.userId===user.$id)orders.push(this.customerOrder(o));
-    }
-    return json({orders});
-   }
-  if((p==='/orders'||p==='/sync/orders')&&m==='GET'){
-   if(p==='/sync/orders'){if(!e.SYNC_SHARED_SECRET||r.headers.get('X-Sync-Secret')!==e.SYNC_SHARED_SECRET)fail('Unauthorized',403);}else await this.admin(r);const cursor=u.searchParams.get('cursor');const queries=[JSON.stringify({method:'limit',values:[25]}),JSON.stringify({method:'orderDesc',attribute:'$createdAt'})];if(cursor)queries.push(JSON.stringify({method:'cursorAfter',values:[cursor]}));
-   const params=new URLSearchParams();queries.forEach(q=>params.append('queries[]',q));const result=await this.aw(this.base(e.ORDERS_TABLE_ID)+'?'+params);
-   return json({orders:result.rows.map(x=>{const o=JSON.parse(x.payload);delete o.token;delete o.slipImg;delete o.deliveryImages;return o;}),cursor:result.rows.length===25?result.rows.at(-1).$id:null});
-  }
-  const match=p.match(/^\/orders\/([A-Za-z0-9_-]+)$/);
-  if(match){const row=await this.row(e.ORDERS_TABLE_ID,match[1]);if(!row)fail('ไม่พบออเดอร์หรือไม่มีสิทธิ์',404);const order=JSON.parse(row.payload);
-   if(m==='GET'){if(r.headers.get('Authorization')){await this.admin(r);const safe={...order};delete safe.token;return json({order:safe});}if(r.headers.get('X-Order-Token')!==order.token)fail('ไม่พบออเดอร์หรือไม่มีสิทธิ์',404);return json({order:this.customerOrder(order)});}
-   if(m==='PATCH'){await this.admin(r);const b=await this.body(r);if(b.revision!==order.revision)fail('ออเดอร์เปลี่ยนจากเครื่องอื่น กรุณาเปิดใหม่ก่อนบันทึก',409);if(!['AWAITING_PAYMENT','VERIFYING_SLIP','PENDING','PROCESSING','READY_FOR_DELIVERY','COMPLETED','CANCELLED'].includes(b.status))fail('สถานะไม่ถูกต้อง');const next={...order,status:b.status,deliveryData:String(b.deliveryData||''),deliveryImages:b.deliveryImages||[],adminNote:String(b.adminNote||''),revision:crypto.randomUUID(),updatedAt:new Date().toISOString()};await this.put(e.ORDERS_TABLE_ID,order.id,next,true);delete next.token;return json({order:next});}
-  }
-  fail('Not found',404);
+
+ async route(r){const u=new URL(r.url),p=u.pathname.replace(/\/$/,'')||'/',m=r.method;
+ if(p==='/health')return respond({ok:true,backend:'cloudflare-d1'});
+ if(p==='/auth/bootstrap'&&m==='POST'){if(!this.env.ADMIN_BOOTSTRAP_SECRET||!safeCompare(r.headers.get('X-Bootstrap-Secret'),this.env.ADMIN_BOOTSTRAP_SECRET))err('Unauthorized',403);const already=await this.db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").first();if(already)err('มีบัญชีแอดมินแล้ว',409);return respond({user:await this.authCreate(await this.body(r),'admin')},201)}
+ if(p==='/auth/register'&&m==='POST'){const b=await this.body(r);return respond({user:await this.authCreate(b)},201)}
+ if(p==='/auth/login'&&m==='POST'){const b=await this.body(r);const user=await this.db.prepare('SELECT * FROM users WHERE email=?').bind(String(b.email||'').trim().toLowerCase()).first();if(!user||!safeCompare(await passwordHash(String(b.password||''),user.salt),user.password_hash))err('อีเมลหรือรหัสผ่านไม่ถูกต้อง',401);const session=await this.createSession(user);return respond({session,user:{id:user.id,$id:user.id,email:user.email,name:user.name,role:user.role}})}
+ if(p==='/auth/me'){const x=await this.user(r);return respond({user:{id:x.id,$id:x.id,email:x.email,name:x.name,role:x.role}})}
+ if(p==='/auth/logout'&&m==='POST'){const raw=(r.headers.get('Authorization')||r.headers.get('X-Customer-JWT')||'').replace(/^Bearer\s+/i,'');if(raw)await this.db.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await hash(raw)).run();return respond({ok:true})}
+ if(p==='/visits'&&m==='GET'){const n=await this.db.prepare('SELECT count FROM counters WHERE id=1').first();return respond({count:n?.count||0})}
+ if(p==='/visits'&&m==='POST'){const b=await this.body(r);if(!/^[a-f\d-]{36}$/i.test(String(b.visitId||'')))err('Invalid visit ID');await this.db.prepare('INSERT OR IGNORE INTO visitors (id) VALUES (?)').bind(b.visitId).run();return respond({count:(await this.db.prepare('SELECT count(*) AS count FROM visitors').first()).count})}
+ if(p==='/visits/reset'&&m==='POST'){await this.admin(r);await this.db.prepare('DELETE FROM visitors').run();return respond({count:0})}
+ if(p==='/catalog'&&m==='GET'){const c=await this.catalog();const result=respond({payload:c?this.publicCatalog(c):null,updated_at:c?.updatedAt||null});result.headers.set('Cache-Control','public,max-age=30,stale-while-revalidate=120');return result}
+ if(p==='/catalog'&&m==='PUT'){await this.admin(r);const b=await this.body(r),current=await this.catalog();if((b.expectedRevision??null)!==(current?.revision??null))err('ข้อมูลร้านถูกเปลี่ยนแล้ว กรุณาโหลดใหม่',409);const c={...this.publicCatalog(b.payload),revision:crypto.randomUUID(),updatedAt:new Date().toISOString()};if(JSON.stringify(c).length>1800000)err('ข้อมูลร้านใหญ่เกินไป กรุณาใช้ลิงก์รูปแทนภาพ Base64',413);await this.db.prepare('INSERT INTO catalog(id,payload) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload').bind(JSON.stringify(c)).run();let sheet={status:'not_configured'};try{sheet=await this.sheetSync(c)}catch(e){sheet={status:'failed',error:String(e.message)};await this.db.prepare('INSERT INTO sheet_jobs(id,payload,error) VALUES(?,?,?)').bind(c.revision,JSON.stringify(c),sheet.error).run()}return respond({payload:c,updated_at:c.updatedAt,sheet})}
+ if(p==='/sync/sheets/retry'&&m==='POST'){await this.admin(r);const rows=await this.db.prepare('SELECT * FROM sheet_jobs ORDER BY rowid LIMIT 5').all(),results=[];for(const row of rows.results){try{await this.sheetSync(JSON.parse(row.payload));await this.db.prepare('DELETE FROM sheet_jobs WHERE id=?').bind(row.id).run();results.push({id:row.id,ok:true})}catch(e){results.push({id:row.id,ok:false,error:String(e.message)})}}return respond({results})}
+ if(p==='/orders'&&m==='POST'){const b=await this.body(r),o=b.order;if(!o||!Array.isArray(o.items)||!o.items.length||o.items.length>100)err('รายการสินค้าไม่ถูกต้อง');if(!/^[a-f0-9]{64}$/.test(b.token||''))err('Missing order access token');if(!/^[A-Za-z0-9_-]{1,36}$/.test(o.id||''))err('Order ID invalid');const existing=await this.db.prepare('SELECT payload FROM orders WHERE id=?').bind(o.id).first();if(existing){const x=JSON.parse(existing.payload);if(x.token!==b.token)err('Order ID exists',409);return respond({order:this.customerOrder(x)})}const c=await this.catalog();if(!c)err('ยังไม่มีข้อมูลสินค้าในระบบกลาง',503);const priced=this.calculateCart(c,o.items);if(!Number.isFinite(Number(o.total))||Math.round(Number(o.total)*100)!==Math.round(priced.total*100))err('ราคาสินค้าเปลี่ยน กรุณารีเฟรชตะกร้า',409);const customer=await this.user(r,true);if(o.slipImg&&!/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(o.slipImg))err('รูปสลิปไม่ถูกต้อง');const order={id:o.id,date:new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'}),createdAt:new Date().toISOString(),items:priced.items,total:priced.total,paymentMethod:String(o.paymentMethod||''),source:'WEBSITE',customerRequirements:o.customerRequirements||{},slipImg:o.slipImg||'',status:o.slipImg?'VERIFYING_SLIP':'AWAITING_PAYMENT',deliveryData:'',deliveryImages:[],revision:crypto.randomUUID(),token:b.token,...(customer?{userId:customer.id}:{})};await this.db.prepare('INSERT INTO orders(id,user_id,payload,created_at) VALUES(?,?,?,?)').bind(order.id,customer?.id||null,JSON.stringify(order),order.createdAt).run();return respond({order:this.customerOrder(order)},201)}
+ if(p==='/customer/orders'&&m==='GET'){const user=await this.user(r);const rows=await this.db.prepare('SELECT payload FROM orders WHERE user_id=? ORDER BY created_at DESC LIMIT 100').bind(user.id).all();return respond({orders:rows.results.map(x=>this.customerOrder(JSON.parse(x.payload)))})}
+ if(p==='/orders'&&m==='GET'){await this.admin(r);const cursor=Math.max(0,Number(u.searchParams.get('cursor'))||0);const rows=await this.db.prepare('SELECT payload FROM orders ORDER BY created_at DESC LIMIT 25 OFFSET ?').bind(cursor).all();return respond({orders:rows.results.map(x=>{const o=JSON.parse(x.payload);delete o.token;delete o.slipImg;delete o.deliveryImages;return o}),cursor:rows.results.length===25?String(cursor+25):null})}
+ const match=p.match(/^\/orders\/([A-Za-z0-9_-]+)$/);if(match){const row=await this.db.prepare('SELECT payload FROM orders WHERE id=?').bind(match[1]).first();if(!row)err('ไม่พบออเดอร์',404);const o=JSON.parse(row.payload);if(m==='GET'){if(r.headers.get('Authorization')){await this.admin(r);const x=clean(o);delete x.token;return respond({order:x})}if(r.headers.get('X-Order-Token')!==o.token)err('ไม่มีสิทธิ์ดูออเดอร์',404);return respond({order:this.customerOrder(o)})}if(m==='PATCH'){await this.admin(r);const b=await this.body(r);if(b.revision!==o.revision)err('ออเดอร์ถูกเปลี่ยนแล้ว',409);if(!['AWAITING_PAYMENT','VERIFYING_SLIP','PENDING','PROCESSING','READY_FOR_DELIVERY','COMPLETED','CANCELLED'].includes(b.status))err('สถานะไม่ถูกต้อง');const next={...o,status:b.status,deliveryData:String(b.deliveryData||''),deliveryImages:b.deliveryImages||[],adminNote:String(b.adminNote||''),revision:crypto.randomUUID(),updatedAt:new Date().toISOString()};await this.db.prepare('UPDATE orders SET payload=? WHERE id=?').bind(JSON.stringify(next),o.id).run();delete next.token;return respond({order:next})}}
+ err('Not found',404)
  }
- customerOrder(o){const safe=structuredClone(o);delete safe.token;delete safe.adminNote;return safe;}
 }
+
+export default {
+  async fetch(r, env) {
+    const origin = r.headers.get('Origin');
+    const allowed = String(env.ALLOWED_ORIGINS || '')
+      .split(',')
+      .map(s => s.trim());
+
+    const cors = {
+      'Access-Control-Allow-Origin':
+        origin && allowed.includes(origin)
+          ? origin
+          : allowed[0] || '',
+      'Vary': 'Origin',
+      'Access-Control-Allow-Headers':
+        'Content-Type,Authorization,X-Order-Token,X-Customer-JWT,X-Bootstrap-Secret',
+      'Access-Control-Allow-Methods':
+        'GET,POST,PUT,PATCH,OPTIONS'
+    };
+
+    if (r.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: cors
+      });
+    }
+
+    if (origin && !allowed.includes(origin)) {
+      return respond({ error: 'Origin denied' }, 403, cors);
+    }
+
+    try {
+      const path = new URL(r.url).pathname;
+
+      if (
+        ['/auth/login', '/auth/register', '/orders'].includes(path) &&
+        r.method === 'POST' &&
+        env.RATE_LIMITER
+      ) {
+        const check = await env.RATE_LIMITER.limit({
+          key: (r.headers.get('CF-Connecting-IP') || 'unknown') + ':' + path
+        });
+
+        if (!check.success) {
+          return respond({ error: 'Too many requests' }, 429, cors);
+        }
+      }
+
+      const result = await new Shop(env).route(r);
+
+      Object.entries(cors).forEach(([key, value]) => {
+        result.headers.set(key, value);
+      });
+
+      return result;
+
+    } catch (e) {
+      console.error('Worker request failed:', e);
+
+      return respond(
+        {
+          error: e.status
+            ? e.message
+            : 'Server error; check Worker logs'
+        },
+        e.status || 500,
+        cors
+      );
+    }
+  }
+};
