@@ -187,6 +187,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <button onclick="navigateTo('home'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
                         <i class="fa-solid fa-house text-purple-500 w-5"></i> หน้าแรก
                     </button>
+                    <button onclick="navigateTo('points-guest'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200"><i class="fa-solid fa-star text-amber-500 w-5"></i> ⭐ สะสมแต้ม / รับแต้ม</button>
                     <button onclick="navigateTo('order-tracking'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
                         <i class="fa-solid fa-receipt text-indigo-500 w-5"></i> เช็คสถานะออเดอร์
                     </button>
@@ -363,6 +364,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <h3 class="text-md font-bold mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-list-check text-purple-500"></i> เลือกแพ็กเกจสินค้า
                 </h3>
+                <div class="flex gap-2 items-center"><input id="customerPackageSearch" type="search" oninput="renderCustomerPackageSearch()" placeholder="ค้นหาแพ็กเกจ / กลุ่มแพ็กเกจ / ราคา..." class="w-full px-4 py-2.5 rounded-xl border dark:bg-slate-900 text-sm" aria-label="ค้นหาแพ็กเกจ"><button type="button" onclick="document.getElementById('customerPackageSearch').value='';renderCustomerPackageSearch()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-sm">ล้าง</button></div><div id="customerPackageSearchCount" class="text-xs text-slate-500" aria-live="polite"></div>
                 <div id="packagesListGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
         </div>
@@ -398,10 +400,22 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         </div>
 
         <!-- CUSTOMER ACCOUNT: profile and purchase history only -->
+            <section id="viewPointsGuest" class="hidden bg-white dark:bg-slate-800 border rounded-2xl p-5 space-y-3"><h3 class="font-bold">⭐ สะสมแต้มโดยไม่ต้องสมัครสมาชิก</h3>
+              <p class="text-xs">สำหรับลูกค้าไม่สมัคร: ระบบเก็บสิทธิ์บัตรไว้ในเบราว์เซอร์นี้โดยอัตโนมัติ สามารถระบุเลขออเดอร์หรือชื่อแอคเพื่อใช้เรียกบัตรได้ แต่ไม่ใช่รหัสยืนยันตัวตน หากล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนอุปกรณ์อาจเข้าถึงบัตรเดิมไม่ได้</p>
+              <button onclick="v2NewGuest()" class="bg-purple-600 text-white rounded-lg px-3 py-2 text-sm">สร้างบัตรสะสมแต้ม</button>
+              <label class="block text-sm">เลขออเดอร์ / ชื่อแอค (ชื่อเรียกบัตร)<input id="v2GuestAlias" maxlength="80" class="w-full border rounded-lg p-2" placeholder="เช่น ORD-20261101-12345 หรือ ชื่อแอค"></label><input id="v2GuestCard" type="hidden"><p class="text-xs text-slate-500">ชื่อเรียกบัตรใช้สำหรับแสดงผลเท่านั้น ไม่ใช้แทนหลักฐานความเป็นเจ้าของ</p>
+              <input id="v2GuestSecret" type="hidden">
+              <label class="block text-sm">รหัสลิงก์สะสมแต้ม (ภายใน 15 นาที)<input id="v2ClaimCode" class="w-full border rounded-lg p-2" placeholder="วางรหัสจากแอดมิน"></label>
+              <div class="flex gap-2 flex-wrap"><button onclick="v2GuestLoad()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">ดูบัตร</button><button onclick="v2GuestClaim()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm">รับแต้มครั้งเดียว</button></div>
+              <p id="v2GuestNotice" class="text-xs text-amber-600"></p><div id="v2GuestView"></div>
+            </section>
         <section id="viewCustomerProfile" class="hidden space-y-5">
             <div class="flex flex-wrap justify-between items-center gap-3"><div><p class="text-pink-600 font-semibold text-sm">Profile Information</p><h2 class="text-2xl font-bold">โปรไฟล์ของคุณ</h2></div><button onclick="customerLogout()" class="px-4 py-2 rounded-xl border border-red-200 text-red-500 text-sm font-bold">ออกจากระบบ</button></div>
             <div class="rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
                 <div class="flex items-center gap-3"><div id="customerProfileAvatar" class="w-14 h-14 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-2xl font-bold">U</div><div><div id="customerProfileName" class="font-bold text-lg"></div><div class="text-sm text-slate-400">บัญชีสมาชิก</div></div></div>
+                <div class="p-4 rounded-xl border border-purple-200 space-y-3">
+                  <h3 class="font-bold">⭐ แต้มสะสมของฉัน</h3><div id="v2MemberCards">กำลังโหลด...</div><div id="v2MemberTickets"></div>
+                </div>
                 <div><h3 class="font-bold mb-3">ประวัติสินค้าที่ซื้อ</h3><div id="customerPurchaseHistory" class="space-y-3 text-sm text-slate-500">กำลังโหลด...</div></div>
             </div>
         </section>
@@ -426,7 +440,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             <div class="flex flex-wrap gap-2 bg-white dark:bg-slate-800 p-2 rounded-2xl border border-purple-100 dark:border-slate-700 shadow-sm">
                 <button onclick="switchAdminTab('dashboard-orders')" id="adminTabBtn-dashboard-orders" class="px-4 py-2 text-xs font-bold rounded-xl transition">📊 แดชบอร์ด & ออเดอร์</button>
                 <button onclick="switchAdminTab('products')" id="adminTabBtn-products" class="px-4 py-2 text-xs font-bold rounded-xl transition">🗂️ จัดการสินค้า & แพ็กเกจ</button>
-                <button onclick="switchAdminTab('promotions')" id="adminTabBtn-promotions" class="px-4 py-2 text-xs font-bold rounded-xl transition">🎁 โปรโมชั่น</button>
+                <button onclick="switchAdminTab('points')" id="adminTabBtn-points" class="px-4 py-2 text-xs font-bold rounded-xl transition">⭐ สะสมแต้ม & ของรางวัล</button>
+                 <button onclick="switchAdminTab('promotions')" id="adminTabBtn-promotions" class="px-4 py-2 text-xs font-bold rounded-xl transition">🎁 โปรโมชั่น</button>
                 <button onclick="switchAdminTab('bank-accounts')" id="adminTabBtn-bank-accounts" class="px-4 py-2 text-xs font-bold rounded-xl transition">🏦 บัญชีชำระเงิน</button>
                 <button onclick="switchAdminTab('form-templates')" id="adminTabBtn-form-templates" class="px-4 py-2 text-xs font-bold rounded-xl transition">📝 แบบฟอร์มส่งงาน & สั่งซื้อ LINE</button>
                 <button onclick="switchAdminTab('feedbacks')" id="adminTabBtn-feedbacks" class="px-4 py-2 text-xs font-bold rounded-xl transition">💡 ข้อเสนอแนะ & รีวิว</button>
@@ -494,6 +509,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         </table>
                     </div>
                 </div>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl border p-5 space-y-3 mt-5"><h3 class="font-bold">🧾 นโยบายเก็บรูปสลิปออเดอร์</h3>                <div class="border-t pt-3 space-y-2"><h4 class="font-semibold">🧾 จัดการลบรูปสลิป</h4><label class="flex gap-2"><input id="v2Delete" type="checkbox" checked> เปิดลบอัตโนมัติ</label><label class="block">เก็บรูป (วัน) <input id="v2Days" type="number" min="1" max="365" value="3" class="border p-2 rounded-lg w-28"></label></div><button type="button" onclick="v2SaveSlipPolicy()" class="bg-emerald-600 text-white rounded-lg px-4 py-2 text-sm font-bold">บันทึกนโยบายลบรูปสลิป</button></div>
             </div>
 
             <!-- TAB 2: PRODUCTS -->
@@ -521,6 +537,62 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
             </div>
 
+             <section id="adminTab-points" class="hidden space-y-5">
+               <div class="bg-white dark:bg-slate-800 rounded-2xl border p-5 space-y-4">
+                <h3 class="font-bold text-lg">⭐ บัตรสะสมแต้ม 2 ประเภท & ตั้งค่าร้าน (V2) <span class="inline-block rounded bg-indigo-700 text-white px-2 py-1 text-xs">Points Options FIX 2026-11-01</span></h3>
+                <div class="rounded-xl border border-purple-200 bg-purple-50 dark:bg-slate-900 p-3 text-sm">
+                  <p class="font-bold mb-2">กติกาที่ใช้กับลูกค้า: สะสมจากสลิปที่อนุมัติแล้ว +1 แต้ม / 1 ออเดอร์</p>
+                  <div class="grid sm:grid-cols-2 gap-2"><div class="rounded-lg bg-white dark:bg-slate-800 p-3">⭐ แอพพรีเมี่ยม + เติมนิยาย <b>ครบ <span id="v2ThresholdInfoPremium">10</span> แต้ม</b> → เลือกได้ 1 รางวัล</div><div class="rounded-lg bg-white dark:bg-slate-800 p-3">🎮 เติมเกม <b>ครบ <span id="v2ThresholdInfoGame">15</span> แต้ม</b> → เลือกได้ 1 รางวัล</div></div>
+                  <p class="text-xs mt-2">ยังไม่ครบไม่หมดอายุ · ครบแล้วใช้สิทธิ์ภายใน 2 เดือน</p>
+                  <button type="button" onclick="document.getElementById('v2ClaimAdminPanel').scrollIntoView({behavior:'smooth',block:'center'})" class="mt-3 px-3 py-2 rounded-lg bg-indigo-600 text-white font-semibold">🔗 ไปที่สร้างลิงก์รับแต้ม 15 นาที</button>
+                </div>
+                <label class="flex gap-2 text-sm"><input id="v2Enabled" type="checkbox"> เปิดแจกแต้มจริงหลังตรวจสอบระบบแล้ว</label>
+                <p class="text-xs text-amber-600">เกณฑ์แลกรางวัลกำหนดได้ด้านล่าง และแต้มที่ได้ต่อออเดอร์กำหนดแยกตามหมวด — อนุมัติสลิปก่อนรับแต้ม / สิทธิ์แลกได้ภายใน 2 เดือน / แต้มที่ยังไม่ครบไม่หมดอายุ / ออเดอร์ผสมประเภทไม่นับอัตโนมัติ</p>
+                <h4 class="font-semibold">🎨 รูปบัตรสะสม (URL ภาพ HTTPS)</h4>
+                <div id="v2CardSettings" class="grid md:grid-cols-2 gap-4"></div>
+                <h4 class="font-semibold">📂 หมวดหมู่สินค้าใดสะสมเข้าประเภทไหน · ตั้งค่าแต้มและรายละเอียด <span class="text-[10px] bg-purple-700 text-white px-2 py-1 rounded-lg">Category Points v3.1 · ตั้งค่าแต้มแลกรางวัล</span></h4><p class="text-xs text-slate-500">กำหนดประเภทบัตรให้แต่ละหมวดสินค้า หรือเลือกไม่นับแต้ม รายการหนึ่งออเดอร์จะไม่รับแต้มซ้ำสองบัตร</p><div class="rounded-xl border border-violet-200 bg-violet-50 dark:bg-slate-900 p-3 space-y-2">
+                  <p class="font-semibold text-sm">🎯 จำนวนแต้มที่ต้องสะสมครบเพื่อแลกรางวัล (ตั้งค่าแยกตามประเภทบัตร)</p>
+                  <div class="grid sm:grid-cols-2 gap-3">
+                    <label class="text-xs font-semibold">⭐ บัตรแอพ / นิยาย — แต้มที่ต้องครบ<input id="v2ThresholdPremium" type="number" min="1" max="100" step="1" value="10" class="w-full mt-1 border rounded-lg px-3 py-2 dark:bg-slate-800"></label>
+                    <label class="text-xs font-semibold">🎮 บัตรเติมเกม — แต้มที่ต้องครบ<input id="v2ThresholdGame" type="number" min="1" max="100" step="1" value="15" class="w-full mt-1 border rounded-lg px-3 py-2 dark:bg-slate-800"></label>
+                  </div>
+                  <p class="text-xs text-slate-500">ทุกหมวดที่เลือกประเภทบัตรเดียวกันใช้เกณฑ์แลกร่วมกัน • เปลี่ยนเกณฑ์แล้วมีผลกับการออกสิทธิ์ครั้งถัดไป ไม่แจกสิทธิ์ย้อนหลังอัตโนมัติ</p>
+                </div>
+                <div class="border rounded-xl p-3 space-y-3 bg-indigo-50 dark:bg-slate-900"><div class="flex flex-wrap justify-between gap-2 items-center"><h4 class="font-bold">🪪 ประเภทบัตรสะสมแต้ม (เพิ่มได้เอง)</h4><button type="button" onclick="v2AddCardType()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-bold">+ เพิ่มประเภทบัตร</button></div><p class="text-xs text-slate-500">ตั้งชื่อและจำนวนแต้มที่จะครบเพื่อแลกรางวัลได้ ไม่สามารถลบบัตรเดิมหรือบัตรที่เคยสร้างแล้วโดยอัตโนมัติ</p><div id="v2CardTypesEditor" class="grid sm:grid-cols-2 gap-3"></div><span class="text-xs font-bold">Dynamic Cards v4.0 TEST</span></div>
+                <div id="v2CategoryCardMap" class="grid md:grid-cols-2 gap-2"></div><h4 class="font-semibold">🎁 ชุดรางวัล (1 ชุดมีหลายตัวเลือก เลือกแลกได้เพียง 1 อย่าง)</h4>
+                <div id="v2RewardGroups" class="space-y-3"></div>
+                <button type="button" onclick="v2AddGroup()" class="bg-purple-600 text-white rounded-lg px-3 py-2">+ เพิ่มชุดรางวัล</button>
+
+                <button type="button" onclick="v2Save()" class="bg-emerald-600 text-white rounded-xl px-5 py-3 font-bold">บันทึกบัตรและรางวัลลง D1</button>
+               </div>
+               <div id="v2ClaimAdminPanel" class="bg-white dark:bg-slate-800 border-2 border-indigo-300 rounded-2xl p-5 space-y-3">
+                <h4 class="font-bold">🔗 ลิงก์สะสมแต้มสำหรับลูกค้าที่ไม่สมัคร (15 นาที / ครั้งเดียว)</h4>
+                <p class="text-xs">เว็บ: ใช้เลขออเดอร์ที่ส่งสินค้าแล้ว | LINE: ลงทะเบียนออเดอร์ด้านล่างก่อน จากนั้นสร้างลิงก์ 15 นาที ลูกค้าต้องมีบัตรสะสมในเบราว์เซอร์ของตน</p>
+                <label for="v2OrderChannel" class="block text-sm font-semibold">ช่องทางสั่งซื้อ</label>
+                <select id="v2OrderChannel" onchange="v2OrderChannelChanged()" class="border rounded-lg p-2 w-full dark:bg-slate-800"><option value="WEB">🌐 เว็บไซต์</option><option value="LINE">💚 LINE</option></select>
+                <p id="v2ChannelHelp" class="text-xs text-slate-500">ออเดอร์เว็บไซต์ต้องมีสถานะส่งสินค้าเสร็จแล้ว (READY_FOR_DELIVERY หรือ COMPLETED)</p>
+                <label class="block text-sm font-semibold">เลขออเดอร์ที่ส่งสินค้าแล้ว</label><input id="v2OrderId" placeholder="เช่น ORD-20261101-12345" class="border rounded-lg p-2 w-full">
+                <label for="v2LinkCardType" class="block text-sm font-semibold">เลือกประเภทบัตรที่จะรับแต้ม (หนึ่งออเดอร์เข้าบัตรเดียว)</label>
+                <select id="v2LinkCardType" class="border rounded-lg p-2 w-full dark:bg-slate-800">
+                  <option value="premium">⭐ แอพพรีเมี่ยม / เติมนิยาย — บัตร 10 แต้ม</option>
+                  <option value="game">🎮 เติมเกม — บัตร 15 แต้ม</option>
+                </select>
+                <p class="text-xs text-slate-500">ระบบตรวจสถานะจัดส่งและประเภทบัตร และป้องกันแต้มซ้ำจากออเดอร์เดียว</p>
+                <label class="block text-sm font-semibold" for="v2LinkPoints">จำนวนแต้มที่จะให้ (1–15)</label><input id="v2LinkPoints" type="number" min="1" max="15" step="1" value="1" class="border rounded-lg p-2 w-full dark:bg-slate-800"><p class="text-xs text-amber-700">ออเดอร์เว็บต้องไม่เกินแต้มที่หมวดอนุญาต • ออเดอร์ LINE ต้องเท่ากับแต้มที่ลงทะเบียนไว้</p>
+                <p class="text-xs text-indigo-700 dark:text-indigo-300">กรอกแค่เลขออเดอร์ที่อนุมัติสลิปแล้ว ลูกค้าจะเปิดลิงก์เพื่อรับแต้มเข้าบัตรบนอุปกรณ์ของตนเอง ไม่ต้องขอ Card ID</p><input id="v2GuestId" type="hidden" value="">
+                <details id="v2LineRegistration" class="hidden border rounded-xl p-3 bg-amber-50 dark:bg-slate-900 space-y-2"><summary class="font-bold cursor-pointer">🟢 ลูกค้าสั่งทาง LINE และส่งรหัสแล้ว — ลงทะเบียนรับแต้ม</summary>
+                  <p class="text-xs mt-2">ใช้เลขออเดอร์ขึ้นต้น LINE- ที่ไม่เคยลงทะเบียนมาก่อน เลือกบัตรและจำนวนแต้มด้านบน แล้วบันทึกออเดอร์หลังตรวจชำระเงินและส่งสินค้าเรียบร้อย</p>
+                  <label class="block text-xs mt-2"><input id="v2LinePaid" type="checkbox"> ตรวจสอบยอดชำระเงินจริงแล้ว</label>
+                  <label class="block text-xs"><input id="v2LineDelivered" type="checkbox"> ส่งรหัส/สินค้าให้ลูกค้าเรียบร้อยแล้ว</label>
+                  <button type="button" onclick="v2RegisterLineOrder()" class="block mt-2 px-4 py-2 bg-amber-600 text-white rounded-lg font-bold">บันทึกออเดอร์ LINE (ไม่ออกลิงก์ทันที)</button>
+                </details>
+                <p class="text-xs text-indigo-700 font-bold">Orders Channel v4.2 TEST — หนึ่งออเดอร์รับแต้มได้ครั้งเดียว</p>
+                <button type="button" onclick="v2IssueLink()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">สร้างรหัสลิงก์ 15 นาที</button>
+                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('v2IssuedCode').value.split('\n')[0]).then(()=>showToast('คัดลอกลิงก์แล้ว')).catch(()=>showToast('คัดลอกไม่สำเร็จ'))" class="px-3 py-2 bg-slate-700 text-white rounded-lg text-xs">คัดลอกลิงก์</button>
+                <textarea id="v2IssuedCode" readonly rows="3" class="border p-2 w-full rounded-lg" placeholder="รหัสใช้ครั้งเดียวจะปรากฏที่นี่"></textarea>
+               </div>
+
+             </section>
             <!-- Promotion management: isolated from existing product/admin screens -->
             <div id="adminTab-promotions" class="hidden space-y-5">
               <div class="bg-white dark:bg-slate-800 rounded-2xl border p-5 space-y-4">
@@ -726,11 +798,21 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <div><label class="block text-xs font-bold mb-1">Cloudflare Worker URL (แจ้งเตือน LINE OA)</label><input id="adminWorkerNotifyUrl" type="url" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 text-xs" placeholder="https://...workers.dev/"></div>
                     <div><label class="block text-xs font-bold mb-1">Google Sheets Backup Endpoint (บันทึกสำรองออเดอร์ ไม่ใช้แจ้งเตือน)</label><input id="adminSheetBackupUrl" type="url" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 text-xs" placeholder="URL endpoint สำหรับบันทึกออเดอร์ลงชีต (ถ้ามี)"></div>
                     <div><label class="block text-xs font-bold mb-1">Google Apps Script Web App URL (แนะนำ: ใช้ดึงข้อมูลจากชีตใน URL เดียว)</label><input id="adminSheetAppsScriptUrl" type="url" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 text-xs" placeholder="https://script.google.com/macros/s/.../exec"><p class="text-[10px] text-slate-500 mt-1">วาง URL /exec ที่เผยแพร่ให้เข้าถึงได้ แล้วระบบจะลองอ่าน JSON หรือ CSV จาก URL นี้ก่อน หากไม่กำหนดจะใช้ URL CSV แยกด้านล่าง</p></div>
-                    <div><label class="block text-xs font-bold mb-1">Google Sheets CSV URL - หมวดหมู่ (ถ้ามี)</label><input id="adminSheetCategoriesUrl" type="url" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 text-xs" placeholder="Published CSV URL"></div>
-                    <div><label class="block text-xs font-bold mb-1">Google Sheets CSV URL - แอป/เกม (ถ้ามี)</label><input id="adminSheetAppsUrl" type="url" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 text-xs" placeholder="Published CSV URL"></div>
-                    <div><label class="block text-xs font-bold mb-1">Google Sheets CSV URL - แพ็กเกจ หรือชีตที่มีคอลัมน์ภาษาไทย (ถ้ามี)</label><input id="adminSheetPackagesUrl" type="url" class="w-full px-3 py-2 rounded-xl border dark:bg-slate-900 text-xs" placeholder="Published CSV URL"></div>
-                    <div class="flex flex-wrap gap-2"><button type="button" onclick="saveIntegrationSettings()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">บันทึกการเชื่อมต่อ</button><button type="button" onclick="syncGoogleSheetsData()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">ดึงข้อมูลจาก Google Sheets</button><button type="button" onclick="testWorkerNotification()" class="px-4 py-2 bg-slate-700 text-white rounded-xl text-xs font-bold">ทดสอบ Worker</button><button type="button" onclick="refreshSharedStoreState()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">โหลดข้อมูลจาก D1</button><button type="button" onclick="pushSharedStoreState().then(ok=>showToast(ok?'บันทึกข้อมูลกลางแล้ว':'บันทึกไม่สำเร็จ/ยังไม่ได้ล็อกอิน'))" class="px-4 py-2 bg-violet-700 text-white rounded-xl text-xs font-bold">บันทึกข้อมูลลง D1 + Google Sheets</button></div>
-                    <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><label class="flex items-center gap-2 text-xs font-bold"><input id="adminAutoSyncSheets" type="checkbox" onchange="toggleAutoSyncSheets(this.checked)"> ซิงก์อัตโนมัติ</label><label class="text-xs">ทุก <select id="adminAutoSyncMinutes" onchange="setAutoSyncMinutes(this.value)" class="border rounded-lg p-1 dark:bg-slate-900"><option value="5">5</option><option value="15" selected>15</option><option value="30">30</option><option value="60">60</option></select> นาที</label><button type="button" onclick="exportStoreBackup()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">สำรองข้อมูล JSON</button><label class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold cursor-pointer">กู้คืน JSON<input type="file" accept="application/json,.json" class="hidden" onchange="importStoreBackup(this)"></label><button type="button" onclick="showSystemHistory()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">ดูประวัติระบบ</button></div>
+                    <div class="flex flex-wrap gap-2"><button type="button" onclick="saveIntegrationSettings()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">บันทึกการเชื่อมต่อ</button><button type="button" onclick="previewSheetsImportSafe()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">ตรวจการเปลี่ยนแปลงจาก Google Sheets</button><button type="button" onclick="testWorkerNotification()" class="px-4 py-2 bg-slate-700 text-white rounded-xl text-xs font-bold">ทดสอบ Worker</button><button type="button" onclick="refreshSharedStoreState()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">โหลดข้อมูลจาก D1</button><button type="button" onclick="pushSharedStoreState().then(ok=>showToast(ok?'บันทึกข้อมูลกลางแล้ว':'บันทึกไม่สำเร็จ/ยังไม่ได้ล็อกอิน'))" class="px-4 py-2 bg-violet-700 text-white rounded-xl text-xs font-bold">บันทึกข้อมูลลง D1 + Google Sheets</button></div>
+                    <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><label class="hidden"><input id="adminAutoSyncSheets" type="checkbox" disabled></label><label class="hidden text-xs">ทุก <select id="adminAutoSyncMinutes" onchange="setAutoSyncMinutes(this.value)" class="border rounded-lg p-1 dark:bg-slate-900"><option value="5">5</option><option value="15" selected>15</option><option value="30">30</option><option value="60">60</option></select> นาที</label><button type="button" onclick="exportStoreBackup()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">สำรองข้อมูล JSON</button><label class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold cursor-pointer">กู้คืน JSON<input type="file" accept="application/json,.json" class="hidden" onchange="importStoreBackup(this)"></label><button type="button" onclick="showSystemHistory()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">ดูประวัติระบบ</button></div>
+                    <div id="sheetImportPreviewPanel" class="hidden border border-indigo-200 rounded-xl p-3 space-y-3 text-xs bg-indigo-50 dark:bg-slate-900">
+  <div class="flex flex-wrap items-center justify-between gap-2"><p class="font-bold">รายการที่แตกต่างระหว่าง Google Sheets กับ D1 (ยังไม่บันทึก)</p><span class="inline-block rounded-lg bg-indigo-700 px-2 py-1 text-white font-bold">Sheets Category Batch v2.1 • 2026-11-01</span></div>
+  <p id="sheetImportPreviewSummary" class="whitespace-pre-line"></p>
+  <div class="flex flex-wrap items-center gap-2 rounded-xl border-2 border-indigo-400 bg-white dark:bg-slate-800 p-3"><label for="sheetImportCategory" class="font-bold">📂 เลือกหมวดหมู่ที่ตรวจและนำเข้า:</label><select id="sheetImportCategory" onchange="sheetSelectedIds.clear();renderSheetsImportChoices()" class="rounded-lg border p-2 dark:bg-slate-800"><option value="">ทุกหมวดหมู่</option></select><label for="sheetImportBatchSize">ขนาดชุด:</label><select id="sheetImportBatchSize" class="rounded-lg border p-2 dark:bg-slate-800"><option value="25">25</option><option value="50">50</option><option value="100" selected>100</option></select></div>
+  <div class="flex flex-wrap items-center gap-2"><input id="sheetImportFilter" type="search" oninput="renderSheetsImportChoices()" placeholder="ค้นหา ID / ชื่อแอป / ราคา..." class="min-w-0 flex-1 px-3 py-2 border rounded-lg dark:bg-slate-800"><span id="sheetImportSelectedCount" class="text-slate-600 dark:text-slate-300">เลือก 0 รายการ</span></div>
+  <p class="text-amber-700">เลือกหมวดแล้วกดนำเข้าทั้งหมวด: ระบบจะบันทึกเป็นชุดไม่เกิน 100 รายการ โดยตรวจชีตและ Revision ใหม่ทุกชุด หากพบข้อผิดพลาดจะหยุดทันที</p>
+  <p id="sheetImportBatchProgress" class="font-bold whitespace-pre-line" aria-live="polite"></p>
+  <div id="sheetImportPreviewRows" class="overflow-auto max-h-80 space-y-2"></div>
+  <button type="button" id="sheetImportConfirmBtn" onclick="confirmSheetsImportSafe()" class="bg-emerald-600 text-white rounded-xl px-4 py-2 font-bold">ยืนยันนำเข้าเฉพาะรายการที่แสดงลง D1</button>
+  <button type="button" id="sheetImportAutoBatchBtn" onclick="importSheetCategoryBatches()" class="bg-indigo-600 text-white rounded-xl px-4 py-2 font-bold">ยืนยันนำเข้าทั้งหมวด (แบ่งชุดอัตโนมัติ)</button>
+  <button type="button" id="sheetImportStopBtn" onclick="sheetBatchStopRequested=true" class="hidden bg-rose-600 text-white rounded-xl px-4 py-2 font-bold">หยุดหลังจบชุดปัจจุบัน</button>
+  <button type="button" onclick="clearSheetsImportPreview()" class="bg-slate-200 dark:bg-slate-700 rounded-xl px-4 py-2">ยกเลิก</button>
+</div>
                     <p id="integrationStatusText" class="text-xs text-slate-500 whitespace-pre-line">ระบบจะรวมข้อมูลลงในแท็บจัดการหมวดหมู่/แอป/แพ็กเกจเดิม โดยจัดหมวดตามชื่อชีต เช่น แอพพรีเมี่ยม, เติมเหรียญนิยาย, เติมเกม และสติ๊กเกอร์ไลน์; หาก URL ว่างหรือดึงข้อมูลไม่สำเร็จจะคงข้อมูลเดิมไว้</p>
                     <p class="text-[10px] text-amber-700 bg-amber-50 rounded-xl p-3">แนะนำใช้ Google Apps Script Web App URL /exec ซึ่งรองรับ JSON หรือ CSV ได้ใน URL เดียว; หากไม่ใช้ ให้ใส่ CSV แบบฟิลด์ระบบ (id, name, categoryId, appId, price ฯลฯ) หรือ CSV ตารางภาษาไทย: หมวดหลัก (ชื่อแอป), รายละเอียดแอป, หมวดหมู่แพ็กเกจ/กลุ่มตัวเลือกแพ็กเกจ/ตัวเลือกแพ็กเกจ (หมวดหมู่ย่อย), ชื่อแพ็กเกจย่อย, ราคา, ลิงก์รูป, รายละเอียดแพ็กเกจ, สถานะ, ID; หาก Apps Script ส่งหลายชีตควรแนบชื่อชีตในฟิลด์ sheetName หรือ categoryName หากใช้ /pubhtml ระบบจะลองแปลงเป็น URL CSV ให้อัตโนมัติ ทั้งนี้เบราว์เซอร์/Google อาจปฏิเสธการอ่านข้ามโดเมนได้</p>
                 </div>
@@ -770,6 +852,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     </h3>
                     <div id="adminReviewsList" class="space-y-3 text-xs"></div>
                 </div>
+                               <div class="bg-white dark:bg-slate-800 border rounded-2xl p-5 space-y-2"><h4 class="font-bold">คำขอแลกรางวัล</h4><div id="v2AdminTickets"></div></div>
             </div>
 
             <!-- TAB 6: STORE SETTINGS -->
@@ -1286,8 +1369,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
     </div>
 
     <!-- ADMIN SLIP VIEW MODAL -->
-    <div id="adminSlipModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" onclick="closeAdminSlipModal()"></div>
+    <div id="adminSlipModal" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4"><button type="button" id="adminSlipDeleteButton" onclick="deleteAdminOrderSlip()" class="hidden fixed bottom-6 right-6 z-[80] bg-red-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold shadow-xl">ลบรูปสลิปนี้ถาวร</button>
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" id="adminSlipCloseButton" onclick="closeAdminSlipModal()"></div>
         <div class="relative bg-white dark:bg-slate-800 rounded-3xl max-w-sm w-full p-5 shadow-2xl space-y-4 text-center">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-sm text-purple-600"><i class="fa-solid fa-receipt mr-1"></i> สลิปการชำระเงิน</h3>
@@ -2115,6 +2198,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('viewOrderTracking').classList.add('hidden');
             document.getElementById('viewAdmin').classList.add('hidden');
             document.getElementById('viewCustomerProfile').classList.add('hidden');
+            document.getElementById('viewPointsGuest').classList.add('hidden');
             document.getElementById('backButtonContainer').classList.add('hidden');
 
             if (view === 'home') {
@@ -2134,6 +2218,10 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             } else if (view === 'order-tracking') {
                 document.getElementById('viewOrderTracking').classList.remove('hidden');
                 document.getElementById('backButtonContainer').classList.remove('hidden');
+            } else if (view === 'points-guest') {
+                document.getElementById('viewPointsGuest').classList.remove('hidden');
+                document.getElementById('backButtonContainer').classList.remove('hidden');
+                v2RestoreGuest();
             } else if (view === 'customer-profile') {
                 if (!customerSessionName()) { openLoginModal(); document.getElementById('viewHome').classList.remove('hidden'); return; }
                 document.getElementById('viewCustomerProfile').classList.remove('hidden');
@@ -2319,7 +2407,12 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('appDetailCategoryTag').innerText = cat ? cat.name : 'ทั่วไป';
 
             const packages = appState.packages.filter(p => p.appId === appId && isPackageAvailableForPurchase(p));
+            const term = String(document.getElementById('customerPackageSearch')?.value || '').trim().toLocaleLowerCase('th');
+            const matchedPackages = term ? packages.filter(p => [p.name,p.groupName,p.packageCategory,p.description,p.price].some(v => String(v??'').toLocaleLowerCase('th').includes(term))) : packages;
+            const count = document.getElementById('customerPackageSearchCount');
+            if (count) count.textContent = term ? `พบ ${matchedPackages.length} จาก ${packages.length} แพ็กเกจ` : `${packages.length} แพ็กเกจ`;
             const pGrid = document.getElementById('packagesListGrid');
+            pGrid.dataset.appId = String(appId);
             if (!packages.length) {
                 pGrid.innerHTML = '<div class="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center text-sm text-slate-400">ยังไม่มีแพ็กเกจสำหรับแอปนี้</div>';
                 return;
@@ -2327,7 +2420,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
 
             // Group packages by Package Group so customers can clearly distinguish each set.
             const groupedPackages = new Map();
-            packages.forEach(pkg => {
+            matchedPackages.forEach(pkg => {
                 const groupLabel = String(pkg.groupName || '').trim() || 'แพ็กเกจทั่วไป';
                 if (!groupedPackages.has(groupLabel)) groupedPackages.set(groupLabel, []);
                 groupedPackages.get(groupLabel).push(pkg);
@@ -2337,7 +2430,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
             }[ch]));
 
-            pGrid.innerHTML = Array.from(groupedPackages.entries()).map(([groupLabel, groupItems]) => `
+            pGrid.innerHTML = !matchedPackages.length ? '<div class="col-span-full p-6 text-center text-sm text-slate-500">ไม่พบแพ็กเกจตามคำค้น</div>' : Array.from(groupedPackages.entries()).map(([groupLabel, groupItems]) => `
                 <section class="col-span-full min-w-0 rounded-2xl border border-blue-100 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 sm:p-4 shadow-sm">
                     <div class="mb-3 rounded-xl border-l-4 border-blue-500 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 px-3 py-3 sm:px-4">
                         <div class="flex items-start gap-2">
@@ -2372,6 +2465,11 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     </div>
                 </section>
             `).join('');
+        }
+
+        function renderCustomerPackageSearch() {
+            const app = appState.apps.find(a => String(a.id) === String(document.getElementById('packagesListGrid')?.dataset.appId || ''));
+            if (app) renderAppDetailPage(app.id);
         }
 
         // Cart Logic
@@ -3349,8 +3447,93 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('adminBankSlipNote').value = a.slipNote || '';
         }
 
+        let v2Cfg=null;
+        function v2Node(tag,cls,text){const e=document.createElement(tag);e.className=cls||'';if(text!==undefined)e.textContent=text;return e}
+        function v2Input(placeholder,val,change){const e=v2Node('input','border rounded-lg p-2 w-full');e.placeholder=placeholder;e.value=val||'';e.oninput=()=>change(e.value);return e}
+        function v2CardPreview(type,progress,cfg){const total=Number(cfg.thresholds?.[type]||(type==='game'?15:10));const card=cfg.cards?.[type]||{},wrap=v2Node('div','border rounded-xl p-3 space-y-2');wrap.append(v2Node('h4','font-bold',(cfg.cardTypes||[]).find(x=>x.id===type)?.name||type));const count=Number(progress?.[type]||0);wrap.append(v2Node('p','text-xs',count+' / '+total+' แต้ม — '+(count<total?'ยังไม่ครบ ไม่มีวันหมดอายุ':'พร้อมแลกเมื่อออกสิทธิ์')));const grid=v2Node('div','grid grid-cols-5 gap-2');for(let i=0;i<Math.min(total,100);i++){const cell=v2Node('div','h-12 flex justify-center items-center border rounded-lg overflow-hidden text-lg',i<count?'⭐':'✧');const imgs=card.images||[],src=card.mode==='same'?imgs[0]:card.mode==='cycle'?imgs[i%Math.max(1,imgs.length)]:imgs[i];if(src&&i<count){const img=v2Node('img','h-full w-full object-contain');img.src=src;img.onerror=()=>{img.remove();cell.textContent='⭐'};cell.replaceChildren(img)}grid.append(cell)}wrap.append(grid);return wrap}
+        function v2EnsureCardTypes(){if(!v2Cfg)return;v2Cfg.cardTypes ||= [{id:'premium',name:'⭐ แอพ / นิยาย'},{id:'game',name:'🎮 เติมเกม'}];v2Cfg.thresholds ||= {premium:10,game:15};v2Cfg.cards ||= {};}
+        function v2AddCardType(){if(!v2Cfg)return;v2EnsureCardTypes();if(v2Cfg.cardTypes.length>=20){showToast('เพิ่มได้สูงสุด 20 ประเภท');return}const id='card_'+crypto.randomUUID().replace(/-/g,'').slice(0,16);v2Cfg.cardTypes.push({id,name:'🪪 บัตรสะสมใหม่'});v2Cfg.thresholds[id]=10;v2Cfg.cards[id]={mode:'same',images:[]};v2RenderAdmin()}
+        function v2RenderCardTypes(){v2EnsureCardTypes();const root=document.getElementById('v2CardTypesEditor');if(!root)return;root.replaceChildren();for(const t of v2Cfg.cardTypes){const card=v2Node('div','rounded-xl border bg-white dark:bg-slate-800 p-3 space-y-2');card.append(v2Node('p','text-xs text-slate-500','รหัส: '+t.id));card.append(v2Input('ชื่อประเภทบัตร',t.name,value=>t.name=value));const label=v2Node('label','text-sm block font-bold','สะสมครบกี่แต้มเพื่อแลกรางวัล');const number=v2Node('input','block border rounded-lg p-2 w-full mt-1');number.type='number';number.min='1';number.max='100';number.value=String(v2Cfg.thresholds[t.id]??10);number.oninput=()=>{v2Cfg.thresholds[t.id]=Number(number.value)};label.append(number);card.append(label);if(t.id!=='premium'&&t.id!=='game'){const btn=v2Node('button','text-xs text-amber-700 underline','ซ่อนบัตรใหม่ที่ยังไม่ใช้');btn.onclick=()=>{showToast('เพื่อรักษาแต้มเดิม ระบบยังไม่อนุญาตให้ลบประเภทบัตร กรุณายกเลิกการเชื่อมหมวดแทน')};card.append(btn)}root.append(card)}}
+        function v2TypeOptions(includeBoth=false){v2EnsureCardTypes();return [['','ไม่ร่วมสะสม'],...v2Cfg.cardTypes.map(t=>[t.id,t.name]),...(includeBoth?[['both','🎁 รางวัลร่วมทุกประเภท']]:[])]}
+        async function v2LoadAdmin(){try{const out=await centralRequest('/admin/points/v2');v2Cfg=out.config;document.getElementById('v2Enabled').checked=!!v2Cfg.enabled;document.getElementById('v2Delete').checked=v2Cfg.slipAutoDelete!==false;document.getElementById('v2Days').value=v2Cfg.slipRetentionDays||3;document.getElementById('v2ThresholdPremium').value=v2Cfg.thresholds?.premium??10;document.getElementById('v2ThresholdGame').value=v2Cfg.thresholds?.game??15;v2RenderAdmin();const link=document.getElementById('v2LinkCardType');if(link){const before=link.value;link.replaceChildren();for(const t of v2Cfg.cardTypes)link.add(new Option(t.name,t.id));if(v2Cfg.cardTypes.some(t=>t.id===before))link.value=before}v2LoadTickets()}catch(e){showToast('โหลดกติกาบัตรไม่สำเร็จ: '+e.message)}}
+        function v2RenderAdmin(){v2EnsureCardTypes();v2RenderCardTypes();const linkSelect=document.getElementById('v2LinkCardType');if(linkSelect){const chosen=linkSelect.value;linkSelect.replaceChildren();v2Cfg.cardTypes.forEach(t=>linkSelect.add(new Option(t.name,t.id)));if(v2Cfg.cardTypes.some(t=>t.id===chosen))linkSelect.value=chosen;}const tp=document.getElementById('v2ThresholdInfoPremium'),tg=document.getElementById('v2ThresholdInfoGame');if(tp)tp.textContent=v2Cfg.thresholds?.premium??10;if(tg)tg.textContent=v2Cfg.thresholds?.game??15;const cards=document.getElementById('v2CardSettings'),groups=document.getElementById('v2RewardGroups');cards.replaceChildren();groups.replaceChildren();for(const {id:t,name:cardName} of v2Cfg.cardTypes){const c=v2Cfg.cards[t]||{mode:'same',images:[]};const box=v2Node('div','border rounded-lg p-3 space-y-2');box.append(v2Node('b','',cardName+' ('+(v2Cfg.thresholds?.[t]??10)+' ช่อง)'));const sel=v2Node('select','border p-2 w-full rounded-lg');[['same','รูปเดียวซ้ำ'],['cycle','รูปคละวนซ้ำ'],['custom','กำหนดรายช่อง (คั่นด้วยขึ้นบรรทัดใหม่)']].forEach(([value,name])=>{const opt=new Option(name,value);sel.add(opt)});sel.value=c.mode;sel.onchange=()=>c.mode=sel.value;box.append(sel);const area=v2Node('textarea','border rounded-lg p-2 w-full');area.rows=3;area.placeholder='URL รูป HTTPS บรรทัดละรูป';area.value=(c.images||[]).join('\n');area.oninput=()=>c.images=area.value.split('\n').map(x=>x.trim()).filter(Boolean);box.append(area);cards.append(box);v2Cfg.cards[t]=c}
+        {const root=document.getElementById('v2CategoryCardMap');root.replaceChildren();v2Cfg.categoryCardMap ||= {'แอพพรีเมี่ยม':'premium','เติมเหรียญนิยาย':'premium','เติมเกม':'game'};v2Cfg.categoryEarnPoints ||= {};v2Cfg.categoryDescriptions ||= {};const names=(appState.categories||[]).map(x=>x.name).filter(Boolean);for(const name of new Set([...names,...Object.keys(v2Cfg.categoryCardMap)])){const card=v2Node('div','border rounded-xl p-3 space-y-2 text-sm bg-white dark:bg-slate-800');card.append(v2Node('b','block text-purple-700 dark:text-purple-300',name));const select=v2Node('select','border rounded-lg p-2 w-full dark:bg-slate-900');v2TypeOptions().forEach(([val,text])=>select.add(new Option(text,val)));select.value=v2Cfg.categoryCardMap[name]||'';select.onchange=()=>{v2Cfg.categoryCardMap[name]=select.value;pointsRow.classList.toggle('hidden',!select.value)};card.append(select);const pointsRow=v2Node('label','block text-xs font-semibold','แต้มที่ได้ต่อออเดอร์ (1–15)');const points=v2Node('input','block mt-1 border rounded-lg p-2 w-full dark:bg-slate-900');points.type='number';points.min='1';points.max='15';points.step='1';points.value=String(v2Cfg.categoryEarnPoints[name]??1);points.oninput=()=>v2Cfg.categoryEarnPoints[name]=Number(points.value);pointsRow.append(points);card.append(pointsRow);pointsRow.classList.toggle('hidden',!select.value);const descRow=v2Node('label','block text-xs font-semibold','รายละเอียด / เงื่อนไขเพิ่มเติมของหมวด');const desc=v2Node('textarea','block mt-1 border rounded-lg p-2 w-full dark:bg-slate-900');desc.rows=2;desc.maxLength=500;desc.placeholder='เช่น ซื้อครบตามเงื่อนไข รับแต้มเข้าบัตรที่เลือก';desc.value=v2Cfg.categoryDescriptions[name]||'';desc.oninput=()=>v2Cfg.categoryDescriptions[name]=desc.value;descRow.append(desc);card.append(descRow);root.append(card)}}
+        v2Cfg.rewardGroups.forEach((g,i)=>{const box=v2Node('div','border-2 border-purple-100 dark:border-slate-700 rounded-xl p-4 space-y-3');box.append(v2Node('p','text-xs font-bold text-purple-600',g.type==='both'?'🎁 ชุดรางวัลร่วมทุกบัตร':((v2Cfg.cardTypes||[]).find(x=>x.id===g.type)?.name||g.type)+' — สะสมครบ '+(v2Cfg.thresholds?.[g.type]??10)+' แต้ม'));box.append(v2Input('ชื่อชุดรางวัล',g.name,v=>g.name=v));const sel=v2Node('select','border rounded-lg p-2 w-full');v2TypeOptions(true).filter(x=>x[0]).forEach(([value,label])=>sel.add(new Option(label,value)));sel.value=g.type;sel.onchange=()=>g.type=sel.value;box.append(sel);const options=v2Node('textarea','border rounded-lg p-2 w-full');options.rows=4;options.placeholder='รางวัลหนึ่งอย่างต่อบรรทัด';options.value=g.options.join('\n');options.oninput=()=>g.options=options.value.split('\n').map(x=>x.trim()).filter(Boolean);box.append(options);const active=v2Node('input');active.type='checkbox';active.checked=g.active;active.onchange=()=>g.active=active.checked;box.append(v2Node('span','text-xs','เปิดใช้ '),active);const del=v2Node('button','text-rose-600 ml-4','ลบชุดนี้');del.onclick=()=>{v2Cfg.rewardGroups.splice(i,1);v2RenderAdmin()};box.append(del);groups.append(box)})}
+        function v2AddGroup(){if(!v2Cfg)return;v2Cfg.rewardGroups.push({id:'grp_'+crypto.randomUUID().replaceAll('-',''),type:'premium',name:'ชุดรางวัลใหม่',options:['รางวัลใหม่'],active:false});v2RenderAdmin()}
+        async function v2Save(){try{v2Cfg.enabled=document.getElementById('v2Enabled').checked;v2Cfg.slipAutoDelete=document.getElementById('v2Delete').checked;v2Cfg.slipRetentionDays=Number(document.getElementById('v2Days').value);const premium=Number(document.getElementById('v2ThresholdPremium').value),game=Number(document.getElementById('v2ThresholdGame').value);if(!Number.isInteger(premium)||premium<1||premium>100||!Number.isInteger(game)||game<1||game>100)throw Error('แต้มที่ต้องครบต้องเป็นจำนวนเต็ม 1–100');v2EnsureCardTypes();v2Cfg.thresholds={...v2Cfg.thresholds,premium,game};if(v2Cfg.cardTypes.some(t=>!t.name.trim()||!Number.isInteger(Number(v2Cfg.thresholds[t.id]))||Number(v2Cfg.thresholds[t.id])<1||Number(v2Cfg.thresholds[t.id])>100))throw Error('ชื่อบัตรและเกณฑ์แต้มต้องถูกต้อง');const saved=await centralRequest('/admin/points/v2','PUT',{config:v2Cfg});v2Cfg=saved.config||v2Cfg;v2RenderAdmin();showToast('บันทึกเกณฑ์สะสมแต้มและกติกาบัตรสำเร็จ')}catch(e){showToast('บันทึกไม่สำเร็จ: '+e.message)}}
+        function v2OrderChannelChanged(){const channel=document.getElementById('v2OrderChannel')?.value||'WEB';const line=channel==='LINE';document.getElementById('v2LineRegistration')?.classList.toggle('hidden',!line);const hint=document.getElementById('v2ChannelHelp');if(hint)hint.textContent=line?'LINE: เลือกเลขออเดอร์ที่ลงทะเบียนและยืนยันการส่งสินค้าแล้ว หรือบันทึกรายการ LINE ใหม่ด้านล่าง':'เว็บไซต์: ใช้ออเดอร์จริงในระบบ โดยต้องมีสถานะ READY_FOR_DELIVERY หรือ COMPLETED; ไม่ต้องตรวจไฟล์รูปสลิปอีกครั้ง';}
+        async function v2SaveSlipPolicy(){try{const out=await centralRequest('/admin/points/v2');const config=out.config;config.slipAutoDelete=!!document.getElementById('v2Delete').checked;config.slipRetentionDays=Number(document.getElementById('v2Days').value);if(!Number.isInteger(config.slipRetentionDays)||config.slipRetentionDays<1||config.slipRetentionDays>365)throw Error('จำนวนวันต้องอยู่ในช่วง 1–365');await centralRequest('/admin/points/v2','PUT',{config});showToast('บันทึกนโยบายสลิปสำเร็จ');}catch(e){showToast('บันทึกนโยบายสลิปไม่สำเร็จ: '+e.message)}}
+        async function v2RegisterLineOrder(){try{const orderId=document.getElementById('v2OrderId').value.trim(),cardType=document.getElementById('v2LinkCardType').value,points=Number(document.getElementById('v2LinkPoints').value);if(document.getElementById('v2OrderChannel').value!=='LINE')throw Error('กรุณาเลือกช่องทาง LINE ก่อน');if(!confirm('ตรวจยอดชำระและส่งรหัสแล้วจริงสำหรับ '+orderId+' ? การลงทะเบียนเลขเดิมซ้ำจะทำไม่ได้'))return;const r=await centralRequest('/admin/points/v2/line-orders','POST',{orderId,cardType,points,confirmPaid:document.getElementById('v2LinePaid').checked,confirmDelivered:document.getElementById('v2LineDelivered').checked});showToast('บันทึกออเดอร์ LINE สำเร็จแล้ว สามารถกดสร้างลิงก์ได้');document.getElementById('v2LinePaid').checked=false;document.getElementById('v2LineDelivered').checked=false}catch(e){showToast('บันทึก LINE ไม่สำเร็จ: '+e.message)}}
+        async function v2IssueLink(){try{const out=await centralRequest('/admin/points/v2/links','POST',{orderId:document.getElementById('v2OrderId').value.trim(),source:document.getElementById('v2OrderChannel').value,cardType:document.getElementById('v2LinkCardType').value,points:Number(document.getElementById('v2LinkPoints').value)});document.getElementById('v2IssuedCode').value=location.origin+location.pathname+'#claim='+encodeURIComponent(out.claimCode)+'\nหมดอายุ: '+out.expiresAt+'\nรหัส: '+out.claimCode;showToast('สร้างลิงก์ครั้งเดียวสำเร็จ')}catch(e){showToast(e.message)}}
+        async function v2LoadTickets(){try{const out=await centralRequest('/admin/points/v2/tickets');const root=document.getElementById('v2AdminTickets');root.replaceChildren();(out.tickets||[]).forEach(t=>{const row=v2Node('div','border p-2 rounded-lg flex flex-wrap gap-2',t.owner_id+' · '+t.reward_name);const btn=v2Node('button','bg-emerald-600 text-white px-2 rounded-lg','จัดส่งแล้ว');btn.onclick=async()=>{try{await centralRequest('/admin/points/v2/tickets','PATCH',{id:t.id});v2LoadTickets()}catch(e){showToast(e.message)}};row.append(btn);root.append(row)});if(!out.tickets?.length)root.textContent='ไม่มีคำขอค้าง'}catch(e){showToast(e.message)}}
+        function v2RenderMember(data,target,ticketTarget,guest){const main=document.getElementById(target);main.replaceChildren();for(const card of (data.config.cardTypes||[{id:'premium'},{id:'game'}]))main.append(v2CardPreview(card.id,data.progress,data.config));const out=document.getElementById(ticketTarget);out.replaceChildren();(data.tickets||[]).forEach(t=>{const card=v2Node('div','p-2 border rounded-lg space-y-1');card.append(v2Node('div','font-bold text-sm',(data.config.cardTypes||[]).find(x=>x.id===t.type)?.name||t.type));card.append(v2Node('p','text-xs','สถานะ: '+t.status+' · หมดอายุ: '+new Date(t.expires_at).toLocaleDateString('th-TH')));if(t.status==='AVAILABLE'&&new Date(t.expires_at)>new Date()){const select=v2Node('select','border p-2 rounded-lg w-full');const choices=[];data.config.rewardGroups.filter(g=>g.active&&(g.type===t.type||g.type==='both')).forEach(g=>g.options.forEach(opt=>{choices.push({groupId:g.id,name:opt});select.add(new Option(g.name+' — '+opt,String(choices.length-1)))}));const btn=v2Node('button','bg-purple-600 text-white rounded-lg p-2 mt-2','ยืนยันเลือก 1 รางวัล');btn.disabled=!choices.length;btn.onclick=async()=>{if(!confirm('ใช้สิทธิ์นี้เพื่อแลก '+choices[Number(select.value)]?.name+'?'))return;try{const ch=choices[Number(select.value)];await centralRequest('/points/v2/redeem','POST',{ticketId:t.id,groupId:ch.groupId,choice:ch.name,...(guest?{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim()}: {})},undefined,guest?undefined:customerSessionToken());showToast('ส่งคำขอแลกแล้ว');guest?v2GuestLoad():v2LoadMember()}catch(e){showToast(e.message)}};card.append(select,btn)}out.append(card)});if(!data.tickets?.length)out.textContent='ยังไม่มีสิทธิ์แลกรางวัล'}
+        async function v2LoadMember(){try{const r=await centralRequest('/points/v2/me','GET',undefined,undefined,customerSessionToken());v2RenderMember(r,'v2MemberCards','v2MemberTickets',false)}catch(e){document.getElementById('v2MemberCards').textContent=e.message}}
+        setTimeout(()=>{try{const m=location.hash.match(/(?:^#|&)claim=([^&]+)/);if(m){const target=document.getElementById('v2ClaimCode');if(target)target.value=decodeURIComponent(m[1]);history.replaceState(null,'',location.pathname+location.search)}}catch{}},0);
+        function v2RestoreGuest(){try{const x=JSON.parse(localStorage.getItem('wanderer_guest_points_card_v2')||'null');if(x?.cardId&&x?.secret){document.getElementById('v2GuestCard').value=x.cardId;document.getElementById('v2GuestSecret').value=x.secret;document.getElementById('v2GuestAlias').value=x.alias||'';document.getElementById('v2GuestNotice').textContent='บัตรเดิมพร้อมใช้งานบนอุปกรณ์นี้';v2GuestLoad();}}catch{}}
+        function v2CopyGuestId(){const id=document.getElementById('v2GuestCard').value;if(!id)return showToast('กรุณาสร้างบัตรก่อน');copyToClipboard(id)}
+        async function v2NewGuest(){try{const alias=document.getElementById('v2GuestAlias').value.trim();if(!alias){showToast('กรุณาระบุเลขออเดอร์หรือชื่อแอคก่อนสร้างบัตร');return}if(localStorage.getItem('wanderer_guest_points_card_v2')&&!confirm('มีบัตรเดิมบนอุปกรณ์นี้ การสร้างใหม่จะเปลี่ยนบัตรที่แสดง ต้องการดำเนินการหรือไม่?'))return;const r=await centralRequest('/points/v2/guest/create','POST',{});localStorage.setItem('wanderer_guest_points_card_v2',JSON.stringify({cardId:r.cardId,secret:r.secret,alias}));document.getElementById('v2GuestCard').value=r.cardId;document.getElementById('v2GuestSecret').value=r.secret;document.getElementById('v2GuestNotice').textContent='สร้างบัตรแล้ว เก็บข้อมูลเข้าเบราว์เซอร์นี้เท่านั้น หากเปลี่ยนเครื่องหรือล้างข้อมูลจะสูญเสียการเข้าถึง';showToast('สร้างบัตรสำเร็จ');await v2GuestLoad()}catch(e){showToast(e.message)}}
+        async function v2GuestLoad(){try{const r=await centralRequest('/points/v2/guest','POST',{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim()});let tickets=document.getElementById('v2GuestTicketView');if(!tickets){tickets=v2Node('div','mt-2');tickets.id='v2GuestTicketView';document.getElementById('v2GuestView').after(tickets)}v2RenderMember(r,'v2GuestView','v2GuestTicketView',true)}catch(e){showToast(e.message)}}
+        // A one-time link contains a code, not ownership of a card. The customer must still provide Card ID + recovery secret.
+        function v2ReadClaimLink(){
+          try {
+            const hashValue=new URLSearchParams(location.hash.replace(/^#/,''));
+            const code=hashValue.get('claim');if(!code)return;
+            const field=document.getElementById('v2ClaimCode');if(!field)return;
+            field.value=code;
+            document.getElementById('v2GuestNotice').textContent='พบลิงก์รับแต้ม กรุณาใช้บัตรที่สร้างบนอุปกรณ์นี้ แล้วกดรับแต้มภายใน 15 นาที';
+            navigateTo('points-guest');field.scrollIntoView({behavior:'smooth',block:'center'});
+            history.replaceState(null,'',location.pathname+location.search); // avoid replaying claim token from address bar
+          }catch(e){console.warn('claim link format',e)}
+        }
+        if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{v2RestoreGuest();v2ReadClaimLink()},{once:true});else setTimeout(()=>{v2RestoreGuest();v2ReadClaimLink()},0);
+        async function v2GuestClaim(){try{const r=await centralRequest('/points/v2/claim','POST',{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim(),claimCode:document.getElementById('v2ClaimCode').value.trim()});document.getElementById('v2ClaimCode').value='';showToast('รับแต้มสำเร็จ');v2GuestLoad()}catch(e){showToast(e.message)}}
+        function pointElement(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
+        let pointsAdminRewards=[];
+        function renderPointsRewardRows(){
+          const root=document.getElementById('pointsRewardsRows');root.replaceChildren();
+          pointsAdminRewards.forEach((r,i)=>{
+            const row=pointElement('div','flex flex-wrap items-center gap-2 p-2 border dark:border-slate-700 rounded-xl');
+            const name=pointElement('input','flex-1 min-w-36 p-2 rounded-lg border dark:bg-slate-900');name.value=r.name;name.placeholder='ชื่อรางวัล';name.oninput=()=>r.name=name.value;
+            const cost=pointElement('input','w-28 p-2 rounded-lg border dark:bg-slate-900');cost.type='number';cost.min='1';cost.value=r.cost;cost.placeholder='แต้ม';cost.oninput=()=>r.cost=Number(cost.value);
+            const active=pointElement('input');active.type='checkbox';active.checked=r.active!==false;active.onchange=()=>r.active=active.checked;
+            const del=pointElement('button','text-red-600 px-2','ลบ');del.onclick=()=>{pointsAdminRewards.splice(i,1);renderPointsRewardRows()};
+            row.append(name,cost,pointElement('span','text-xs','แต้ม'),pointElement('span','text-xs','เปิด'),active,del);root.append(row);
+          });
+        }
+        function addPointRewardRow(){pointsAdminRewards.push({id:'reward_'+crypto.randomUUID().replaceAll('-',''),name:'',cost:100,active:true});renderPointsRewardRows()}
+        async function loadPointsAdminConfig(){
+          try{
+            const [data,red]=await Promise.all([centralRequest('/admin/points/config'),centralRequest('/admin/points/redemptions')]);const c=data.config;
+            document.getElementById('pointsEnabled').checked=c.enabled!==false;
+            document.getElementById('pointsSlipBonus').value=c.slipPoints??1;
+            document.getElementById('pointsSlipAutoDelete').checked=c.slipAutoDelete!==false;
+            document.getElementById('pointsSlipDays').value=c.slipRetentionDays??3;
+            const root=document.getElementById('pointsCategoryRows');root.replaceChildren();
+            appState.categories.forEach(cat=>{const label=pointElement('label','block text-sm',cat.name);const input=pointElement('input','block w-full mt-1 p-2 border rounded-lg dark:bg-slate-900');input.type='number';input.min='0';input.max='10000';input.dataset.category=cat.name;input.value=c.categoryPoints?.[cat.name]??0;label.append(input);root.append(label)});
+            pointsAdminRewards=JSON.parse(JSON.stringify(c.rewards||[]));renderPointsRewardRows();
+            const holder=document.getElementById('pointsAdminRedemptions');holder.replaceChildren();
+            if(!red.redemptions?.length)holder.textContent='ยังไม่มีคำขอแลกรางวัล';
+            (red.redemptions||[]).forEach(r=>{const row=pointElement('div','border dark:border-slate-700 rounded-lg p-3 flex flex-wrap items-center gap-2');row.append(pointElement('span','flex-1',(r.username||'สมาชิก')+' — '+r.reward_name+' ('+r.cost+' แต้ม) · '+r.status));if(r.status==='PENDING'){const btn=pointElement('button','bg-emerald-600 text-white rounded-lg px-3 py-1','ส่งรางวัลแล้ว');btn.onclick=async()=>{try{await centralRequest('/admin/points/redemptions/'+encodeURIComponent(r.id),'PATCH',{status:'FULFILLED'});loadPointsAdminConfig()}catch(e){showToast(e.message)}};row.append(btn)}holder.append(row)});
+          }catch(e){showToast('โหลดตั้งค่าแต้มไม่สำเร็จ: '+e.message)}
+        }
+        async function savePointsAdminConfig(){
+          try{
+            const categoryPoints={};document.querySelectorAll('#pointsCategoryRows [data-category]').forEach(el=>categoryPoints[el.dataset.category]=Number(el.value));
+            const config={enabled:document.getElementById('pointsEnabled').checked,categoryPoints,slipPoints:Number(document.getElementById('pointsSlipBonus').value),rewards:pointsAdminRewards,slipAutoDelete:document.getElementById('pointsSlipAutoDelete').checked,slipRetentionDays:Number(document.getElementById('pointsSlipDays').value)};
+            await centralRequest('/admin/points/config','PUT',{config});showToast('บันทึกตั้งค่าแต้มและสลิปลง D1 สำเร็จ');
+          }catch(e){showToast('บันทึกไม่สำเร็จ: '+e.message)}
+        }
+        async function loadCustomerPoints(){
+          const balance=document.getElementById('customerPointsBalance'),root=document.getElementById('customerPointsRewards'),history=document.getElementById('customerPointsHistory');if(!balance)return;
+          try{
+            const data=await centralRequest('/points/me','GET',undefined,undefined,customerSessionToken());balance.textContent=data.balance+' แต้ม';root.replaceChildren();
+            (data.rewards||[]).forEach(r=>{const row=pointElement('div','border dark:border-slate-700 rounded-lg p-2 flex items-center gap-2');row.append(pointElement('span','flex-1',r.name+' — '+r.cost+' แต้ม'));const btn=pointElement('button','bg-purple-600 text-white px-3 py-1 rounded-lg','แลก');btn.disabled=data.balance<r.cost||!data.enabled;btn.onclick=async()=>{if(!confirm('ยืนยันแลก '+r.name+' ใช้ '+r.cost+' แต้ม?'))return;try{await centralRequest('/points/redeem','POST',{rewardId:r.id},undefined,customerSessionToken());showToast('ส่งคำขอแลกรางวัลแล้ว');loadCustomerPoints()}catch(e){showToast(e.message)}};row.append(btn);root.append(row)});
+            if(!data.rewards?.length)root.textContent='ยังไม่มีของรางวัลที่เปิดให้แลก';
+            history.textContent='ประวัติแต้ม: '+(data.events||[]).slice(0,8).map(x=>(x.delta>0?'+':'')+x.delta+' ('+x.description+')').join(' · ');
+          }catch(e){balance.textContent='ไม่สามารถโหลดแต้ม: '+e.message}
+        }
         function switchAdminTab(tabName) {
-            const tabs = ['dashboard-orders', 'products', 'promotions', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations'];
+            const tabs = ['dashboard-orders', 'products', 'points', 'promotions', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations'];
             tabs.forEach(t => {
                 document.getElementById(`adminTab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`adminTabBtn-${t}`);
@@ -3360,9 +3543,11 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const activeBtn = document.getElementById(`adminTabBtn-${tabName}`);
             if (activeBtn) activeBtn.className = 'px-4 py-2 text-xs font-bold rounded-xl transition bg-purple-600 text-white shadow-md';
 
-            if (tabName === 'dashboard-orders') { renderAdminOrdersTable(); refreshCentralOrders(); }
+            if (tabName === 'dashboard-orders') { renderAdminOrdersTable(); refreshCentralOrders(); centralRequest('/admin/points/v2').then(r=>{document.getElementById('v2Delete').checked=r.config.slipAutoDelete!==false;document.getElementById('v2Days').value=r.config.slipRetentionDays||3}).catch(()=>{}); }
             else if (tabName === 'products') renderAdminProductsTree();
             else if (tabName === 'promotions') renderPromotionAdmin();
+            else if (tabName === 'points') v2LoadAdmin();
+            else if (tabName === 'feedbacks') v2LoadTickets();
             else if (tabName === 'bank-accounts') loadAdminBankAccountsForm();
             else if (tabName === 'form-templates') populateFormTemplateCategorySelect();
             else if (tabName === 'feedbacks') renderAdminFeedbacks();
@@ -3501,7 +3686,21 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 status.classList.remove('hidden');
             }
             renderAdminSlipCustomerRequirements(ord);
+            const del = document.getElementById('adminSlipDeleteButton');
+            if (del) { del.classList.toggle('hidden', !slipSource); del.dataset.orderId=ord.id; }
             document.getElementById('adminSlipModal').classList.remove('hidden');
+        }
+        async function deleteAdminOrderSlip() {
+            const btn=document.getElementById('adminSlipDeleteButton');
+            const id=btn?.dataset.orderId;
+            if (!id || !confirm('ลบรูปสลิปของออเดอร์ '+id+' ถาวร? ข้อมูลออเดอร์จะยังอยู่')) return;
+            btn.disabled=true;
+            try {
+                await centralRequest('/orders/'+encodeURIComponent(id)+'/slip','DELETE',{});
+                const o=appState.orders.find(x=>String(x.id)===String(id));
+                if(o){o.slipImg='';o.hasSlip=false;}
+                closeAdminSlipModal(); renderAdminOrdersTable();showToast('ลบรูปสลิปแล้ว (ข้อมูลออเดอร์ยังอยู่)');
+            } catch(e){alert('ลบสลิปไม่สำเร็จ: '+e.message);} finally {btn.disabled=false;}
         }
         function closeAdminSlipModal() {
             document.getElementById('adminSlipModal').classList.add('hidden');
@@ -3682,7 +3881,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             if (!tree) return;
             const searchEl = document.getElementById('adminProductTreeSearch');
             const filterEl = document.getElementById('adminProductTreeCategoryFilter');
-            const search = String(searchEl?.value || '').trim().toLowerCase();
+            const search = String(searchEl?.value || '').trim().toLocaleLowerCase('th');
             const selectedCategory = String(filterEl?.value || '');
             if (filterEl) {
                 const prior = filterEl.value;
@@ -3696,7 +3895,11 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 const searchable = [cat.name, cat.description, ...apps.flatMap(a => [a.name, a.description, ...appState.packages.filter(p => String(p.appId) === String(a.id)).flatMap(p => [p.name, p.description, p.groupName])])].join(' ').toLowerCase();
                 return !search || searchable.includes(search);
             }).map(cat => {
-                const catApps = appState.apps.filter(a => a.categoryId === cat.id);
+                const catApps = appState.apps.filter(a => a.categoryId === cat.id).filter(app => {
+                    if (!search) return true;
+                    if ([cat.name, cat.description].some(v => String(v||'').toLocaleLowerCase('th').includes(search))) return true;
+                    return [app.name, app.description, ...appState.packages.filter(p => String(p.appId) === String(app.id)).flatMap(p => [p.name,p.groupName,p.description,p.packageCategory,p.id])].some(v => String(v||'').toLocaleLowerCase('th').includes(search));
+                });
                 return `
                     <div class="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border space-y-3">
                         <div class="flex justify-between items-center border-b pb-2">
@@ -3710,7 +3913,9 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         </div>
                         <div class="pl-4 space-y-2">
                             ${catApps.map(app => {
-                                const pkgs = appState.packages.filter(p => p.appId === app.id);
+                                const allPkgs = appState.packages.filter(p => p.appId === app.id);
+                                const appMatch = [cat.name, cat.description, app.name, app.description].some(v => String(v||'').toLocaleLowerCase('th').includes(search));
+                                const pkgs = search && !appMatch ? allPkgs.filter(p => [p.name,p.groupName,p.description,p.packageCategory,p.id].some(v => String(v||'').toLocaleLowerCase('th').includes(search))) : allPkgs;
                                 return `
                                     <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border text-xs space-y-1">
                                         <div class="flex justify-between items-center font-bold">
@@ -5171,6 +5376,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const name=customerSessionName()||customerIdentity.email||'สมาชิก';
             document.getElementById('customerProfileName').textContent=name;
             document.getElementById('customerProfileAvatar').textContent=name.charAt(0).toUpperCase();
+            v2LoadMember();
             const root=document.getElementById('customerPurchaseHistory');root.replaceChildren();
             const status=document.createElement('p');status.textContent='กำลังโหลดประวัติการซื้อจากเซิร์ฟเวอร์...';root.append(status);
             try{
@@ -5443,9 +5649,9 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             appState.settings.workerNotifyUrl = document.getElementById('adminWorkerNotifyUrl').value.trim();
             appState.settings.sheetBackupUrl = document.getElementById('adminSheetBackupUrl').value.trim();
             appState.settings.sheetAppsScriptUrl = document.getElementById('adminSheetAppsScriptUrl').value.trim();
-            appState.settings.sheetCategoriesUrl = document.getElementById('adminSheetCategoriesUrl').value.trim();
-            appState.settings.sheetAppsUrl = document.getElementById('adminSheetAppsUrl').value.trim();
-            appState.settings.sheetPackagesUrl = document.getElementById('adminSheetPackagesUrl').value.trim();
+            appState.settings.sheetCategoriesUrl = (document.getElementById('adminSheetCategoriesUrl')?.value?.trim() ?? appState.settings.sheetCategoriesUrl ?? '');
+            appState.settings.sheetAppsUrl = (document.getElementById('adminSheetAppsUrl')?.value?.trim() ?? appState.settings.sheetAppsUrl ?? '');
+            appState.settings.sheetPackagesUrl = (document.getElementById('adminSheetPackagesUrl')?.value?.trim() ?? appState.settings.sheetPackagesUrl ?? '');
             saveState(); showToast('บันทึก URL การเชื่อมต่อแล้ว');
         }
         function loadIntegrationSettings() {
@@ -5727,6 +5933,129 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             });
             return {categories:[...categoriesMap.values()],apps:[...appMap.values()],packages:packageRows};
         }
+
+        // Import only approved, matching IDs. Batch mode never writes back to Google Sheets.
+        let pendingSheetPreview=null;
+        let sheetSelectedIds=new Set();
+        let sheetBatchRunning=false, sheetBatchStopRequested=false;
+        const sheetImportCategoryEl=()=>document.getElementById('sheetImportCategory');
+        const sheetCategoryChanges=(r)=>{
+            const category=sheetImportCategoryEl()?.value||'';
+            return (r?.changes||[]).filter(x=>!category||x.category===category);
+        };
+        function clearSheetsImportPreview(){
+            if(sheetBatchRunning){sheetBatchStopRequested=true;return;}
+            pendingSheetPreview=null;sheetSelectedIds.clear();
+            document.getElementById('sheetImportPreviewPanel').classList.add('hidden');
+        }
+        function renderSheetsImportChoices(){
+            const r=pendingSheetPreview;if(!r)return;
+            const filter=String(document.getElementById('sheetImportFilter')?.value||'').trim().toLowerCase();
+            const all=sheetCategoryChanges(r);
+            const list=all.filter(x=>(x.id+' '+x.appName+' '+Object.keys(x.fields).join(' ')).toLowerCase().includes(filter));
+            const root=document.getElementById('sheetImportPreviewRows');root.replaceChildren();
+            const count=document.createElement('p');count.textContent=`หมวดที่เลือก: ${all.length} รายการเปลี่ยน · ผลค้นหา ${list.length} · แสดงตัวอย่าง ${Math.min(list.length,100)} รายการ`;root.appendChild(count);
+            for(const x of list.slice(0,100)){
+                const box=document.createElement('label');box.className='flex gap-2 bg-white dark:bg-slate-800 rounded-lg border p-2 cursor-pointer';
+                const input=document.createElement('input');input.type='checkbox';input.checked=sheetSelectedIds.has(String(x.id));input.className='mt-1';input.disabled=sheetBatchRunning;
+                input.addEventListener('change',()=>{
+                    const id=String(x.id);
+                    if(input.checked){if(sheetSelectedIds.size>=100){input.checked=false;showToast('เลือกได้ครั้งละไม่เกิน 100 รายการ');return;}sheetSelectedIds.add(id)}
+                    else sheetSelectedIds.delete(id);
+                    updateSheetsImportSelection();
+                });
+                const details=document.createElement('div');details.className='min-w-0';
+                const title=document.createElement('b');title.textContent=`${x.id} — ${x.appName} (${x.category||'-'})`;details.appendChild(title);
+                for(const [key,d] of Object.entries(x.fields)){
+                    if(key==='inStock'||key==='status')continue;
+                    const line=document.createElement('div');line.className='break-words';line.textContent=`${key}: ${String(d.from).slice(0,120)} → ${String(d.to).slice(0,120)}`;details.appendChild(line);
+                }
+                box.append(input,details);root.appendChild(box);
+            }
+            updateSheetsImportSelection();
+        }
+        function updateSheetsImportSelection(){
+            const r=pendingSheetPreview;
+            document.getElementById('sheetImportSelectedCount').textContent=`เลือกด้วยตัวเอง ${sheetSelectedIds.size} รายการ`;
+            const btn=document.getElementById('sheetImportConfirmBtn');
+            btn.disabled=sheetBatchRunning||!r||!sheetSelectedIds.size||Boolean(r.ignoredCount)||sheetSelectedIds.size>100;
+            btn.textContent=`ยืนยันนำเข้าเฉพาะ ${sheetSelectedIds.size} รายการที่เลือกลง D1`;
+            const auto=document.getElementById('sheetImportAutoBatchBtn');
+            auto.disabled=sheetBatchRunning||!r||Boolean(r.ignoredCount)||!sheetCategoryChanges(r).length;
+        }
+        async function previewSheetsImportSafe(){
+            if(sheetBatchRunning)return;
+            clearSheetsImportPreview();const status=document.getElementById('integrationStatusText');
+            status.textContent='กำลังตรวจ Google Sheets ผ่าน Worker (ยังไม่มีการบันทึกข้อมูล)...';
+            try{
+                const r=await centralRequest('/catalog/import-preview','POST',{});
+                pendingSheetPreview=r;
+                const cats=[...new Set((r.changes||[]).map(x=>x.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+                const cat=sheetImportCategoryEl();cat.replaceChildren();
+                const all=document.createElement('option');all.value='';all.textContent='ทุกหมวดหมู่';cat.appendChild(all);
+                for(const name of cats){const option=document.createElement('option');option.value=name;option.textContent=name;cat.appendChild(option)}
+                const summary=document.getElementById('sheetImportPreviewSummary');
+                summary.textContent=`ตรวจ ${r.checked} แถว · พบรายการเปลี่ยน ${r.changes.length} · แถวที่ข้าม ${r.ignoredCount||0}`+(r.ignored?.length?'\nรายการที่ตรวจไม่ตรง: '+r.ignored.slice(0,5).join(' / '):'')+'\nอ่านชีตเวลา: '+(r.readAt||'-')+'\nตัวอย่างจากชีต: '+(r.sheetSamples||[]).slice(0,3).map(x=>x.tab+'/'+x.appName+'/'+x.id+' ราคา '+x.price).join(' ; ');
+                document.getElementById('sheetImportFilter').value='';
+                document.getElementById('sheetImportBatchProgress').textContent='';
+                document.getElementById('sheetImportPreviewPanel').classList.remove('hidden');
+                renderSheetsImportChoices();status.textContent='ตรวจเสร็จแล้ว — เลือกหมวดหมู่และตรวจรายการก่อนนำเข้า';
+            }catch(e){status.textContent='ตรวจ Sheets ไม่สำเร็จ: '+e.message;showToast(status.textContent)}
+        }
+        async function confirmSheetsImportSafe(){
+            const r=pendingSheetPreview;const approved=[...sheetSelectedIds];
+            if(sheetBatchRunning||!r||!approved.length||r.ignoredCount||approved.length>100)return;
+            if(!confirm(`ยืนยันนำเข้าการเปลี่ยนแปลง ${approved.length} แพ็กเกจลง D1? ทุกฟิลด์ที่เปลี่ยนในแพ็กเกจที่เลือกจะอัปเดต`))return;
+            const btn=document.getElementById('sheetImportConfirmBtn');btn.disabled=true;
+            try{
+                const result=await centralRequest('/catalog/import-confirm','POST',{expectedRevision:r.revision,previewDigest:r.previewDigest,approvedIds:approved});
+                clearSheetsImportPreview();await loadSharedStoreState();renderCategories();renderApps();
+                document.getElementById('integrationStatusText').textContent=`นำเข้า D1 สำเร็จ ${result.updated} แพ็กเกจ (ไม่เขียนย้อนทับชีต)`;
+                showToast('นำเข้าจาก Google Sheets สำเร็จ '+result.updated+' รายการ');
+            }catch(e){showToast('นำเข้าไม่สำเร็จ: '+e.message);document.getElementById('integrationStatusText').textContent=e.message;updateSheetsImportSelection();}
+        }
+        async function importSheetCategoryBatches(){
+            const first=pendingSheetPreview;if(sheetBatchRunning||!first)return;
+            if(first.ignoredCount){showToast('ยังมีรายการที่ข้าม กรุณาแก้ข้อมูลก่อน');return;}
+            const cat=sheetImportCategoryEl().value;
+            const selected=sheetCategoryChanges(first);
+            if(!selected.length)return;
+            const batchSize=Number(document.getElementById('sheetImportBatchSize').value)||100;
+            const name=cat||'ทุกหมวดหมู่';
+            if(!confirm(`ยืนยันนำเข้า ${selected.length} รายการที่เปลี่ยนใน ${name} ลง D1?\nแบ่งครั้งละไม่เกิน ${batchSize} รายการ ตรวจ Google Sheets ใหม่ทุกชุด และอัปเดตทุกฟิลด์ที่ต่างกันของแพ็กเกจที่นำเข้า`))return;
+            const allowedIds=new Set(selected.map(x=>String(x.id)));
+            sheetBatchRunning=true;sheetBatchStopRequested=false;
+            const stop=document.getElementById('sheetImportStopBtn');stop.classList.remove('hidden');
+            const progress=document.getElementById('sheetImportBatchProgress');
+            const status=document.getElementById('integrationStatusText');
+            let done=0,steps=0,failed=null;
+            try{
+                while(!sheetBatchStopRequested){
+                    // Fresh preview is required after every batch: revision/digest change after D1 writes.
+                    const current=await centralRequest('/catalog/import-preview','POST',{});
+                    if(current.ignoredCount)throw new Error('พบข้อมูลชีตไม่ตรง D1 '+current.ignoredCount+' รายการ: '+(current.ignored||[]).slice(0,2).join(', '));
+                    const pending=current.changes.filter(x=>allowedIds.has(String(x.id))&&(!cat||x.category===cat));
+                    if(!pending.length)break;
+                    const ids=pending.slice(0,batchSize).map(x=>String(x.id));
+                    progress.textContent=`กำลังส่งชุด ${steps+1}: ${ids.length} รายการ · นำเข้าสำเร็จแล้ว ${done}/${selected.length}`;
+                    const result=await centralRequest('/catalog/import-confirm','POST',{expectedRevision:current.revision,previewDigest:current.previewDigest,approvedIds:ids});
+                    if(!result.success||result.updated!==ids.length)throw new Error('ผลบันทึกไม่ตรงกับจำนวนที่ขอ กรุณาหยุดและตรวจ D1');
+                    ids.forEach(id=>allowedIds.delete(id));done+=result.updated;steps++;
+                    progress.textContent=`บันทึกแล้ว ${done}/${selected.length} รายการ (${steps} ชุด)`;
+                }
+            }catch(e){failed=e;progress.textContent=`หยุดหลังสำเร็จ ${done} รายการ: ${e.message}`;}
+            finally{
+                sheetBatchRunning=false;stop.classList.add('hidden');
+                try{
+                    await loadSharedStoreState();renderCategories();renderApps();
+                    await previewSheetsImportSafe();
+                    document.getElementById('sheetImportBatchProgress').textContent=failed?`นำเข้าสำเร็จ ${done} รายการ แล้วหยุด: ${failed.message}`:sheetBatchStopRequested?`หยุดตามคำขอ หลังนำเข้าสำเร็จ ${done} รายการ`:`เสร็จแล้ว ${done} รายการใน ${steps} ชุด`;
+                }catch(e){progress.textContent+=`\nโหลดหน้าร้านใหม่ไม่สำเร็จ: ${e.message}`;}
+                status.textContent=failed?`นำเข้าหยุด: ${failed.message}`:`นำเข้า ${done} รายการแล้ว · ไม่มีการเขียนย้อนทับ Google Sheets`;
+                showToast(failed?'นำเข้าหยุด: '+failed.message:`นำเข้าสำเร็จ ${done} รายการ`);
+            }
+        }
+
         async function syncGoogleSheetsData() {
             saveIntegrationSettings();
             const status=document.getElementById('integrationStatusText');
