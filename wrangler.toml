@@ -1,9 +1,9 @@
-name = "wanderer-central-test"
+﻿name = "wanderer-central-test"
 main = "worker.mjs"
 compatibility_date = "2026-10-16"
 [vars]
 ALLOWED_ORIGINS = "https://wanderer.wanderer-shop.workers.dev,https://wanderer.wanderershop001.workers.dev,https://wanderer-shop-test.pages.dev,https://0f185f1d.wanderer-shop-test.pages.dev"
-SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwLVBqh0ky0w947u08ZB1qzupJP_37l4ajdWHDy0qgIe6sBFxuz0qGE98RAwhVjV46fbA/exec"
+SHEETS_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbwpbqkzrN-B7S6W9iQqdUtnX_ByPXhErFp-QHpQwu8k-bDkRFcV7d7_FGHE6wnPxyZsoA/exec"
 [[d1_databases]]
 binding = "DB"
 database_name = "wanderer-shop-db"
@@ -23,3 +23,4 @@ head_sampling_rate = 1
 # Delete only order receipt images older than 3 days; retain order records.
 [triggers]
 crons = ["15 18 * * *"]
+
