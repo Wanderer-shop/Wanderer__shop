@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WANDERER SHOP - ร้านค้าสินค้าดิจิทัล</title>
     <!-- Patched v61: privacy-safe shared state and non-destructive browser-cache recovery -->
+    <!-- ADMIN REVIEWS TAB FIX 2026-11-02 -->
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -801,7 +802,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <div class="flex flex-wrap gap-2"><button type="button" onclick="saveIntegrationSettings()" class="px-4 py-2 bg-emerald-600 text-white rounded-xl text-xs font-bold">บันทึกการเชื่อมต่อ</button><button type="button" onclick="previewSheetsImportSafe()" class="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold">ตรวจการเปลี่ยนแปลงจาก Google Sheets</button><button type="button" onclick="testWorkerNotification()" class="px-4 py-2 bg-slate-700 text-white rounded-xl text-xs font-bold">ทดสอบ Worker</button><button type="button" onclick="refreshSharedStoreState()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold">โหลดข้อมูลจาก D1</button><button type="button" onclick="pushSharedStoreState().then(ok=>showToast(ok?'บันทึกข้อมูลกลางแล้ว':'บันทึกไม่สำเร็จ/ยังไม่ได้ล็อกอิน'))" class="px-4 py-2 bg-violet-700 text-white rounded-xl text-xs font-bold">บันทึกข้อมูลลง D1 + Google Sheets</button></div>
                     <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><label class="hidden"><input id="adminAutoSyncSheets" type="checkbox" disabled></label><label class="hidden text-xs">ทุก <select id="adminAutoSyncMinutes" onchange="setAutoSyncMinutes(this.value)" class="border rounded-lg p-1 dark:bg-slate-900"><option value="5">5</option><option value="15" selected>15</option><option value="30">30</option><option value="60">60</option></select> นาที</label><button type="button" onclick="exportStoreBackup()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">สำรองข้อมูล JSON</button><label class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold cursor-pointer">กู้คืน JSON<input type="file" accept="application/json,.json" class="hidden" onchange="importStoreBackup(this)"></label><button type="button" onclick="showSystemHistory()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">ดูประวัติระบบ</button></div>
                     <div id="sheetImportPreviewPanel" class="hidden border border-indigo-200 rounded-xl p-3 space-y-3 text-xs bg-indigo-50 dark:bg-slate-900">
-  <div class="flex flex-wrap items-center justify-between gap-2"><p class="font-bold">รายการที่แตกต่างระหว่าง Google Sheets กับ D1 (ยังไม่บันทึก)</p><span class="inline-block rounded-lg bg-indigo-700 px-2 py-1 text-white font-bold">Sheets Category Batch v2.1 • 2026-11-01</span></div>
+  <div class="flex flex-wrap items-center justify-between gap-2"><p class="font-bold">รายการที่แตกต่างระหว่าง Google Sheets กับ D1 (ยังไม่บันทึก)</p><span class="inline-block rounded-lg bg-indigo-700 px-2 py-1 text-white font-bold">Sheets Import Safe Skip v2.2 • 2026-11-02</span></div>
   <p id="sheetImportPreviewSummary" class="whitespace-pre-line"></p>
   <div class="flex flex-wrap items-center gap-2 rounded-xl border-2 border-indigo-400 bg-white dark:bg-slate-800 p-3"><label for="sheetImportCategory" class="font-bold">📂 เลือกหมวดหมู่ที่ตรวจและนำเข้า:</label><select id="sheetImportCategory" onchange="sheetSelectedIds.clear();renderSheetsImportChoices()" class="rounded-lg border p-2 dark:bg-slate-800"><option value="">ทุกหมวดหมู่</option></select><label for="sheetImportBatchSize">ขนาดชุด:</label><select id="sheetImportBatchSize" class="rounded-lg border p-2 dark:bg-slate-800"><option value="25">25</option><option value="50">50</option><option value="100" selected>100</option></select></div>
   <div class="flex flex-wrap items-center gap-2"><input id="sheetImportFilter" type="search" oninput="renderSheetsImportChoices()" placeholder="ค้นหา ID / ชื่อแอป / ราคา..." class="min-w-0 flex-1 px-3 py-2 border rounded-lg dark:bg-slate-800"><span id="sheetImportSelectedCount" class="text-slate-600 dark:text-slate-300">เลือก 0 รายการ</span></div>
@@ -850,6 +851,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <h3 class="font-bold text-md text-purple-600 border-b pb-2 flex items-center gap-2">
                         <i class="fa-solid fa-star text-amber-400"></i> จัดการรีวิวจากลูกค้า (ซ่อน / ลบรีวิว)
                     </h3>
+                    <div class="flex flex-wrap items-center justify-between gap-2"><p id="adminReviewsLoadStatus" class="text-xs text-slate-500" aria-live="polite">กำลังรอโหลดรีวิว</p><button type="button" onclick="refreshAdminReviews()" class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold">↻ โหลดรีวิวจาก D1 ใหม่</button></div>
                     <div id="adminReviewsList" class="space-y-3 text-xs"></div>
                 </div>
                                <div class="bg-white dark:bg-slate-800 border rounded-2xl p-5 space-y-2"><h4 class="font-bold">คำขอแลกรางวัล</h4><div id="v2AdminTickets"></div></div>
@@ -2379,17 +2381,47 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             `).join('');
         }
 
+        let centralReviews = [];
+        async function refreshPublicReviews() {
+            const result = await centralRequest('/reviews');
+            centralReviews = Array.isArray(result.reviews) ? result.reviews : [];
+            renderReviews();
+            return centralReviews;
+        }
+        async function refreshAdminReviews() {
+            const notice = document.getElementById('adminReviewsLoadStatus');
+            if (notice) notice.textContent = 'กำลังดึงรีวิวจาก D1...';
+            try {
+                const result = await centralRequest('/admin/reviews');
+                centralReviews = Array.isArray(result.reviews) ? result.reviews : [];
+                renderAdminFeedbacks();
+                if (notice) notice.textContent = 'โหลดรีวิวจาก D1 สำเร็จ (' + centralReviews.length + ' รายการ รวมรีวิวที่ซ่อน)';
+            } catch (e) {
+                console.warn('โหลดรีวิวแอดมินไม่ได้', e);
+                // Public endpoint does not require admin authorization; visible reviews can still be inspected.
+                // Never imply that public-only results are the full moderation list.
+                try {
+                    const publicResult = await centralRequest('/reviews');
+                    centralReviews = Array.isArray(publicResult.reviews) ? publicResult.reviews : [];
+                    renderAdminFeedbacks();
+                    if (notice) notice.textContent = 'โหลดรายการที่เผยแพร่ได้ ' + centralReviews.length + ' รีวิว แต่ยังโหลดสิทธิ์จัดการไม่ได้: ' + e.message + ' — กรุณาเข้าสู่ระบบแอดมินใหม่ / ตรวจ GET /admin/reviews ใน Network (รีวิวที่ซ่อนจะไม่แสดง)';
+                } catch (pubErr) {
+                    renderAdminFeedbacks();
+                    if (notice) notice.textContent = 'โหลดรีวิวไม่ได้: ' + e.message + ' / รีวิวสาธารณะ: ' + pubErr.message;
+                }
+            }
+        }
         function renderReviews() {
             const box = document.getElementById('reviewsFloatingBox');
-            const visible = appState.reviews.filter(r => !r.hidden);
+            const visible = [...centralReviews.filter(r => !r.hidden), ...appState.reviews.filter(r => !r.hidden && !centralReviews.some(c => c.id === r.id))];
 
             box.innerHTML = visible.length ? visible.map(r => `
                 <div class="p-3 bg-slate-50 dark:bg-slate-900/60 rounded-2xl border border-slate-100 dark:border-slate-700 text-xs space-y-1 shrink-0">
                     <div class="flex justify-between items-center">
-                        <span class="font-bold text-purple-600">${r.author}</span>
+                        <span class="font-bold text-purple-600">${escapeHtml(r.author || '')}</span>
                         <span class="text-amber-400 font-bold">${'⭐'.repeat(Number(r.rating) || 0)}</span>
                     </div>
-                    <p class="text-slate-600 dark:text-slate-300 text-[11px]">${r.text}</p>
+                    <p class="text-slate-600 dark:text-slate-300 text-[11px]">${escapeHtml(r.text || '')}</p>
                     <span class="text-[9px] text-slate-400 block text-right">${r.date || ''}</span>
                 </div>
             `).join('') : '<p class="text-xs text-slate-400 text-center py-8">ยังไม่มีรีวิวที่แสดงอยู่ในขณะนี้</p>';
@@ -2421,7 +2453,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             // Group packages by Package Group so customers can clearly distinguish each set.
             const groupedPackages = new Map();
             matchedPackages.forEach(pkg => {
-                const groupLabel = String(pkg.groupName || '').trim() || 'แพ็กเกจทั่วไป';
+                const groupLabel = String(pkg.packageCategory || pkg.groupName || '').trim() || 'แพ็กเกจทั่วไป';
                 if (!groupedPackages.has(groupLabel)) groupedPackages.set(groupLabel, []);
                 groupedPackages.get(groupLabel).push(pkg);
             });
@@ -2445,7 +2477,6 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         ${groupItems.map(pkg => `
                             <div class="min-w-0 bg-slate-50 dark:bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-between gap-3">
                                 <div>
-                                    ${pkg.packageCategory ? `<div class="text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">${escapeHtml(pkg.packageCategory)}</div>` : ''}
                                     <div class="flex justify-between items-start gap-3">
                                         <h4 class="font-bold text-sm text-slate-800 dark:text-white break-words">${escapeHtml(pkg.name)}</h4>
                                         <span class="text-base sm:text-lg font-black text-pink-500 whitespace-nowrap">฿${escapeHtml(pkg.price)}</span>
@@ -2738,13 +2769,11 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             }).join('\n---------------------------\n'); // ปรับให้มีขีดคั่นระหว่างรายการถ้ามีหลายรายการ
 
             const tmpl = `🛒 รายการสั่งซื้อ (Wanderer_Shop)\n\nเลขออเดอร์ : ${lineOrder.id}\n---------------------------\n${itemsText}\n---------------------------\n💰 ยอดรวมทั้งสิ้น: ${total.toLocaleString('th-TH')}฿\n---------------------------\nรบกวนรอแม่ค้าตอบก่อนค่อยโอนนะคะ`;
+            // Open LINE only on a second, explicit tap to avoid iOS Safari popup blocking.
             const copied = await copyToClipboard(tmpl);
-            if (copied) {
-                alert('คัดลอกข้อความแจ้งสั่งซื้อ LINE เรียบร้อยแล้วค่ะ\n\nเปิดห้องแชท LINE แล้ววางข้อความเพื่อส่งให้ร้านค้าได้เลย');
-                const rawId = String(appState.settings.lineId || '@997pfoig').trim();
-                const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
-                window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
-            }
+            if (!copied) { showToast('คัดลอกข้อความไม่สำเร็จ กรุณาลองใหม่'); return; }
+            showLineOrderCopiedPopup();
+
         }
 
         function showLineOrderCopiedPopup() {
@@ -2762,10 +2791,13 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 document.body.appendChild(modal);
                 modal.querySelector('#lineOrderCopiedClose').addEventListener('click',()=>modal.remove());
                 modal.querySelector('#lineOrderCopiedOpen').addEventListener('click',()=>{
-                    const rawId = String(appState.settings.lineId || '@997pfoig').trim();
+                    const rawId = String(appState.settings.lineId || '').trim();
+                    const configured = safeUrl(appState.settings.lineUrl);
                     const linePathId = rawId.startsWith('@') ? rawId : '@' + rawId;
-                    window.open(`https://line.me/R/ti/p/${encodeURIComponent(linePathId)}`, '_blank', 'noopener');
-                    modal.remove();
+                    const url = configured || (rawId ? `https://line.me/R/ti/p/${encodeURIComponent(linePathId)}` : '');
+                    if (!url) { showToast('กรุณาตั้งค่าลิงก์ LINE OA ในตั้งค่าร้านก่อน'); return; }
+                    // Direct synchronous navigation from the actual user click works on iPad/Safari.
+                    window.location.assign(url);
                 });
             }
         }
@@ -3369,7 +3401,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         // Customer Reviews & Feedback Submission
         function openAddReviewModal() { document.getElementById('addReviewModal').classList.remove('hidden'); }
         function closeAddReviewModal() { document.getElementById('addReviewModal').classList.add('hidden'); }
-        function submitCustomerReview(e) {
+        async function submitCustomerReview(e) {
             e.preventDefault();
             const author = document.getElementById('reviewAuthorInput').value;
             const mask = document.getElementById('reviewNameMaskSelect').value;
@@ -3381,18 +3413,14 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 finalName = author.substring(0, 2) + '***';
             }
 
-            appState.reviews.unshift({
-                id: 'rev-' + Date.now(),
-                author: finalName,
-                rating: rating,
-                text: text,
-                date: new Date().toLocaleDateString('th-TH'),
-                hidden: false
-            });
-            saveState();
-            renderReviews();
-            closeAddReviewModal();
-            showToast('โพสต์รีวิวเรียบร้อยแล้ว');
+            try {
+                await centralRequest('/reviews', 'POST', {author: finalName, rating, text});
+                document.getElementById('reviewTextInput').value = '';
+                await refreshPublicReviews();
+                closeAddReviewModal();
+                showToast('ส่งรีวิวขึ้นเว็บรวมสำเร็จ');
+            } catch (e) { showToast('ส่งรีวิวไม่สำเร็จ: ' + e.message); }
+
         }
 
         function openFeedbackModal() { document.getElementById('addFeedbackModal').classList.remove('hidden'); }
@@ -3547,10 +3575,10 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             else if (tabName === 'products') renderAdminProductsTree();
             else if (tabName === 'promotions') renderPromotionAdmin();
             else if (tabName === 'points') v2LoadAdmin();
-            else if (tabName === 'feedbacks') v2LoadTickets();
+            else if (tabName === 'feedbacks') { renderAdminFeedbacks(); refreshAdminReviews(); v2LoadTickets(); }
             else if (tabName === 'bank-accounts') loadAdminBankAccountsForm();
             else if (tabName === 'form-templates') populateFormTemplateCategorySelect();
-            else if (tabName === 'feedbacks') renderAdminFeedbacks();
+
             else if (tabName === 'settings-store') { loadStoreSettingsForm(); renderShopIdentityAndStatus(); }
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
             else if (tabName === 'website-theme') loadWebsiteThemeForm();
@@ -5192,12 +5220,13 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             `).join('') : '<p class="text-slate-400 italic">ไม่มีข้อเสนอแนะในขณะนี้</p>';
 
             const revBox = document.getElementById('adminReviewsList');
-            revBox.innerHTML = appState.reviews.length ? appState.reviews.map(r => `
+            const adminAllReviews = [...centralReviews, ...appState.reviews.filter(r => !centralReviews.some(c => c.id === r.id))];
+            revBox.innerHTML = adminAllReviews.length ? adminAllReviews.map(r => `
                 <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl border space-y-3">
                     <div class="flex justify-between items-start gap-3">
                         <div>
-                            <span class="font-bold ${r.hidden ? 'text-slate-400' : 'text-purple-600'}">${r.author} (${r.rating} ดาว)</span>
-                            <p class="text-slate-600 dark:text-slate-300 text-xs mt-1">${r.text}</p>
+                            <span class="font-bold ${r.hidden ? 'text-slate-400' : 'text-purple-600'}">${escapeHtml(r.author || '')} (${Number(r.rating)||0} ดาว)</span>
+                            <p class="text-slate-600 dark:text-slate-300 text-xs mt-1">${escapeHtml(r.text || '')}</p>
                             <span class="text-[9px] text-slate-400">${r.date || ''}</span>
                         </div>
                         <span class="text-[10px] px-2 py-1 rounded-full font-bold ${r.hidden ? 'bg-slate-200 text-slate-500' : 'bg-green-100 text-green-700'}">${r.hidden ? 'ซ่อนอยู่' : 'แสดงอยู่'}</span>
@@ -5212,7 +5241,11 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             `).join('') : '<p class="text-slate-400 italic">ไม่มีรีวิวในขณะนี้</p>';
         }
 
-        function toggleReviewVisibility(id) {
+        async function toggleReviewVisibility(id) {
+            if (String(id).startsWith('db-')) {
+                try { await centralRequest('/admin/reviews/'+encodeURIComponent(id),'PATCH',{action:'toggle'}); await refreshAdminReviews(); await refreshPublicReviews(); showToast('อัปเดตการแสดงรีวิวแล้ว'); }
+                catch(e){showToast(e.message)} return;
+            }
             const review = appState.reviews.find(r => r.id === id);
             if (!review) return;
             review.hidden = !review.hidden;
@@ -5222,7 +5255,12 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             showToast(review.hidden ? 'ซ่อนรีวิวแล้ว' : 'แสดงรีวิวแล้ว');
         }
 
-        function deleteReview(id) {
+        async function deleteReview(id) {
+            if (String(id).startsWith('db-')) {
+                if (!confirm('ต้องการลบรีวิวนี้ถาวร?')) return;
+                try { await centralRequest('/admin/reviews/'+encodeURIComponent(id),'DELETE'); await refreshAdminReviews(); await refreshPublicReviews(); showToast('ลบรีวิวแล้ว'); }
+                catch(e){showToast(e.message)} return;
+            }
             appState.reviews = appState.reviews.filter(r => r.id !== id);
             saveState();
             renderAdminFeedbacks();
@@ -5978,10 +6016,10 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const r=pendingSheetPreview;
             document.getElementById('sheetImportSelectedCount').textContent=`เลือกด้วยตัวเอง ${sheetSelectedIds.size} รายการ`;
             const btn=document.getElementById('sheetImportConfirmBtn');
-            btn.disabled=sheetBatchRunning||!r||!sheetSelectedIds.size||Boolean(r.ignoredCount)||sheetSelectedIds.size>100;
+            btn.disabled=sheetBatchRunning||!r||!sheetSelectedIds.size||sheetSelectedIds.size>100;
             btn.textContent=`ยืนยันนำเข้าเฉพาะ ${sheetSelectedIds.size} รายการที่เลือกลง D1`;
             const auto=document.getElementById('sheetImportAutoBatchBtn');
-            auto.disabled=sheetBatchRunning||!r||Boolean(r.ignoredCount)||!sheetCategoryChanges(r).length;
+            auto.disabled=sheetBatchRunning||!r||!sheetCategoryChanges(r).length;
         }
         async function previewSheetsImportSafe(){
             if(sheetBatchRunning)return;
@@ -6004,8 +6042,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         }
         async function confirmSheetsImportSafe(){
             const r=pendingSheetPreview;const approved=[...sheetSelectedIds];
-            if(sheetBatchRunning||!r||!approved.length||r.ignoredCount||approved.length>100)return;
-            if(!confirm(`ยืนยันนำเข้าการเปลี่ยนแปลง ${approved.length} แพ็กเกจลง D1? ทุกฟิลด์ที่เปลี่ยนในแพ็กเกจที่เลือกจะอัปเดต`))return;
+            if(sheetBatchRunning||!r||!approved.length||approved.length>100)return;
+            if(!confirm(`${r.ignoredCount?'คำเตือน: ข้าม '+r.ignoredCount+' รายการที่ข้อมูลไม่ถูกต้อง\n':''}ยืนยันนำเข้าการเปลี่ยนแปลง ${approved.length} แพ็กเกจลง D1? ทุกฟิลด์ที่เปลี่ยนในแพ็กเกจที่เลือกจะอัปเดต`))return;
             const btn=document.getElementById('sheetImportConfirmBtn');btn.disabled=true;
             try{
                 const result=await centralRequest('/catalog/import-confirm','POST',{expectedRevision:r.revision,previewDigest:r.previewDigest,approvedIds:approved});
@@ -6016,13 +6054,13 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         }
         async function importSheetCategoryBatches(){
             const first=pendingSheetPreview;if(sheetBatchRunning||!first)return;
-            if(first.ignoredCount){showToast('ยังมีรายการที่ข้าม กรุณาแก้ข้อมูลก่อน');return;}
+            if(first.ignoredCount){showToast('มี '+first.ignoredCount+' รายการที่ข้าม ระบบจะนำเข้าเฉพาะรายการตรวจผ่าน');}
             const cat=sheetImportCategoryEl().value;
             const selected=sheetCategoryChanges(first);
             if(!selected.length)return;
             const batchSize=Number(document.getElementById('sheetImportBatchSize').value)||100;
             const name=cat||'ทุกหมวดหมู่';
-            if(!confirm(`ยืนยันนำเข้า ${selected.length} รายการที่เปลี่ยนใน ${name} ลง D1?\nแบ่งครั้งละไม่เกิน ${batchSize} รายการ ตรวจ Google Sheets ใหม่ทุกชุด และอัปเดตทุกฟิลด์ที่ต่างกันของแพ็กเกจที่นำเข้า`))return;
+            if(!confirm(`${first.ignoredCount?'คำเตือน: ข้าม '+first.ignoredCount+' รายการที่ข้อมูลไม่ถูกต้อง\n':''}ยืนยันนำเข้า ${selected.length} รายการที่เปลี่ยนใน ${name} ลง D1?\nแบ่งครั้งละไม่เกิน ${batchSize} รายการ ตรวจ Google Sheets ใหม่ทุกชุด และอัปเดตทุกฟิลด์ที่ต่างกันของแพ็กเกจที่นำเข้า`))return;
             const allowedIds=new Set(selected.map(x=>String(x.id)));
             sheetBatchRunning=true;sheetBatchStopRequested=false;
             const stop=document.getElementById('sheetImportStopBtn');stop.classList.remove('hidden');
@@ -6033,7 +6071,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 while(!sheetBatchStopRequested){
                     // Fresh preview is required after every batch: revision/digest change after D1 writes.
                     const current=await centralRequest('/catalog/import-preview','POST',{});
-                    if(current.ignoredCount)throw new Error('พบข้อมูลชีตไม่ตรง D1 '+current.ignoredCount+' รายการ: '+(current.ignored||[]).slice(0,2).join(', '));
+                    // Invalid rows are omitted from changes and will never be imported.
                     const pending=current.changes.filter(x=>allowedIds.has(String(x.id))&&(!cat||x.category===cat));
                     if(!pending.length)break;
                     const ids=pending.slice(0,batchSize).map(x=>String(x.id));
@@ -6119,6 +6157,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             if (supabaseClient) {
                 try { const { data } = await supabaseClient.auth.getSession(); supabaseAuthSession = data?.session || null; } catch (e) { console.warn('D1 session restore failed', e); }
                 await loadSharedStoreState();
+                refreshPublicReviews().catch(e => console.warn('โหลดรีวิวรวมไม่สำเร็จ',e.message));
                 // Background catalog polling disabled.
             }
             normalizeCart();
