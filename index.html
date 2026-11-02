@@ -832,6 +832,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                   <label class="font-bold">สีพื้นหลังการ์ด<input id="themeCardBg" type="color" value="#ffffff" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
                   <label class="font-bold">สีกรอบการ์ด<input id="themeCardBorder" type="color" value="#e9d5ff" class="theme-edit-control block w-full h-11 mt-1 rounded-lg border"></label>
                   <label class="font-bold sm:col-span-2">แบบอักษร<select id="themeFontFamily" class="theme-edit-control block w-full mt-1 px-3 py-2 rounded-xl border dark:bg-slate-900"><option value="system">ค่าเริ่มต้นของอุปกรณ์</option><option value="prompt">Prompt</option><option value="sarabun">Sarabun</option><option value="sans">Arial / Sans-serif</option></select></label>
+                  <label class="font-bold sm:col-span-2">ขนาดตัวอักษรทั้งเว็บไซต์ <span id="themeFontSizeValue">100%</span>
+                    <input id="themeFontSize" type="range" min="85" max="125" step="5" value="100" class="theme-edit-control block w-full mt-2" aria-label="ขนาดตัวอักษรเว็บไซต์">
+                    <span class="block text-[10px] text-slate-500 mt-1">85% เล็กลง · 100% ปกติ · 125% ใหญ่ขึ้น (ปรับรวมทั้งเว็บ)</span>
+                  </label>
                 </div>
                 <div class="rounded-2xl p-4 border" id="websiteThemeSample"><h4 class="font-bold mb-2">ตัวอย่างการ์ด</h4><p class="text-xs mb-3">ตัวอย่างสีตัวอักษรและกรอบการ์ดที่ตั้งค่าไว้</p><button type="button" class="px-4 py-2 rounded-xl text-white text-xs font-bold">ปุ่มตัวอย่าง</button></div>
                 <p id="websiteThemeStatus" class="text-xs text-slate-500">โหมดดูอย่างเดียว — กด “แก้ไขสี” เพื่อเปลี่ยนค่า</p>
@@ -3234,44 +3238,36 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         function switchBankModalTab(method) {
             activeBankModalTab = method;
             const container = document.getElementById('bankModalAccountDetail');
-            const acc = appState.bankAccounts;
-
+            const acc = appState.bankAccounts || {};
             const tabMap = {
                 PROMPTPAY: document.getElementById('bankModalTabPromptPay'),
                 BANK: document.getElementById('bankModalTabBank'),
                 TRUEWALLET: document.getElementById('bankModalTabWallet')
             };
             Object.values(tabMap).forEach(btn => {
-                if (!btn) return;
-                btn.className = 'p-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300';
+                if (btn) btn.className = 'p-2 text-xs font-bold rounded-xl border border-slate-200 text-slate-600 dark:text-slate-300';
             });
             if (tabMap[method]) tabMap[method].className = 'p-2 text-xs font-bold rounded-xl border border-purple-500 bg-purple-50 text-purple-600';
-
-            if (method === 'PROMPTPAY') {
-                container.innerHTML = `
-                    <img src="${acc.promptpayQrUrl || ''}" class="w-36 h-36 mx-auto rounded-xl shadow-sm border mb-2" onerror="this.style.display='none';this.parentElement.insertAdjacentText('beforeend','⚠️')">
-                    <p class="font-bold text-xs text-purple-600">พร้อมเพย์: ${acc.promptpayNum || '-'}</p>
-                    <button type="button" onclick="copyToClipboard('${String(acc.promptpayNum || '').replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-[10px] font-bold">
-                        <i class="fa-solid fa-copy"></i> คัดลอกเลขบัญชี
-                    </button>
-                    <p class="text-[11px] text-slate-500">${acc.promptpayName || '-'}</p>`;
-            } else if (method === 'BANK') {
-                container.innerHTML = `
-                    <div class="p-3 bg-emerald-50 rounded-2xl w-full text-center">
-                        <p class="font-bold text-xs text-emerald-700">กสิกรไทย: ${acc.kbankNum || '-'}</p>
-                        <button type="button" onclick="copyToClipboard('${String(acc.kbankNum || '').replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 px-3 py-1.5 mt-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 rounded-lg text-[10px] font-bold">
-                            <i class="fa-solid fa-copy"></i> คัดลอกเลขบัญชี
-                        </button>
-                        <p class="text-[11px] text-slate-500 mt-1">${acc.kbankName || '-'}</p></div>`;
-            } else {
-                container.innerHTML = `
-                    <div class="p-3 bg-orange-50 rounded-2xl w-full text-center">
-                        <p class="font-bold text-xs text-orange-700">TrueWallet: ${acc.walletNum || '-'}</p>
-                        <button type="button" onclick="copyToClipboard('${String(acc.walletNum || '').replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg text-[10px] font-bold">
-                            <i class="fa-solid fa-copy"></i> คัดลอกเลขบัญชี
-                        </button>
-                        <p class="text-[11px] text-slate-500 mt-1">${acc.walletName || '-'}</p></div>`;
-            }
+            const safe = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+            const isBank = method === 'BANK';
+            const isWallet = method === 'TRUEWALLET';
+            const number = isBank ? acc.kbankNum : isWallet ? acc.walletNum : acc.promptpayNum;
+            const name = isBank ? acc.kbankName : isWallet ? acc.walletName : acc.promptpayName;
+            const label = isBank ? 'ธนาคารกสิกรไทย (KBANK)' : isWallet ? 'TrueMoney Wallet' : 'พร้อมเพย์ (PromptPay)';
+            const palette = isBank ? 'emerald' : isWallet ? 'orange' : 'purple';
+            const icon = isBank ? 'fa-building-columns' : isWallet ? 'fa-wallet' : 'fa-qrcode';
+            const qr = method === 'PROMPTPAY' && /^https:\/\//i.test(String(acc.promptpayQrUrl||''))
+                ? `<img src="${safe(acc.promptpayQrUrl)}" alt="พร้อมเพย์ QR" class="w-36 h-36 mx-auto rounded-xl object-contain mb-2" onerror="this.style.display='none'">` : '';
+            container.innerHTML = `
+                <div class="p-5 bg-${palette}-50 dark:bg-slate-800 rounded-2xl w-full text-center space-y-2">
+                    <i class="fa-solid ${icon} text-${palette}-600 text-3xl" aria-hidden="true"></i>
+                    <p class="font-bold text-sm text-${palette}-700 dark:text-${palette}-300">${label}</p>
+                    <p class="font-black text-lg text-slate-800 dark:text-white break-all" id="bankAccountViewerNumber">${safe(number || '-')}</p>
+                    ${qr}
+                    <button type="button" id="bankAccountViewerCopy" class="inline-flex items-center gap-1 px-3 py-1.5 bg-${palette}-100 hover:bg-${palette}-200 text-${palette}-800 rounded-lg text-xs font-bold"><i class="fa-solid fa-copy"></i> คัดลอก${isWallet?'เบอร์วอลเลต':'เลขบัญชี'}</button>
+                    <p class="text-xs text-slate-500 dark:text-slate-300">ชื่อบัญชี: ${safe(name || '-')}</p>
+                </div>`;
+            container.querySelector('#bankAccountViewerCopy')?.addEventListener('click', () => copyToClipboard(String(number || '')));
         }
 
         // Order Tracking
@@ -5742,14 +5738,14 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         setInterval(() => { if (appState.isAdminLoggedIn) renderVisitorCount(); }, 15000);
 
         // Website-wide appearance editor
-        const websiteThemeDefaults={pageBg:'#f8f7ff',textColor:'#334155',headingColor:'#6d28d9',buttonColor:'#7c3aed',cardBg:'#ffffff',cardBorder:'#e9d5ff',fontFamily:'system'};
+        const websiteThemeDefaults={pageBg:'#f8f7ff',textColor:'#334155',headingColor:'#6d28d9',buttonColor:'#7c3aed',cardBg:'#ffffff',cardBorder:'#e9d5ff',fontFamily:'system',fontSize:'100'};
         function getWebsiteTheme(){ return {...websiteThemeDefaults,...(appState.settings?.websiteTheme||{})}; }
-        function applyWebsiteTheme(){ const t=getWebsiteTheme(), root=document.documentElement; root.style.setProperty('--ws-page-bg',t.pageBg);root.style.setProperty('--ws-text',t.textColor);root.style.setProperty('--ws-heading',t.headingColor);root.style.setProperty('--ws-button',t.buttonColor);root.style.setProperty('--ws-card-bg',t.cardBg);root.style.setProperty('--ws-card-border',t.cardBorder);const fonts={system:'system-ui,sans-serif',prompt:'Prompt, system-ui, sans-serif',sarabun:'Sarabun, system-ui, sans-serif',sans:'Arial, sans-serif'};root.style.setProperty('--ws-font',fonts[t.fontFamily]||fonts.system); }
-        function loadWebsiteThemeForm(){ const t=getWebsiteTheme(); const map={themePageBg:'pageBg',themeTextColor:'textColor',themeHeadingColor:'headingColor',themeButtonColor:'buttonColor',themeCardBg:'cardBg',themeCardBorder:'cardBorder',themeFontFamily:'fontFamily'};Object.entries(map).forEach(([id,k])=>{const e=document.getElementById(id);if(e)e.value=t[k]||websiteThemeDefaults[k];}); enableWebsiteThemeEdit(false); updateWebsiteThemeSample(); }
+        function applyWebsiteTheme(){ const t=getWebsiteTheme(), root=document.documentElement; root.style.setProperty('--ws-page-bg',t.pageBg);root.style.setProperty('--ws-text',t.textColor);root.style.setProperty('--ws-heading',t.headingColor);root.style.setProperty('--ws-button',t.buttonColor);root.style.setProperty('--ws-card-bg',t.cardBg);root.style.setProperty('--ws-card-border',t.cardBorder);const fonts={system:'system-ui,sans-serif',prompt:'Prompt, system-ui, sans-serif',sarabun:'Sarabun, system-ui, sans-serif',sans:'Arial, sans-serif'};root.style.setProperty('--ws-font',fonts[t.fontFamily]||fonts.system);root.style.fontSize=Math.max(85,Math.min(125,Number(t.fontSize)||100))+'%'; }
+        function loadWebsiteThemeForm(){ const t=getWebsiteTheme(); const map={themePageBg:'pageBg',themeTextColor:'textColor',themeHeadingColor:'headingColor',themeButtonColor:'buttonColor',themeCardBg:'cardBg',themeCardBorder:'cardBorder',themeFontFamily:'fontFamily',themeFontSize:'fontSize'};Object.entries(map).forEach(([id,k])=>{const e=document.getElementById(id);if(e)e.value=t[k]||websiteThemeDefaults[k];}); enableWebsiteThemeEdit(false); updateWebsiteThemeSample(); }
         function enableWebsiteThemeEdit(on){ document.querySelectorAll('#adminTab-website-theme .theme-edit-control').forEach(e=>e.disabled=!on);const st=document.getElementById('websiteThemeStatus');if(st)st.textContent=on?'โหมดแก้ไข — ปรับค่าแล้วกด “บันทึก”':'โหมดดูอย่างเดียว — กด “แก้ไขสี” เพื่อเปลี่ยนค่า'; }
-        function updateWebsiteThemeSample(){const e=document.getElementById('websiteThemeSample');if(!e)return;const val=id=>document.getElementById(id)?.value; e.style.background=val('themeCardBg')||'#fff';e.style.borderColor=val('themeCardBorder')||'#ddd';e.style.color=val('themeTextColor')||'#334155';e.style.setProperty('--sample-heading',val('themeHeadingColor')||'#6d28d9');e.querySelector('h4').style.color=val('themeHeadingColor')||'#6d28d9';e.querySelector('button').style.background=val('themeButtonColor')||'#7c3aed';e.querySelector('p').style.color=val('themeTextColor')||'#334155';}
-        function saveWebsiteTheme(){const map={pageBg:'themePageBg',textColor:'themeTextColor',headingColor:'themeHeadingColor',buttonColor:'themeButtonColor',cardBg:'themeCardBg',cardBorder:'themeCardBorder',fontFamily:'themeFontFamily'};const t={};Object.entries(map).forEach(([k,id])=>t[k]=document.getElementById(id)?.value||websiteThemeDefaults[k]);appState.settings.websiteTheme=t;saveState();applyWebsiteTheme();updateWebsiteThemeSample();enableWebsiteThemeEdit(false);showToast('บันทึกสี ตัวอักษร และกรอบการ์ดแล้ว');}
-        function resetWebsiteThemeForm(){const map={themePageBg:'pageBg',themeTextColor:'textColor',themeHeadingColor:'headingColor',themeButtonColor:'buttonColor',themeCardBg:'cardBg',themeCardBorder:'cardBorder',themeFontFamily:'fontFamily'};Object.entries(map).forEach(([id,k])=>{const e=document.getElementById(id);if(e)e.value=websiteThemeDefaults[k];});updateWebsiteThemeSample();}
+        function updateWebsiteThemeSample(){const size=document.getElementById('themeFontSize');const display=document.getElementById('themeFontSizeValue');if(display&&size)display.textContent=size.value+'%';const e=document.getElementById('websiteThemeSample');if(!e)return;const val=id=>document.getElementById(id)?.value; e.style.fontSize=(Math.max(85,Math.min(125,Number(val('themeFontSize'))||100)))+'%';e.style.background=val('themeCardBg')||'#fff';e.style.borderColor=val('themeCardBorder')||'#ddd';e.style.color=val('themeTextColor')||'#334155';e.style.setProperty('--sample-heading',val('themeHeadingColor')||'#6d28d9');e.querySelector('h4').style.color=val('themeHeadingColor')||'#6d28d9';e.querySelector('button').style.background=val('themeButtonColor')||'#7c3aed';e.querySelector('p').style.color=val('themeTextColor')||'#334155';}
+        function saveWebsiteTheme(){const map={pageBg:'themePageBg',textColor:'themeTextColor',headingColor:'themeHeadingColor',buttonColor:'themeButtonColor',cardBg:'themeCardBg',cardBorder:'themeCardBorder',fontFamily:'themeFontFamily',fontSize:'themeFontSize'};const t={};Object.entries(map).forEach(([k,id])=>t[k]=document.getElementById(id)?.value||websiteThemeDefaults[k]);appState.settings.websiteTheme=t;saveState();applyWebsiteTheme();updateWebsiteThemeSample();enableWebsiteThemeEdit(false);showToast('บันทึกสี ตัวอักษร และกรอบการ์ดแล้ว');}
+        function resetWebsiteThemeForm(){const map={themePageBg:'pageBg',themeTextColor:'textColor',themeHeadingColor:'headingColor',themeButtonColor:'buttonColor',themeCardBg:'cardBg',themeCardBorder:'cardBorder',themeFontFamily:'fontFamily',themeFontSize:'fontSize'};Object.entries(map).forEach(([id,k])=>{const e=document.getElementById(id);if(e)e.value=websiteThemeDefaults[k];});updateWebsiteThemeSample();}
         document.addEventListener('input',e=>{if(e.target?.classList?.contains('theme-edit-control'))updateWebsiteThemeSample();});
         applyWebsiteTheme();
 
