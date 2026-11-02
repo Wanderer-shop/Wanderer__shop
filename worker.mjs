@@ -19,7 +19,7 @@ class Shop {
  async createSession(u){const t=token();await this.db.prepare('INSERT INTO sessions (token_hash,user_id,expires_at) VALUES (?,?,?)').bind(await hash(t),u.id,Date.now()+7*86400000).run();return t}
  async authCreate(b,role='customer'){const email=String(b.email||'').trim().toLowerCase(),name=String(b.name||'').trim(),pw=String(b.password||'');if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||pw.length<10||pw.length>128||name.length>120)err('อีเมลหรือรหัสผ่านไม่ถูกต้อง (อย่างน้อย 10 ตัวอักษร)');if(role==='customer'&&name.length<3)err('กรุณากรอกชื่ออย่างน้อย 3 ตัวอักษร');const id=crypto.randomUUID(),salt=crypto.randomUUID();try{await this.db.prepare('INSERT INTO users (id,email,name,password_hash,salt,role) VALUES (?,?,?,?,?,?)').bind(id,email,name||email,await passwordHash(pw,salt),salt,role).run()}catch(e){if(String(e).includes('UNIQUE'))err('อีเมลนี้ถูกใช้แล้ว',409);throw e}return {id,email,name:name||email,role}}
  customerOrder(o){const x=clean(o);delete x.token;delete x.adminNote;return x}
- async sheetSync(c){const e=this.env;if(!e.SHEETS_WEBAPP_URL||!e.SYNC_SHARED_SECRET)return {status:'not_configured'};const res=await fetch(e.SHEETS_WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync_catalog_to_sheets',syncToken:e.SYNC_SHARED_SECRET,updatedAt:c.updatedAt,categories:c.categories||[],apps:c.apps||[],packages:c.packages||[],idempotencyKey:c.revision})});const raw=await res.text();let result;try{result=JSON.parse(raw)}catch{throw Error('Google Apps Script response ไม่ใช่ JSON')}if(!res.ok||!result.success)throw Error(result.error||'Google Sheets sync failed');return {status:'saved',result}}
+ async sheetSync(c){const e=this.env;if(!e.SHEETS_WEBAPP_URL||!e.SYNC_SHARED_SECRET)return {status:'not_configured'};const res=await fetch(e.SHEETS_WEBAPP_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'sync_catalog_to_sheets',syncToken:e.SYNC_SHARED_SECRET,updatedAt:c.updatedAt,categories:c.categories||[],apps:c.apps||[],packages:c.packages||[],formTemplates:c.formTemplates||{},idempotencyKey:c.revision})});const raw=await res.text();let result;try{result=JSON.parse(raw)}catch{throw Error('Google Apps Script response ไม่ใช่ JSON')}if(!res.ok||!result.success)throw Error(result.error||'Google Sheets sync failed');return {status:'saved',result}}
   available(pkg){
     const status=String(pkg.status??pkg.stockStatus??pkg.availability??'').trim().toLowerCase().replace(/[\s-]+/g,'_');
     if(['out_of_stock','not_ready','waiting','unavailable','notready','not_ready_to_send'].includes(status))return false;
@@ -87,7 +87,7 @@ class Shop {
     const apps=new Map((c.apps||[]).map(a=>[String(a.id),a]));
     const pkgMap=new Map((c.packages||[]).map(p=>[String(p.id),p]));
     const categories=new Map((c.categories||[]).map(x=>[String(x.id),x.name]));
-    const changes=[],ignored=[];const ids=new Set();const sheetSamples=[];
+    const changes=[],ignored=[],warnings=[];const ids=new Set();const sheetSamples=[];
     for(const row of rows){
       const id=String(row.id||'').trim();
       if(!id){ignored.push('แถวไม่มี ID');continue}
@@ -108,18 +108,48 @@ class Shop {
       const no=['ไม่พร้อมส่ง','หมด','หมดสต็อก','out_of_stock','not_ready','waiting','false','0','ปิดขาย'];
       if(!yes.includes(raw)&&!no.includes(raw)){ignored.push('สถานะไม่รู้จัก: '+id);continue}
       const inStock=yes.includes(raw);
-      const fields={price, inStock, status:inStock?'IN_STOCK':'OUT_OF_STOCK',name:String(row.packageName||'').trim(),description:String(row.description||'').trim(),packageCategory:String(row.packageCategory||'').trim()};
+      const sheetGroup=String(row.packageCategory||'').trim();
+      // Column C is the storefront group title. Keep both legacy groupName and packageCategory in sync.
+      const fields={price,inStock,status:inStock?'IN_STOCK':'OUT_OF_STOCK',name:String(row.packageName||'').trim(),description:String(row.description||'').trim(),packageCategory:sheetGroup,groupName:sheetGroup};
+      // Column J optionally selects one of the configured customer-information templates.
+      // Blank cells intentionally mean 'keep existing', not clear existing requirements.
+      // Sheet J accepts human-readable template names; old IDs remain readable for compatibility.
+      // Unknown/ambiguous names never overwrite the existing D1 customer form.
+      const rawTemplate=String(row.customerRequirementTemplateId??'').trim();
+      if(rawTemplate){
+        const templates=[...(c.formTemplates?.customerRequirementTemplates||[])];
+        for(const builtin of [{id:'crt-none',name:'ไม่ต้องรับข้อมูลเพิ่มเติม',fields:[]},{id:'crt-email-pass',name:'อีเมล / รหัสผ่าน',fields:[]},{id:'crt-uid',name:'UID',fields:[]}]){
+          if(!templates.some(t=>String(t.id)===builtin.id))templates.push(builtin);
+        }
+        const normalized=x=>String(x??'').normalize('NFKC').trim().replace(/\s+/g,' ').toLocaleLowerCase('th-TH');
+        const aliases={'อีเมล + รหัสผ่าน':'crt-email-pass','อีเมลและรหัสผ่าน':'crt-email-pass','email / password':'crt-email-pass','email + password':'crt-email-pass','ไม่ต้องรับข้อมูล':'crt-none','ไม่ต้องระบุข้อมูลเพิ่มเติม':'crt-none','ไม่ต้องระบุข้อมูล':'crt-none','ไม่ต้องระบุ':'crt-none','ไม่มี':'crt-none','none':'crt-none','uid เกม':'crt-uid'};
+        const legacy=(rawTemplate.match(/\[([^\[\]]+)\]$/)||[])[1]||rawTemplate;
+        const exactId=templates.find(t=>String(t.id)===legacy);
+        const requestedName=normalized(rawTemplate);
+        const matched=exactId?[exactId]:templates.filter(t=>normalized(t.name)===requestedName);
+        if(!matched.length && aliases[requestedName])matched.push(...templates.filter(t=>t.id===aliases[requestedName]));
+        if(matched.length!==1){
+          warnings.push((matched.length?'ชื่อแบบฟอร์มซ้ำ: ':'ไม่พบแบบฟอร์มข้อมูลลูกค้า: ')+rawTemplate+' สำหรับ '+id+' — คงแบบฟอร์มเดิมใน D1');
+        } else {
+          const t=matched[0],requested=String(t.id);
+          fields.customerRequirementTemplateId=requested;
+          fields.requirementType=requested==='crt-email-pass'?'EMAIL_PASS':requested==='crt-uid'?'UID':(t.fields||[]).length?'CUSTOM':'NONE';
+          fields.customerRequirementType=fields.requirementType;
+          fields.customerFields=JSON.parse(JSON.stringify(t.fields||[]));
+          fields.loginMethods=(t.loginOptions||[]).map(x=>x.key);
+        }
+      }
       if(!fields.name){ignored.push('ชื่อแพ็กเกจว่าง: '+id);continue}
       const fieldChanges={};
       for(const [k,v] of Object.entries(fields)){
         if(k==='status'){if(Boolean(old.inStock)!==inStock)fieldChanges.status={from:old.status||'',to:v};continue}
         if(k==='inStock'){if(Boolean(old.inStock)!==v)fieldChanges.inStock={from:old.inStock,to:v};continue}
         if(k==='price'){if(Number(old.price)!==v)fieldChanges.price={from:old.price,to:v};continue}
-        if(String(old[k]??'')!==String(v))fieldChanges[k]={from:old[k]??'',to:v};
+        if((v&&typeof v==='object'?JSON.stringify(v):String(v))!==(old[k]&&typeof old[k]==='object'?JSON.stringify(old[k]):String(old[k]??'')))fieldChanges[k]={from:old[k]??'',to:v};
       }
       if(Object.keys(fieldChanges).length)changes.push({id,appName:app.name,category:String(categories.get(String(app.categoryId))||""),fields:fieldChanges,values:fields});
     }
-    return {changes,ignored,checked:ids.size,sheetSamples};
+    return {changes,ignored,warnings,checked:ids.size,sheetSamples};
   }
   defaultPointsConfig(){return {enabled:true, categoryPoints:{'แอพพรีเมี่ยม':10,'เติมเกม':15},slipPoints:1,rewards:[],slipAutoDelete:true,slipRetentionDays:3}}
   async pointsConfig(){const x=await this.db.prepare("SELECT value FROM shop_feature_config WHERE key='points_v1'").first();if(!x)return this.defaultPointsConfig();try{return {...this.defaultPointsConfig(),...JSON.parse(x.value)}}catch{return this.defaultPointsConfig()}}
@@ -134,6 +164,28 @@ class Shop {
   async v2Issue(owner,type,cfg){const required=Number(cfg.thresholds?.[type]??(type==='game'?15:10));if(!Number.isInteger(required)||required<1||required>100)err('threshold invalid');for(let cycle=0;cycle<10;cycle++){const available=await this.db.prepare('SELECT id,remaining_points FROM points_v2_stamps WHERE owner_id=? AND type=? AND ticket_id IS NULL AND remaining_points>0 ORDER BY created_at,id LIMIT 200').bind(owner,type).all();let total=(available.results||[]).reduce((a,x)=>a+Number(x.remaining_points||0),0);if(total<required)return;const ticketId=crypto.randomUUID(),earned=new Date(),expires=new Date(earned);expires.setUTCMonth(expires.getUTCMonth()+2);let need=required;const updates=[];for(const x of available.results){if(!need)break;const before=Number(x.remaining_points);const used=Math.min(need,before);updates.push(this.db.prepare('UPDATE points_v2_stamps SET remaining_points=? WHERE id=? AND remaining_points=? AND ticket_id IS NULL').bind(before-used,x.id,before));need-=used}const done=await this.db.batch([...updates,this.db.prepare('INSERT INTO points_v2_tickets(id,owner_id,type,earned_at,expires_at,status) VALUES(?,?,?,?,?,?)').bind(ticketId,owner,type,earned.toISOString(),expires.toISOString(),'AVAILABLE')]);if(done.slice(0,-1).some(x=>x.meta?.changes!==1))throw Error('แต้มเปลี่ยนระหว่างออกสิทธิ์ กรุณาตรวจประวัติบัตร')}}
 
  async route(r){const u=new URL(r.url),p=u.pathname.replace(/\/$/,'')||'/',m=r.method;
+ // Public reviews saved centrally; D1 migration is required before deployment.
+ if(p==='/reviews'&&m==='GET'){
+   const rows=await this.db.prepare('SELECT id,author,rating,text,created_at FROM shop_reviews WHERE hidden=0 ORDER BY created_at DESC LIMIT 100').all();
+   return respond({reviews:(rows.results||[]).map(x=>({id:x.id,author:x.author,rating:x.rating,text:x.text,date:x.created_at,hidden:false}))});
+ }
+ if(p==='/reviews'&&m==='POST'){
+   const b=await this.body(r),author=String(b.author||'').trim(),bodyText=String(b.text||'').trim(),rating=Number(b.rating);
+   if(author.length<2||author.length>60||bodyText.length<4||bodyText.length>700||!Number.isInteger(rating)||rating<1||rating>5)err('ชื่อ รีวิว หรือคะแนนไม่ถูกต้อง');
+   const id='db-'+crypto.randomUUID();
+   await this.db.prepare('INSERT INTO shop_reviews(id,author,rating,text) VALUES(?,?,?,?)').bind(id,author,rating,bodyText).run();
+   return respond({success:true,id},201);
+ }
+ if(p==='/admin/reviews'&&m==='GET'){
+   await this.admin(r);const rows=await this.db.prepare('SELECT id,author,rating,text,hidden,created_at FROM shop_reviews ORDER BY created_at DESC LIMIT 200').all();
+   return respond({reviews:(rows.results||[]).map(x=>({id:x.id,author:x.author,rating:x.rating,text:x.text,hidden:!!x.hidden,date:x.created_at}))});
+ }
+ if(p.startsWith('/admin/reviews/')&&(m==='PATCH'||m==='DELETE')){
+   await this.admin(r);const id=decodeURIComponent(p.slice('/admin/reviews/'.length));
+   if(!/^db-[a-f0-9-]{36}$/.test(id))err('Review ID invalid');
+   const result=m==='PATCH'?await this.db.prepare('UPDATE shop_reviews SET hidden=CASE WHEN hidden=0 THEN 1 ELSE 0 END WHERE id=?').bind(id).run():await this.db.prepare('DELETE FROM shop_reviews WHERE id=?').bind(id).run();
+   if(!result.meta?.changes)err('ไม่พบรีวิว',404);return respond({success:true});
+ }
  if(p==='/health')return respond({ok:true,backend:'cloudflare-d1'});
  if(p==='/auth/bootstrap'&&m==='POST'){if(!this.env.ADMIN_BOOTSTRAP_SECRET||!safeCompare(r.headers.get('X-Bootstrap-Secret'),this.env.ADMIN_BOOTSTRAP_SECRET))err('Unauthorized',403);const already=await this.db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").first();if(already)err('มีบัญชีแอดมินแล้ว',409);return respond({user:await this.authCreate(await this.body(r),'admin')},201)}
  if(p==='/auth/register'&&m==='POST'){
@@ -284,13 +336,14 @@ class Shop {
     await this.admin(r);const c=await this.catalog();if(!c)err('ไม่พบข้อมูลสินค้า',404);
     const rows=await this.readSheetProductRows();const check=this.compareSheets(c,rows);
     const digest=await hash(JSON.stringify(check.changes));
-    return respond({revision:c.revision,previewDigest:digest,checked:check.checked,changes:check.changes.map(({id,appName,category,fields})=>({id,appName,category,fields})),ignored:check.ignored.slice(0,30),ignoredCount:check.ignored.length,sheetSamples:check.sheetSamples,source:"Apps Script /exec read only",readAt:new Date().toISOString()});
+    return respond({revision:c.revision,previewDigest:digest,checked:check.checked,changes:check.changes.map(({id,appName,category,fields})=>({id,appName,category,fields})),ignored:check.ignored.slice(0,30),ignoredCount:check.ignored.length,warnings:check.warnings.slice(0,50),warningCount:check.warnings.length,sheetSamples:check.sheetSamples,source:"Apps Script /exec read only",readAt:new Date().toISOString()});
   }
   if(p==='/catalog/import-confirm'&&m==='POST'){
     await this.admin(r);const b=await this.body(r),c=await this.catalog();
     if(!c||b.expectedRevision!==c.revision)err('D1 มีการเปลี่ยนแปลงหลัง Preview กรุณาตรวจสอบใหม่',409);
     const rows=await this.readSheetProductRows();const check=this.compareSheets(c,rows);
-    if(check.ignored.length)err('มีข้อมูลที่ไม่ตรงกับ D1 กรุณาตรวจสอบชีตก่อน: '+check.ignored[0],409);
+    // Invalid or unrecognized rows are excluded by compareSheets. Apply only explicitly approved valid IDs.
+    // Keep the full comparison digest so intervening sheet changes still invalidate the approval.
     if(b.previewDigest!==await hash(JSON.stringify(check.changes)))err('Google Sheets มีการเปลี่ยนหลัง Preview กรุณาตรวจสอบใหม่',409);
     if(!check.changes.length)return respond({success:true,updated:0,revision:c.revision});
     const approved=Array.isArray(b.approvedIds)?b.approvedIds.map(String):[];
@@ -385,7 +438,7 @@ export default {
       const path = new URL(r.url).pathname;
 
       if (
-        ['/auth/login', '/auth/register', '/orders', '/points/v2/guest/create', '/points/v2/guest', '/points/v2/claim'].includes(path) &&
+        ['/auth/login', '/auth/register', '/orders', '/points/v2/guest/create', '/points/v2/guest', '/points/v2/claim', '/reviews'].includes(path) &&
         r.method === 'POST' &&
         env.RATE_LIMITER
       ) {
