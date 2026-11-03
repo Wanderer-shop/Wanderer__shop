@@ -188,7 +188,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <button onclick="navigateTo('home'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
                         <i class="fa-solid fa-house text-purple-500 w-5"></i> หน้าแรก
                     </button>
-                    <button onclick="navigateTo('points-guest'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200"><i class="fa-solid fa-star text-amber-500 w-5"></i> ⭐ สะสมแต้ม / รับแต้ม</button>
+                    <button onclick="navigateTo('points-guest'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200"><i class="fa-solid fa-star text-amber-500 w-5"></i>  สะสมแต้ม / รับแต้ม</button>
                     <button onclick="navigateTo('order-tracking'); toggleHamburgerDrawer(false)" class="w-full text-left px-3 py-2.5 rounded-xl hover:bg-purple-50 dark:hover:bg-slate-700 flex items-center gap-3 text-slate-700 dark:text-slate-200">
                         <i class="fa-solid fa-receipt text-indigo-500 w-5"></i> เช็คสถานะออเดอร์
                     </button>
@@ -401,7 +401,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         </div>
 
         <!-- CUSTOMER ACCOUNT: profile and purchase history only -->
-            <section id="viewPointsGuest" class="hidden bg-white dark:bg-slate-800 border rounded-2xl p-5 space-y-3"><h3 class="font-bold">⭐ สะสมแต้มโดยไม่ต้องสมัครสมาชิก</h3>
+            <section id="viewPointsGuest" class="hidden bg-white dark:bg-slate-800 border rounded-2xl p-5 space-y-3"><h3 class="font-bold">⭐ บัตรสะสมแต้ม</h3>
               <p class="text-xs">สำหรับลูกค้าไม่สมัคร: ระบบเก็บสิทธิ์บัตรไว้ในเบราว์เซอร์นี้โดยอัตโนมัติ สามารถระบุเลขออเดอร์หรือชื่อแอคเพื่อใช้เรียกบัตรได้ แต่ไม่ใช่รหัสยืนยันตัวตน หากล้างข้อมูลเบราว์เซอร์หรือเปลี่ยนอุปกรณ์อาจเข้าถึงบัตรเดิมไม่ได้</p>
               <button onclick="v2NewGuest()" class="bg-purple-600 text-white rounded-lg px-3 py-2 text-sm">สร้างบัตรสะสมแต้ม</button>
               <label class="block text-sm">เลขออเดอร์ / ชื่อแอค (ชื่อเรียกบัตร)<input id="v2GuestAlias" maxlength="80" class="w-full border rounded-lg p-2" placeholder="เช่น ORD-20261101-12345 หรือ ชื่อแอค"></label><input id="v2GuestCard" type="hidden"><p class="text-xs text-slate-500">ชื่อเรียกบัตรใช้สำหรับแสดงผลเท่านั้น ไม่ใช้แทนหลักฐานความเป็นเจ้าของ</p>
