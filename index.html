@@ -406,7 +406,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
               <button onclick="v2NewGuest()" class="bg-purple-600 text-white rounded-lg px-3 py-2 text-sm">สร้างบัตรสะสมแต้ม</button>
               <label class="block text-sm">เลขออเดอร์ / ชื่อแอค (ชื่อเรียกบัตร)<input id="v2GuestAlias" maxlength="80" class="w-full border rounded-lg p-2" placeholder="เช่น ORD-20261101-12345 หรือ ชื่อแอค"></label><input id="v2GuestCard" type="hidden"><p class="text-xs text-slate-500">ชื่อเรียกบัตรใช้สำหรับแสดงผลเท่านั้น ไม่ใช้แทนหลักฐานความเป็นเจ้าของ</p>
               <input id="v2GuestSecret" type="hidden">
-              <label class="block text-sm">รหัสลิงก์สะสมแต้ม (ภายใน 15 นาที)<input id="v2ClaimCode" class="w-full border rounded-lg p-2" placeholder="วางรหัสจากแอดมิน"></label>
+              <label class="block text-sm">รหัสรับแต้ม 20 ตัวอักษร (ภายใน 15 นาที)<input id="v2ClaimCode" class="w-full border rounded-lg p-2" placeholder="เช่น ABCDEFGHJKLMNPQRST2" maxlength="20" autocapitalize="characters"></label>
               <div class="flex gap-2 flex-wrap"><button onclick="v2GuestLoad()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">ดูบัตร</button><button onclick="v2GuestClaim()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm">รับแต้มครั้งเดียว</button></div>
               <p id="v2GuestNotice" class="text-xs text-amber-600"></p><div id="v2GuestView"></div>
             </section>
@@ -415,7 +415,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
             <div class="rounded-3xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-5 space-y-4">
                 <div class="flex items-center gap-3"><div id="customerProfileAvatar" class="w-14 h-14 rounded-full bg-pink-100 text-pink-600 flex items-center justify-center text-2xl font-bold">U</div><div><div id="customerProfileName" class="font-bold text-lg"></div><div class="text-sm text-slate-400">บัญชีสมาชิก</div></div></div>
                 <div class="p-4 rounded-xl border border-purple-200 space-y-3">
-                  <h3 class="font-bold">⭐ แต้มสะสมของฉัน</h3><div id="v2MemberCards">กำลังโหลด...</div><div id="v2MemberTickets"></div>
+                  <h3 class="font-bold">⭐ แต้มสะสมของฉัน</h3><div class="flex flex-wrap gap-2 mb-3"><input id="v2MemberClaimCode" type="text" maxlength="20" autocapitalize="characters" placeholder="กรอกรหัสรับแต้ม 20 ตัวอักษร" class="flex-1 min-w-52 border rounded-lg p-2 text-sm dark:bg-slate-900"><button type="button" onclick="v2MemberClaim()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold">รับแต้มเข้าบัญชี</button></div><div id="v2MemberCards">กำลังโหลด...</div><div id="v2MemberTickets"></div>
                 </div>
                 <div><h3 class="font-bold mb-3">ประวัติสินค้าที่ซื้อ</h3><div id="customerPurchaseHistory" class="space-y-3 text-sm text-slate-500">กำลังโหลด...</div></div>
             </div>
@@ -567,8 +567,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <button type="button" onclick="v2Save()" class="bg-emerald-600 text-white rounded-xl px-5 py-3 font-bold">บันทึกบัตรและรางวัลลง D1</button>
                </div>
                <div id="v2ClaimAdminPanel" class="bg-white dark:bg-slate-800 border-2 border-indigo-300 rounded-2xl p-5 space-y-3">
-                <h4 class="font-bold">🔗 ลิงก์สะสมแต้มสำหรับลูกค้าที่ไม่สมัคร (15 นาที / ครั้งเดียว)</h4>
-                <p class="text-xs">เว็บ: ใช้เลขออเดอร์ที่ส่งสินค้าแล้ว | LINE: ลงทะเบียนออเดอร์ด้านล่างก่อน จากนั้นสร้างลิงก์ 15 นาที ลูกค้าต้องมีบัตรสะสมในเบราว์เซอร์ของตน</p>
+                <h4 class="font-bold">🔑 รหัสรับแต้มสำหรับทุกออเดอร์ (สมาชิก / ไม่สมัคร · 15 นาที · ครั้งเดียว)</h4>
+                <p class="text-xs">ออกลิงก์ได้เมื่อมีเลขออเดอร์ในระบบ ไม่ต้องรอสถานะส่งสินค้า แต่ลูกค้าจะรับแต้มได้หลังยืนยันชำระเงินและส่งสินค้าแล้วเท่านั้น (ลิงก์หมดอายุ 15 นาที) · LINE ที่ขายผ่านแชทโดยไม่มีออเดอร์ต้องลงทะเบียนก่อน</p>
                 <label for="v2OrderChannel" class="block text-sm font-semibold">ช่องทางสั่งซื้อ</label>
                 <select id="v2OrderChannel" onchange="v2OrderChannelChanged()" class="border rounded-lg p-2 w-full dark:bg-slate-800"><option value="WEB">🌐 เว็บไซต์</option><option value="LINE">💚 LINE</option></select>
                 <p id="v2ChannelHelp" class="text-xs text-slate-500">ออเดอร์เว็บไซต์ต้องมีสถานะส่งสินค้าเสร็จแล้ว (READY_FOR_DELIVERY หรือ COMPLETED)</p>
@@ -582,15 +582,15 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <label class="block text-sm font-semibold" for="v2LinkPoints">จำนวนแต้มที่จะให้ (1–15)</label><input id="v2LinkPoints" type="number" min="1" max="15" step="1" value="1" class="border rounded-lg p-2 w-full dark:bg-slate-800"><p class="text-xs text-amber-700">ออเดอร์เว็บต้องไม่เกินแต้มที่หมวดอนุญาต • ออเดอร์ LINE ต้องเท่ากับแต้มที่ลงทะเบียนไว้</p>
                 <p class="text-xs text-indigo-700 dark:text-indigo-300">กรอกแค่เลขออเดอร์ที่อนุมัติสลิปแล้ว ลูกค้าจะเปิดลิงก์เพื่อรับแต้มเข้าบัตรบนอุปกรณ์ของตนเอง ไม่ต้องขอ Card ID</p><input id="v2GuestId" type="hidden" value="">
                 <details id="v2LineRegistration" class="hidden border rounded-xl p-3 bg-amber-50 dark:bg-slate-900 space-y-2"><summary class="font-bold cursor-pointer">🟢 ลูกค้าสั่งทาง LINE และส่งรหัสแล้ว — ลงทะเบียนรับแต้ม</summary>
-                  <p class="text-xs mt-2">ใช้เลขออเดอร์ขึ้นต้น LINE- ที่ไม่เคยลงทะเบียนมาก่อน เลือกบัตรและจำนวนแต้มด้านบน แล้วบันทึกออเดอร์หลังตรวจชำระเงินและส่งสินค้าเรียบร้อย</p>
+                  <p class="text-xs mt-2">เฉพาะออเดอร์ที่แอดมินขายตรงในแชท LINE และยังไม่มีในระบบเท่านั้น หากลูกค้ากดสั่งจากหน้าเว็บผ่านปุ่ม LINE OA จะมีเลข LINE- ในรายการออเดอร์อยู่แล้ว ไม่ต้องลงทะเบียนซ้ำ</p>
                   <label class="block text-xs mt-2"><input id="v2LinePaid" type="checkbox"> ตรวจสอบยอดชำระเงินจริงแล้ว</label>
                   <label class="block text-xs"><input id="v2LineDelivered" type="checkbox"> ส่งรหัส/สินค้าให้ลูกค้าเรียบร้อยแล้ว</label>
                   <button type="button" onclick="v2RegisterLineOrder()" class="block mt-2 px-4 py-2 bg-amber-600 text-white rounded-lg font-bold">บันทึกออเดอร์ LINE (ไม่ออกลิงก์ทันที)</button>
                 </details>
                 <p class="text-xs text-indigo-700 font-bold">Orders Channel v4.2 TEST — หนึ่งออเดอร์รับแต้มได้ครั้งเดียว</p>
-                <button type="button" onclick="v2IssueLink()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">สร้างรหัสลิงก์ 15 นาที</button>
-                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('v2IssuedCode').value.split('\n')[0]).then(()=>showToast('คัดลอกลิงก์แล้ว')).catch(()=>showToast('คัดลอกไม่สำเร็จ'))" class="px-3 py-2 bg-slate-700 text-white rounded-lg text-xs">คัดลอกลิงก์</button>
-                <textarea id="v2IssuedCode" readonly rows="3" class="border p-2 w-full rounded-lg" placeholder="รหัสใช้ครั้งเดียวจะปรากฏที่นี่"></textarea>
+                <button type="button" onclick="v2IssueLink()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">สร้างรหัสรับแต้ม 20 ตัว (15 นาที)</button>
+                <button type="button" onclick="navigator.clipboard.writeText((document.getElementById('v2IssuedCode').value.match(/รหัสรับแต้ม: ([A-Z2-9]{20})/)||[])[1]||'').then(()=>showToast('คัดลอกรหัสแล้ว')).catch(()=>showToast('คัดลอกไม่สำเร็จ'))" class="px-3 py-2 bg-slate-700 text-white rounded-lg text-xs">คัดลอกรหัส</button>
+                <textarea id="v2IssuedCode" readonly rows="3" class="border p-2 w-full rounded-lg" placeholder="รหัสรับแต้ม 20 ตัวอักษรจะปรากฏที่นี่"></textarea>
                </div>
 
              </section>
@@ -765,9 +765,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                         <textarea id="adminLineOrderFormTemplate" rows="7" class="w-full p-3 text-xs rounded-xl border dark:bg-slate-800 font-mono leading-relaxed"></textarea>
                     </div>
 
-                    <button onclick="saveAdminFormTemplates()" class="px-5 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-purple-700 transition">
-                        บันทึกแบบฟอร์มทั้งหมด
-                    </button>
+                        <button id="deliveryFormsSaveBtn" onclick="saveAdminFormTemplates()" class="px-5 py-2.5 bg-purple-600 text-white text-xs font-bold rounded-xl shadow-md hover:bg-purple-700 transition">
+                            บันทึกแบบฟอร์มทั้งหมดลง D1
+                        </button>
+                        <p id="deliveryFormsSaveStatus" class="text-xs text-slate-500" role="status" aria-live="polite">Delivery Forms D1 FIX v1 • บันทึกลง D1 โดยตรง ไม่เขียนทับ Google Sheets</p>
                 </div>
             </div>
 
@@ -1345,6 +1346,12 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <label for="adminDeliveryDataTextArea" class="block text-xs font-bold text-slate-700 dark:text-slate-200">ข้อความ / ข้อมูลสินค้าที่จัดส่ง</label>
                 <textarea id="adminDeliveryDataTextArea" rows="6" placeholder="กรอกข้อมูลรหัส Gift Code / Link Invite / Email & Pass..." class="w-full p-3 text-xs rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-mono focus:ring-2 focus:ring-purple-400 focus:outline-none"></textarea>
             </div>
+            <div class="space-y-2 p-3 rounded-xl border border-violet-200 bg-violet-50/50 dark:bg-slate-900">
+                <label for="adminPointsClaimLink" class="block text-xs font-bold text-violet-700">⭐ รหัสสะสมแต้ม 20 ตัวสำหรับส่งให้ลูกค้า (15 นาที / ครั้งเดียว)</label>
+                <textarea id="adminPointsClaimLink" rows="2" class="w-full rounded-lg border p-2 text-xs dark:bg-slate-800" placeholder="วางรหัส 20 ตัวอักษรจากแท็บสะสมแต้มที่นี่"></textarea>
+                <p class="text-[11px] text-slate-600">สร้างลิงก์จากเลขออเดอร์เดิมแล้ววางที่นี่ ลูกค้าจะกดรับแต้มได้หลังออเดอร์ผ่านสถานะส่งสินค้าแล้วเท่านั้น</p>
+                <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('adminPointsClaimLink').value).then(()=>showToast('คัดลอกรหัสแล้ว')).catch(()=>showToast('คัดลอกไม่สำเร็จ'))" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs">คัดลอกรหัสรับแต้ม</button>
+            </div>
 
             <div class="space-y-2 p-3 rounded-2xl border border-indigo-100 dark:border-slate-700 bg-indigo-50/60 dark:bg-slate-900">
                 <label for="adminDeliveryImagesInput" class="block text-xs font-bold text-indigo-700 dark:text-indigo-300"><i class="fa-regular fa-image mr-1"></i>แนบรูปภาพที่ต้องการส่งให้ลูกค้า</label>
@@ -1630,16 +1637,17 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         function orderTokens(){try{return JSON.parse(localStorage.getItem('wanderer_order_tokens')||'{}');}catch{return {};}}
         // Friendly order numbers use the Bangkok calendar date and a random five-digit suffix.
         // A secret access token (kept on this device) still protects private order details.
-        function makeOrderId() {
+        function makeOrderId(channel='WEB') {
             const parts = new Intl.DateTimeFormat('en-US', {
                 timeZone:'Asia/Bangkok', year:'numeric', month:'2-digit', day:'2-digit'
             }).formatToParts(new Date());
             const datePart = ['year','month','day'].map(key => parts.find(p => p.type === key)?.value || '').join('');
-            const digits = crypto.getRandomValues(new Uint32Array(1))[0] % 90000 + 10000;
-            return `ORD-${datePart}-${digits}`;
+            const rand = crypto.getRandomValues(new Uint32Array(1))[0];
+            if(channel==='LINE')return `LINE-${datePart}-${String(rand % 900000 + 100000)}`;
+            return `ORD-${datePart}-${String(rand % 90000 + 10000)}`;
         }
         function ownedOrderIds() {
-            return Object.keys(orderTokens()).filter(id => /^ORD-[A-Za-z0-9_-]+$/.test(id));
+            return Object.keys(orderTokens()).filter(id => /^(?:ORD|LINE)-[A-Za-z0-9_-]+$/.test(id));
         }
         function renderOwnedOrderLinks() {
             const root = document.getElementById('ownedOrdersList');
@@ -1669,7 +1677,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         async function persistCentralOrder(order) {
-            const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({items:order.items,total:order.total,paymentMethod:order.paymentMethod,requirements:order.customerRequirements,slip:order.slipImg})))),b=>b.toString(16).padStart(2,'0')).join('');
+            const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({items:order.items,total:order.total,paymentMethod:order.paymentMethod,source:order.source,requirements:order.customerRequirements,slip:order.slipImg})))),b=>b.toString(16).padStart(2,'0')).join('');
             let pending;try{pending=JSON.parse(sessionStorage.getItem('wanderer_pending_order')||'null');}catch{}
             if(pending?.fingerprint===fingerprint)order.id=pending.id;
             else sessionStorage.setItem('wanderer_pending_order',JSON.stringify({fingerprint,id:order.id}));
@@ -2746,8 +2754,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
 
             const itemsSnapshot = appState.cart.map(item => ({ ...item, qty: getCartQuantity(item) }));
             const total = getCartTotal();
-            const orderId = makeOrderId();
-            const lineOrder = { id: orderId, date: new Date().toLocaleString('th-TH'), items: itemsSnapshot, total, paymentMethod: 'LINE OA', source: 'LINE', status: 'AWAITING_PAYMENT', deliveryData: '', customerRequirements: appState.pendingCustomerRequirements || {} };
+            const orderId = makeOrderId('LINE');
+            const lineOrder = { id: orderId, date: new Date().toLocaleString('th-TH'), items: itemsSnapshot, total, paymentMethod: 'LINE OA', source: 'LINE_OA', status: 'AWAITING_PAYMENT', deliveryData: '', customerRequirements: appState.pendingCustomerRequirements || {} };
             try { await persistCentralOrder(lineOrder); } catch(e){alert('ยังไม่ได้สร้างออเดอร์: '+e.message);return;}
             appState.orders.unshift(lineOrder);
             showOrderAccessCode(lineOrder.id);
@@ -3303,6 +3311,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     <p><strong>วันที่:</strong> ${ord.date}</p>
                     <p><strong>รายการ:</strong> ${ord.items.map(i => i.name).join(', ')}</p>
                     <p><strong>ราคารวม:</strong> ฿${ord.total}</p>
+                    ${ord.pointsClaimLink ? `<div class="p-3 rounded-xl bg-violet-50 border border-violet-200 text-xs"><p class="font-bold">⭐ รหัสรับแต้ม (15 นาที / ครั้งเดียว)</p><p class="break-all font-mono">${escapeHtml(ord.pointsClaimLink)}</p></div>` : ''}
                     ${ord.deliveryData ? `
                         <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-purple-200">
                             <span class="font-bold text-purple-600 block mb-1">🎁 ข้อมูลสินค้าดิจิทัลที่คุณได้รับ:</span>
@@ -3481,17 +3490,24 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         function v2TypeOptions(includeBoth=false){v2EnsureCardTypes();return [['','ไม่ร่วมสะสม'],...v2Cfg.cardTypes.map(t=>[t.id,t.name]),...(includeBoth?[['both','🎁 รางวัลร่วมทุกประเภท']]:[])]}
         async function v2LoadAdmin(){try{const out=await centralRequest('/admin/points/v2');v2Cfg=out.config;document.getElementById('v2Enabled').checked=!!v2Cfg.enabled;document.getElementById('v2Delete').checked=v2Cfg.slipAutoDelete!==false;document.getElementById('v2Days').value=v2Cfg.slipRetentionDays||3;document.getElementById('v2ThresholdPremium').value=v2Cfg.thresholds?.premium??10;document.getElementById('v2ThresholdGame').value=v2Cfg.thresholds?.game??15;v2RenderAdmin();const link=document.getElementById('v2LinkCardType');if(link){const before=link.value;link.replaceChildren();for(const t of v2Cfg.cardTypes)link.add(new Option(t.name,t.id));if(v2Cfg.cardTypes.some(t=>t.id===before))link.value=before}v2LoadTickets()}catch(e){showToast('โหลดกติกาบัตรไม่สำเร็จ: '+e.message)}}
         function v2RenderAdmin(){v2EnsureCardTypes();v2RenderCardTypes();const linkSelect=document.getElementById('v2LinkCardType');if(linkSelect){const chosen=linkSelect.value;linkSelect.replaceChildren();v2Cfg.cardTypes.forEach(t=>linkSelect.add(new Option(t.name,t.id)));if(v2Cfg.cardTypes.some(t=>t.id===chosen))linkSelect.value=chosen;}const tp=document.getElementById('v2ThresholdInfoPremium'),tg=document.getElementById('v2ThresholdInfoGame');if(tp)tp.textContent=v2Cfg.thresholds?.premium??10;if(tg)tg.textContent=v2Cfg.thresholds?.game??15;const cards=document.getElementById('v2CardSettings'),groups=document.getElementById('v2RewardGroups');cards.replaceChildren();groups.replaceChildren();for(const {id:t,name:cardName} of v2Cfg.cardTypes){const c=v2Cfg.cards[t]||{mode:'same',images:[]};const box=v2Node('div','border rounded-lg p-3 space-y-2');box.append(v2Node('b','',cardName+' ('+(v2Cfg.thresholds?.[t]??10)+' ช่อง)'));const sel=v2Node('select','border p-2 w-full rounded-lg');[['same','รูปเดียวซ้ำ'],['cycle','รูปคละวนซ้ำ'],['custom','กำหนดรายช่อง (คั่นด้วยขึ้นบรรทัดใหม่)']].forEach(([value,name])=>{const opt=new Option(name,value);sel.add(opt)});sel.value=c.mode;sel.onchange=()=>c.mode=sel.value;box.append(sel);const area=v2Node('textarea','border rounded-lg p-2 w-full');area.rows=3;area.placeholder='URL รูป HTTPS บรรทัดละรูป';area.value=(c.images||[]).join('\n');area.oninput=()=>c.images=area.value.split('\n').map(x=>x.trim()).filter(Boolean);box.append(area);cards.append(box);v2Cfg.cards[t]=c}
-        {const root=document.getElementById('v2CategoryCardMap');root.replaceChildren();v2Cfg.categoryCardMap ||= {'แอพพรีเมี่ยม':'premium','เติมเหรียญนิยาย':'premium','เติมเกม':'game'};v2Cfg.categoryEarnPoints ||= {};v2Cfg.categoryDescriptions ||= {};const names=(appState.categories||[]).map(x=>x.name).filter(Boolean);for(const name of new Set([...names,...Object.keys(v2Cfg.categoryCardMap)])){const card=v2Node('div','border rounded-xl p-3 space-y-2 text-sm bg-white dark:bg-slate-800');card.append(v2Node('b','block text-purple-700 dark:text-purple-300',name));const select=v2Node('select','border rounded-lg p-2 w-full dark:bg-slate-900');v2TypeOptions().forEach(([val,text])=>select.add(new Option(text,val)));select.value=v2Cfg.categoryCardMap[name]||'';select.onchange=()=>{v2Cfg.categoryCardMap[name]=select.value;pointsRow.classList.toggle('hidden',!select.value)};card.append(select);const pointsRow=v2Node('label','block text-xs font-semibold','แต้มที่ได้ต่อออเดอร์ (1–15)');const points=v2Node('input','block mt-1 border rounded-lg p-2 w-full dark:bg-slate-900');points.type='number';points.min='1';points.max='15';points.step='1';points.value=String(v2Cfg.categoryEarnPoints[name]??1);points.oninput=()=>v2Cfg.categoryEarnPoints[name]=Number(points.value);pointsRow.append(points);card.append(pointsRow);pointsRow.classList.toggle('hidden',!select.value);const descRow=v2Node('label','block text-xs font-semibold','รายละเอียด / เงื่อนไขเพิ่มเติมของหมวด');const desc=v2Node('textarea','block mt-1 border rounded-lg p-2 w-full dark:bg-slate-900');desc.rows=2;desc.maxLength=500;desc.placeholder='เช่น ซื้อครบตามเงื่อนไข รับแต้มเข้าบัตรที่เลือก';desc.value=v2Cfg.categoryDescriptions[name]||'';desc.oninput=()=>v2Cfg.categoryDescriptions[name]=desc.value;descRow.append(desc);card.append(descRow);root.append(card)}}
+        {const root=document.getElementById('v2CategoryCardMap');root.replaceChildren();v2Cfg.categoryCardMap ||= {'แอพพรีเมี่ยม':'premium','เติมเหรียญนิยาย':'premium','เติมเกม':'game'};v2Cfg.categoryEarnPoints ||= {};v2Cfg.categoryDescriptions ||= {};
+        root.className='border rounded-xl p-4 space-y-3 bg-white dark:bg-slate-800';
+        const title=v2Node('h4','font-bold text-purple-700','📂 เลือกหมวดสินค้าที่ต้องการตั้งค่าบัตรสะสมแต้ม');root.append(title);
+        const names=(appState.categories||[]).map(x=>x.name).filter(Boolean);const unique=[...new Set([...names,...Object.keys(v2Cfg.categoryCardMap)])];
+        const catSelect=v2Node('select','border rounded-lg p-3 w-full dark:bg-slate-900');unique.forEach(n=>catSelect.add(new Option(n,n)));root.append(catSelect);
+        const detail=v2Node('div','space-y-3');root.append(detail);
+        const refresh=()=>{const name=catSelect.value;detail.replaceChildren();const map=v2Node('select','border rounded-lg p-3 w-full dark:bg-slate-900');v2TypeOptions().forEach(([val,text])=>map.add(new Option(text,val)));map.value=v2Cfg.categoryCardMap[name]||'';const note=v2Node('p','text-xs text-indigo-700');const show=()=>{const t=v2Cfg.cardTypes.find(x=>x.id===map.value);note.textContent=t?name+' ใช้บัตรสะสม '+t.name+' — สะสมครบ '+(v2Cfg.thresholds?.[t.id]??10)+' แต้ม':'หมวดนี้ไม่นับแต้ม';};map.onchange=()=>{v2Cfg.categoryCardMap[name]=map.value;show()};detail.append(v2Node('label','font-semibold text-sm','ประเภทบัตรที่ใช้สะสม'),map,note);show();const points=v2Node('input','block border rounded-lg p-2 w-full');points.type='number';points.min='1';points.max='15';points.value=String(v2Cfg.categoryEarnPoints[name]??1);points.oninput=()=>v2Cfg.categoryEarnPoints[name]=Number(points.value);detail.append(v2Node('label','font-semibold text-sm','จำนวนแต้มต่อออเดอร์ (1–15)'),points);const desc=v2Node('textarea','block border rounded-lg p-2 w-full');desc.rows=2;desc.maxLength=500;desc.value=v2Cfg.categoryDescriptions[name]||'';desc.oninput=()=>v2Cfg.categoryDescriptions[name]=desc.value;detail.append(v2Node('label','font-semibold text-sm','เงื่อนไขเพิ่มเติมของหมวด'),desc)};
+        catSelect.onchange=refresh;refresh();}
         v2Cfg.rewardGroups.forEach((g,i)=>{const box=v2Node('div','border-2 border-purple-100 dark:border-slate-700 rounded-xl p-4 space-y-3');box.append(v2Node('p','text-xs font-bold text-purple-600',g.type==='both'?'🎁 ชุดรางวัลร่วมทุกบัตร':((v2Cfg.cardTypes||[]).find(x=>x.id===g.type)?.name||g.type)+' — สะสมครบ '+(v2Cfg.thresholds?.[g.type]??10)+' แต้ม'));box.append(v2Input('ชื่อชุดรางวัล',g.name,v=>g.name=v));const sel=v2Node('select','border rounded-lg p-2 w-full');v2TypeOptions(true).filter(x=>x[0]).forEach(([value,label])=>sel.add(new Option(label,value)));sel.value=g.type;sel.onchange=()=>g.type=sel.value;box.append(sel);const options=v2Node('textarea','border rounded-lg p-2 w-full');options.rows=4;options.placeholder='รางวัลหนึ่งอย่างต่อบรรทัด';options.value=g.options.join('\n');options.oninput=()=>g.options=options.value.split('\n').map(x=>x.trim()).filter(Boolean);box.append(options);const active=v2Node('input');active.type='checkbox';active.checked=g.active;active.onchange=()=>g.active=active.checked;box.append(v2Node('span','text-xs','เปิดใช้ '),active);const del=v2Node('button','text-rose-600 ml-4','ลบชุดนี้');del.onclick=()=>{v2Cfg.rewardGroups.splice(i,1);v2RenderAdmin()};box.append(del);groups.append(box)})}
         function v2AddGroup(){if(!v2Cfg)return;v2Cfg.rewardGroups.push({id:'grp_'+crypto.randomUUID().replaceAll('-',''),type:'premium',name:'ชุดรางวัลใหม่',options:['รางวัลใหม่'],active:false});v2RenderAdmin()}
         async function v2Save(){try{v2Cfg.enabled=document.getElementById('v2Enabled').checked;v2Cfg.slipAutoDelete=document.getElementById('v2Delete').checked;v2Cfg.slipRetentionDays=Number(document.getElementById('v2Days').value);const premium=Number(document.getElementById('v2ThresholdPremium').value),game=Number(document.getElementById('v2ThresholdGame').value);if(!Number.isInteger(premium)||premium<1||premium>100||!Number.isInteger(game)||game<1||game>100)throw Error('แต้มที่ต้องครบต้องเป็นจำนวนเต็ม 1–100');v2EnsureCardTypes();v2Cfg.thresholds={...v2Cfg.thresholds,premium,game};if(v2Cfg.cardTypes.some(t=>!t.name.trim()||!Number.isInteger(Number(v2Cfg.thresholds[t.id]))||Number(v2Cfg.thresholds[t.id])<1||Number(v2Cfg.thresholds[t.id])>100))throw Error('ชื่อบัตรและเกณฑ์แต้มต้องถูกต้อง');const saved=await centralRequest('/admin/points/v2','PUT',{config:v2Cfg});v2Cfg=saved.config||v2Cfg;v2RenderAdmin();showToast('บันทึกเกณฑ์สะสมแต้มและกติกาบัตรสำเร็จ')}catch(e){showToast('บันทึกไม่สำเร็จ: '+e.message)}}
-        function v2OrderChannelChanged(){const channel=document.getElementById('v2OrderChannel')?.value||'WEB';const line=channel==='LINE';document.getElementById('v2LineRegistration')?.classList.toggle('hidden',!line);const hint=document.getElementById('v2ChannelHelp');if(hint)hint.textContent=line?'LINE: เลือกเลขออเดอร์ที่ลงทะเบียนและยืนยันการส่งสินค้าแล้ว หรือบันทึกรายการ LINE ใหม่ด้านล่าง':'เว็บไซต์: ใช้ออเดอร์จริงในระบบ โดยต้องมีสถานะ READY_FOR_DELIVERY หรือ COMPLETED; ไม่ต้องตรวจไฟล์รูปสลิปอีกครั้ง';}
+        function v2OrderChannelChanged(){const channel=document.getElementById('v2OrderChannel')?.value||'WEB';const line=channel==='LINE';document.getElementById('v2LineRegistration')?.classList.toggle('hidden',!line);const hint=document.getElementById('v2ChannelHelp');if(hint)hint.textContent=line?'LINE: ใช้เลข LINE- จากรายการออเดอร์ที่ส่งสินค้าแล้วได้ทันที; ส่วนที่ลงทะเบียนด้านล่างใช้เฉพาะรายการขายในแชทที่ไม่มีในระบบ':'เว็บไซต์: ใช้ออเดอร์จริงในระบบ โดยต้องมีสถานะ READY_FOR_DELIVERY หรือ COMPLETED; ไม่ต้องตรวจไฟล์รูปสลิปอีกครั้ง';}
         async function v2SaveSlipPolicy(){try{const out=await centralRequest('/admin/points/v2');const config=out.config;config.slipAutoDelete=!!document.getElementById('v2Delete').checked;config.slipRetentionDays=Number(document.getElementById('v2Days').value);if(!Number.isInteger(config.slipRetentionDays)||config.slipRetentionDays<1||config.slipRetentionDays>365)throw Error('จำนวนวันต้องอยู่ในช่วง 1–365');await centralRequest('/admin/points/v2','PUT',{config});showToast('บันทึกนโยบายสลิปสำเร็จ');}catch(e){showToast('บันทึกนโยบายสลิปไม่สำเร็จ: '+e.message)}}
-        async function v2RegisterLineOrder(){try{const orderId=document.getElementById('v2OrderId').value.trim(),cardType=document.getElementById('v2LinkCardType').value,points=Number(document.getElementById('v2LinkPoints').value);if(document.getElementById('v2OrderChannel').value!=='LINE')throw Error('กรุณาเลือกช่องทาง LINE ก่อน');if(!confirm('ตรวจยอดชำระและส่งรหัสแล้วจริงสำหรับ '+orderId+' ? การลงทะเบียนเลขเดิมซ้ำจะทำไม่ได้'))return;const r=await centralRequest('/admin/points/v2/line-orders','POST',{orderId,cardType,points,confirmPaid:document.getElementById('v2LinePaid').checked,confirmDelivered:document.getElementById('v2LineDelivered').checked});showToast('บันทึกออเดอร์ LINE สำเร็จแล้ว สามารถกดสร้างลิงก์ได้');document.getElementById('v2LinePaid').checked=false;document.getElementById('v2LineDelivered').checked=false}catch(e){showToast('บันทึก LINE ไม่สำเร็จ: '+e.message)}}
-        async function v2IssueLink(){try{const out=await centralRequest('/admin/points/v2/links','POST',{orderId:document.getElementById('v2OrderId').value.trim(),source:document.getElementById('v2OrderChannel').value,cardType:document.getElementById('v2LinkCardType').value,points:Number(document.getElementById('v2LinkPoints').value)});document.getElementById('v2IssuedCode').value=location.origin+location.pathname+'#claim='+encodeURIComponent(out.claimCode)+'\nหมดอายุ: '+out.expiresAt+'\nรหัส: '+out.claimCode;showToast('สร้างลิงก์ครั้งเดียวสำเร็จ')}catch(e){showToast(e.message)}}
+        async function v2RegisterLineOrder(){try{const orderId=document.getElementById('v2OrderId').value.trim(),cardType=document.getElementById('v2LinkCardType').value,points=Number(document.getElementById('v2LinkPoints').value);if(!/^LINE-[0-9]{8}-[0-9]{6}$/.test(orderId))throw Error('กรอกเลข LINE-YYYYMMDD-XXXXXX สำหรับรายการขายผ่านแชทที่ยังไม่มีในระบบ');if(document.getElementById('v2OrderChannel').value!=='LINE')throw Error('กรุณาเลือกช่องทาง LINE ก่อน');if(!confirm('ตรวจยอดชำระและส่งรหัสแล้วจริงสำหรับ '+orderId+' ? การลงทะเบียนเลขเดิมซ้ำจะทำไม่ได้'))return;const r=await centralRequest('/admin/points/v2/line-orders','POST',{orderId,cardType,points,confirmPaid:document.getElementById('v2LinePaid').checked,confirmDelivered:document.getElementById('v2LineDelivered').checked});showToast('บันทึกออเดอร์ LINE สำเร็จแล้ว สามารถกดสร้างลิงก์ได้');document.getElementById('v2LinePaid').checked=false;document.getElementById('v2LineDelivered').checked=false}catch(e){showToast('บันทึก LINE ไม่สำเร็จ: '+e.message)}}
+        async function v2IssueLink(){try{const out=await centralRequest('/admin/points/v2/links','POST',{orderId:document.getElementById('v2OrderId').value.trim(),source:document.getElementById('v2OrderChannel').value,cardType:document.getElementById('v2LinkCardType').value,points:Number(document.getElementById('v2LinkPoints').value)});document.getElementById('v2IssuedCode').value='รหัสรับแต้ม: '+out.claimCode+'\nใช้ได้ภายใน 15 นาที / ครั้งเดียว\nหมดอายุ: '+new Date(out.expiresAt).toLocaleString('th-TH')+'\nให้ลูกค้าใส่รหัสใน '+(out.kind==='member'?'โปรไฟล์สมาชิก':'หน้าบัตรสะสม (ไม่สมัคร)');showToast('สร้างรหัส 20 ตัวอักษรสำเร็จ; จะแจกแต้มได้หลังยืนยันชำระเงินและส่งสินค้า')}catch(e){showToast(e.message)}}
         async function v2LoadTickets(){try{const out=await centralRequest('/admin/points/v2/tickets');const root=document.getElementById('v2AdminTickets');root.replaceChildren();(out.tickets||[]).forEach(t=>{const row=v2Node('div','border p-2 rounded-lg flex flex-wrap gap-2',t.owner_id+' · '+t.reward_name);const btn=v2Node('button','bg-emerald-600 text-white px-2 rounded-lg','จัดส่งแล้ว');btn.onclick=async()=>{try{await centralRequest('/admin/points/v2/tickets','PATCH',{id:t.id});v2LoadTickets()}catch(e){showToast(e.message)}};row.append(btn);root.append(row)});if(!out.tickets?.length)root.textContent='ไม่มีคำขอค้าง'}catch(e){showToast(e.message)}}
-        function v2RenderMember(data,target,ticketTarget,guest){const main=document.getElementById(target);main.replaceChildren();for(const card of (data.config.cardTypes||[{id:'premium'},{id:'game'}]))main.append(v2CardPreview(card.id,data.progress,data.config));const out=document.getElementById(ticketTarget);out.replaceChildren();(data.tickets||[]).forEach(t=>{const card=v2Node('div','p-2 border rounded-lg space-y-1');card.append(v2Node('div','font-bold text-sm',(data.config.cardTypes||[]).find(x=>x.id===t.type)?.name||t.type));card.append(v2Node('p','text-xs','สถานะ: '+t.status+' · หมดอายุ: '+new Date(t.expires_at).toLocaleDateString('th-TH')));if(t.status==='AVAILABLE'&&new Date(t.expires_at)>new Date()){const select=v2Node('select','border p-2 rounded-lg w-full');const choices=[];data.config.rewardGroups.filter(g=>g.active&&(g.type===t.type||g.type==='both')).forEach(g=>g.options.forEach(opt=>{choices.push({groupId:g.id,name:opt});select.add(new Option(g.name+' — '+opt,String(choices.length-1)))}));const btn=v2Node('button','bg-purple-600 text-white rounded-lg p-2 mt-2','ยืนยันเลือก 1 รางวัล');btn.disabled=!choices.length;btn.onclick=async()=>{if(!confirm('ใช้สิทธิ์นี้เพื่อแลก '+choices[Number(select.value)]?.name+'?'))return;try{const ch=choices[Number(select.value)];await centralRequest('/points/v2/redeem','POST',{ticketId:t.id,groupId:ch.groupId,choice:ch.name,...(guest?{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim()}: {})},undefined,guest?undefined:customerSessionToken());showToast('ส่งคำขอแลกแล้ว');guest?v2GuestLoad():v2LoadMember()}catch(e){showToast(e.message)}};card.append(select,btn)}out.append(card)});if(!data.tickets?.length)out.textContent='ยังไม่มีสิทธิ์แลกรางวัล'}
-        async function v2LoadMember(){try{const r=await centralRequest('/points/v2/me','GET',undefined,undefined,customerSessionToken());v2RenderMember(r,'v2MemberCards','v2MemberTickets',false)}catch(e){document.getElementById('v2MemberCards').textContent=e.message}}
+        function v2RenderMember(data,target,ticketTarget,guest){const main=document.getElementById(target);main.replaceChildren();const types=data.config.cardTypes||[{id:'premium',name:'⭐ แอพพรีเมี่ยม'},{id:'game',name:'🎮 เติมเกม'}];const chooser=v2Node('div','flex flex-wrap gap-2 mb-3');const body=v2Node('div','space-y-3');main.append(chooser,body);const showCard=(type)=>{body.replaceChildren();body.append(v2CardPreview(type,data.progress,data.config));const reward=v2Node('div','p-3 border rounded-xl bg-purple-50 dark:bg-slate-900 space-y-1');reward.append(v2Node('p','font-bold text-sm','🎁 ของรางวัลเมื่อสะสมครบ '+(data.config.thresholds?.[type]??10)+' แต้ม (เลือกแลก 1 อย่าง)'));const rewardGroups=(data.config.rewardGroups||[]).filter(g=>g.active&&(g.type===type||g.type==='both'));rewardGroups.forEach(g=>{reward.append(v2Node('p','text-xs font-bold',g.name));(g.options||[]).forEach(opt=>reward.append(v2Node('p','text-xs','• '+opt)))});if(!rewardGroups.length)reward.append(v2Node('p','text-xs','ยังไม่มีรางวัลที่เปิดใช้สำหรับบัตรนี้'));body.append(reward)};types.forEach((c,i)=>{const btn=v2Node('button','px-3 py-2 rounded-xl border text-xs font-bold bg-violet-50 dark:bg-slate-800',c.name||c.id);btn.onclick=()=>{[...chooser.children].forEach(b=>b.classList.remove('ring-2','ring-violet-500'));btn.classList.add('ring-2','ring-violet-500');showCard(c.id)};chooser.append(btn)});if(chooser.firstChild)chooser.firstChild.click();const out=document.getElementById(ticketTarget);out.replaceChildren();(data.tickets||[]).forEach(t=>{const card=v2Node('div','p-2 border rounded-lg space-y-1');card.append(v2Node('div','font-bold text-sm',(data.config.cardTypes||[]).find(x=>x.id===t.type)?.name||t.type));card.append(v2Node('p','text-xs','สถานะ: '+t.status+' · หมดอายุ: '+new Date(t.expires_at).toLocaleDateString('th-TH')));if(t.status==='AVAILABLE'&&new Date(t.expires_at)>new Date()){const select=v2Node('select','border p-2 rounded-lg w-full');const choices=[];data.config.rewardGroups.filter(g=>g.active&&(g.type===t.type||g.type==='both')).forEach(g=>g.options.forEach(opt=>{choices.push({groupId:g.id,name:opt});select.add(new Option(g.name+' — '+opt,String(choices.length-1)))}));const btn=v2Node('button','bg-purple-600 text-white rounded-lg p-2 mt-2','ยืนยันเลือก 1 รางวัล');btn.disabled=!choices.length;btn.onclick=async()=>{if(!confirm('ใช้สิทธิ์นี้เพื่อแลก '+choices[Number(select.value)]?.name+'?'))return;try{const ch=choices[Number(select.value)];await centralRequest('/points/v2/redeem','POST',{ticketId:t.id,groupId:ch.groupId,choice:ch.name,...(guest?{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim()}: {})},undefined,guest?undefined:customerSessionToken());showToast('ส่งคำขอแลกแล้ว');guest?v2GuestLoad():v2LoadMember()}catch(e){showToast(e.message)}};card.append(select,btn)}out.append(card)});if(!data.tickets?.length)out.textContent='ยังไม่มีสิทธิ์แลกรางวัล'}
+        async function v2LoadMember(){try{const r=await centralRequest('/points/v2/me','GET',undefined,undefined,customerSessionToken());v2RenderMember(r,'v2MemberCards','v2MemberTickets',false)}catch(e){document.getElementById('v2MemberCards').textContent='โหลดแต้มสะสมไม่สำเร็จ: '+e.message+' (ตรวจ Worker logs และโครงสร้าง D1)'}}
         setTimeout(()=>{try{const m=location.hash.match(/(?:^#|&)claim=([^&]+)/);if(m){const target=document.getElementById('v2ClaimCode');if(target)target.value=decodeURIComponent(m[1]);history.replaceState(null,'',location.pathname+location.search)}}catch{}},0);
         function v2RestoreGuest(){try{const x=JSON.parse(localStorage.getItem('wanderer_guest_points_card_v2')||'null');if(x?.cardId&&x?.secret){document.getElementById('v2GuestCard').value=x.cardId;document.getElementById('v2GuestSecret').value=x.secret;document.getElementById('v2GuestAlias').value=x.alias||'';document.getElementById('v2GuestNotice').textContent='บัตรเดิมพร้อมใช้งานบนอุปกรณ์นี้';v2GuestLoad();}}catch{}}
         function v2CopyGuestId(){const id=document.getElementById('v2GuestCard').value;if(!id)return showToast('กรุณาสร้างบัตรก่อน');copyToClipboard(id)}
@@ -3510,7 +3526,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
           }catch(e){console.warn('claim link format',e)}
         }
         if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{v2RestoreGuest();v2ReadClaimLink()},{once:true});else setTimeout(()=>{v2RestoreGuest();v2ReadClaimLink()},0);
-        async function v2GuestClaim(){try{const r=await centralRequest('/points/v2/claim','POST',{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim(),claimCode:document.getElementById('v2ClaimCode').value.trim()});document.getElementById('v2ClaimCode').value='';showToast('รับแต้มสำเร็จ');v2GuestLoad()}catch(e){showToast(e.message)}}
+        async function v2MemberClaim(){try{const el=document.getElementById('v2MemberClaimCode');const code=el.value.trim().toUpperCase();if(!/^[A-HJ-NP-Z2-9]{20}$/.test(code))throw Error('กรุณากรอกรหัสรับแต้ม 20 ตัวอักษร');const out=await centralRequest('/points/v2/claim','POST',{claimCode:code},undefined,customerSessionToken());el.value='';showToast('รับแต้ม '+out.pointsAdded+' แต้มสำเร็จ');await v2LoadMember()}catch(e){showToast(e.message)}}
+        async function v2GuestClaim(){try{const r=await centralRequest('/points/v2/claim','POST',{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim(),claimCode:document.getElementById('v2ClaimCode').value.trim().toUpperCase()});document.getElementById('v2ClaimCode').value='';showToast('รับแต้มสำเร็จ');v2GuestLoad()}catch(e){showToast(e.message)}}
         function pointElement(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el;}
         let pointsAdminRewards=[];
         function renderPointsRewardRows(){
@@ -3573,7 +3590,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             else if (tabName === 'points') v2LoadAdmin();
             else if (tabName === 'feedbacks') { renderAdminFeedbacks(); refreshAdminReviews(); v2LoadTickets(); }
             else if (tabName === 'bank-accounts') loadAdminBankAccountsForm();
-            else if (tabName === 'form-templates') populateFormTemplateCategorySelect();
+            else if (tabName === 'form-templates') loadDeliveryTemplatesFromD1();
 
             else if (tabName === 'settings-store') { loadStoreSettingsForm(); renderShopIdentityAndStatus(); }
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
@@ -3834,6 +3851,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             currentEditingOrder = ord;
             document.getElementById('adminEditOrderIdDisplay').innerText = `ORDER ID: ${ord.id}`;
             document.getElementById('adminDeliveryDataTextArea').value = ord.deliveryData || '';
+            document.getElementById('adminPointsClaimLink').value = ord.pointsClaimLink || '';
             const purchasedItemsBox = document.getElementById('adminEditPurchasedItems');
             if (purchasedItemsBox) purchasedItemsBox.innerHTML = (ord.items || []).map(item => `<div class="rounded-xl bg-white dark:bg-slate-800 border border-blue-100 dark:border-slate-700 p-2"><div class="font-bold">${escapeHtml(item.appName || item.productName || (appState.apps.find(a => String(a.id) === String(item.appId)) || {}).name || item.name || 'สินค้า')}</div><div class="text-[10px] text-slate-500 mt-0.5">แพ็กเกจ: ${escapeHtml(item.name || item.packageName || '-')} · จำนวน ${Number(item.qty || item.quantity || 1)} · ${Number(item.price || 0).toLocaleString('th-TH')} บาท/ชิ้น</div></div>`).join('') || '<div class="text-slate-400">ไม่พบรายการสินค้าในออเดอร์นี้</div>';
             pendingDeliveryImages = Array.isArray(ord.deliveryImages) ? ord.deliveryImages.map(img => typeof img === 'string' ? ({ name: 'รูปแนบ', src: img }) : img).filter(img => img && img.src) : [];
@@ -3869,6 +3887,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             if (!currentEditingOrder) return;
 
             currentEditingOrder.deliveryData = document.getElementById('adminDeliveryDataTextArea').value;
+            currentEditingOrder.pointsClaimLink = document.getElementById('adminPointsClaimLink').value.trim();
             currentEditingOrder.deliveryImages = pendingDeliveryImages.slice();
             const previousStatus = currentEditingOrder.status;
             currentEditingOrder.status = document.getElementById('adminOrderStatusSelect').value;
@@ -4726,14 +4745,64 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const key = `${catId}_${appId}`;
             document.getElementById('adminDeliveryFormTemplate').value = appState.formTemplates.deliveryTemplates[key] || '';
         }
-        function saveAdminFormTemplates() {
+        let deliveryFormSaveBusy = false;
+        let deliveryFormLoadSeq = 0;
+        async function loadDeliveryTemplatesFromD1() {
+            const sequence = ++deliveryFormLoadSeq;
+            const status = document.getElementById('deliveryFormsSaveStatus');
+            if (status) status.textContent = 'กำลังโหลดแบบฟอร์มจาก D1...';
+            try {
+                const data = await centralRequest('/admin/delivery-templates');
+                if (sequence !== deliveryFormLoadSeq) return;
+                appState.formTemplates = appState.formTemplates || {};
+                appState.formTemplates.deliveryTemplates = data.deliveryTemplates || {};
+                appState.formTemplates.lineOrderTemplate = data.lineOrderTemplate || '';
+                sharedRevision = data.revision;
+                populateFormTemplateCategorySelect();
+                if (status) status.textContent = 'โหลดจาก D1 สำเร็จ • กดบันทึกหลังแก้ข้อความ';
+            } catch (e) {
+                if (sequence !== deliveryFormLoadSeq) return;
+                if (status) status.textContent = 'โหลด D1 ไม่สำเร็จ: ' + e.message + ' • อย่าเพิ่งบันทึกทับ';
+                document.getElementById('adminDeliveryFormTemplate').value = '';
+                console.error('Load delivery templates failed:', e);
+            }
+        }
+        async function saveAdminFormTemplates() {
+            if (deliveryFormSaveBusy) return;
+            const status = document.getElementById('deliveryFormsSaveStatus');
+            const button = document.getElementById('deliveryFormsSaveBtn');
             const catId = document.getElementById('formTemplateCategorySelect').value;
             const appId = document.getElementById('formTemplateAppSelect').value;
+            if (!catId || !appId) { showToast('กรุณาเลือกหมวดหมู่และแอปก่อน'); return; }
             const key = `${catId}_${appId}`;
-            appState.formTemplates.deliveryTemplates[key] = document.getElementById('adminDeliveryFormTemplate').value;
-            appState.formTemplates.lineOrderTemplate = document.getElementById('adminLineOrderFormTemplate').value;
-            saveState();
-            showToast('บันทึกแม่แบบฟอร์มแล้ว');
+            const content = document.getElementById('adminDeliveryFormTemplate').value;
+            const lineOrderTemplate = document.getElementById('adminLineOrderFormTemplate').value;
+            deliveryFormSaveBusy = true;
+            button.disabled = true;
+            button.textContent = 'กำลังบันทึกลง D1...';
+            if (status) status.textContent = 'กำลังส่งข้อมูลไป D1';
+            try {
+                const result = await centralRequest('/admin/delivery-templates','PUT',{
+                    key,content,lineOrderTemplate,expectedRevision:sharedRevision
+                });
+                appState.formTemplates = appState.formTemplates || {};
+                appState.formTemplates.deliveryTemplates = appState.formTemplates.deliveryTemplates || {};
+                appState.formTemplates.deliveryTemplates[key] = content;
+                appState.formTemplates.lineOrderTemplate = lineOrderTemplate;
+                sharedRevision = result.revision;
+                sharedStateLastUpdatedAt = result.updatedAt;
+                saveState();
+                if (status) status.textContent = 'บันทึกลง D1 สำเร็จ • ' + new Date().toLocaleTimeString('th-TH');
+                showToast('บันทึกแบบฟอร์มลง D1 สำเร็จ');
+            } catch (e) {
+                if (status) status.textContent = 'บันทึกไม่สำเร็จ: ' + e.message + ' • ข้อความในช่องยังอยู่ กรุณาคัดลอกเก็บไว้ก่อน';
+                showToast('บันทึกแบบฟอร์มไม่สำเร็จ: ' + e.message);
+                console.error('Delivery template D1 save failed:',e);
+            } finally {
+                deliveryFormSaveBusy = false;
+                button.disabled = false;
+                button.textContent = 'บันทึกแบบฟอร์มทั้งหมดลง D1';
+            }
         }
 
         // Bank Settings Admin
@@ -5763,7 +5832,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             } catch (error) { recordNotificationHistory({ok:false,event:data?.event||'UNKNOWN',orderId:data?.orderId||'',message:String(error?.message||error)}); console.error('Error sending LINE notification:', error); throw error; }
         }
         function onCustomerCreateOrder(orderData) {
-            return sendLineNotification({ event: 'NEW_ORDER', orderId: orderData.id, customerName: orderData.customerName || orderData.name || 'ลูกค้าเว็บไซต์', items: orderData.itemNames || (orderData.items || []).map(i => `${i.name} x${getCartQuantity(i)}`).join(', '), total: Number(orderData.totalPrice ?? orderData.total) || 0 });
+            return sendLineNotification({ event: 'NEW_ORDER', channel:orderData.channel||'WEB', orderId: orderData.id, customerName: orderData.customerName || orderData.name || 'ลูกค้าเว็บไซต์', items: orderData.itemNames || (orderData.items || []).map(i => `${i.name} x${getCartQuantity(i)}`).join(', '), total: Number(orderData.totalPrice ?? orderData.total) || 0 });
         }
         function onCustomerUploadSlip(orderId, totalPrice, slipImageUrl) {
             const payload = { event: 'SLIP_UPLOADED', orderId, total: Number(totalPrice) || 0 };
@@ -5775,7 +5844,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             return sendLineNotification({ event: 'STATUS_CHANGED', orderId, status: newStatus, note: adminNote || '' });
         }
         async function notifyOrderToWorker(order) {
-            return onCustomerCreateOrder({ id: order.id, customerName: order.customerName || order.name || 'ลูกค้าเว็บไซต์', items: order.items || [], total: order.total, itemNames: (order.items || []).map(i => `${i.name} x${getCartQuantity(i)}`).join(', ') });
+            const isLine=/line/i.test(String(order.paymentMethod||''))||['LINE','LINE_OA'].includes(order.source);
+            return onCustomerCreateOrder({ id: order.id, channel:isLine?'LINE':'WEB', customerName: order.customerName || order.name || (isLine?'ลูกค้า LINE OA':'ลูกค้าเว็บไซต์'), items: order.items || [], total: order.total, itemNames: (order.items || []).map(i => `${i.name} x${getCartQuantity(i)}`).join(', ') });
         }
         async function backupOrderToSheet(order) {
             const endpoint = String(appState.settings?.sheetBackupUrl || appState.settings?.sheetAppsScriptUrl || '').trim();
