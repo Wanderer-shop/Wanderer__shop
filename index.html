@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="th" class="light">
 <head>
+    <!-- LINE / social link preview: static metadata for crawlers -->
+    <meta name="description" content="ร้าน Wanderer_shop ยินดีให้บริการค่ะ | รอจัดส่งประมาณ 5–10 นาทีหลังโอนเงิน | หากเกินเวลา ทัก LINE พร้อมแจ้งเลขออเดอร์ได้เลยนะคะ">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="WANDERER SHOP">
+    <meta property="og:title" content="WANDERER SHOP - ร้านค้าสินค้าดิจิทัล">
+    <meta property="og:description" content="ร้าน Wanderer_shop ยินดีให้บริการค่ะ | รอจัดส่งประมาณ 5–10 นาทีหลังโอนเงิน | หากเกินเวลา ทัก LINE พร้อมแจ้งเลขออเดอร์ได้เลยนะคะ">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="WANDERER SHOP - ร้านค้าสินค้าดิจิทัล">
+    <meta name="twitter:description" content="ร้าน Wanderer_shop ยินดีให้บริการค่ะ | รอจัดส่งประมาณ 5–10 นาทีหลังโอนเงิน | หากเกินเวลา ทัก LINE พร้อมแจ้งเลขออเดอร์ได้เลยนะคะ">
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WANDERER SHOP - ร้านค้าสินค้าดิจิทัล</title>
@@ -246,6 +256,15 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
             </div>
 
+            <!-- WANDERER_GUIDE_STATS_UI_V410_FIXED_20261122 -->
+            <section id="shopGuideStatsBar" class="flex flex-col sm:flex-row gap-3 items-stretch mb-5">
+              <button type="button" onclick="navigateTo('store-guide')" class="shrink-0 rounded-2xl px-5 py-3 font-bold text-sm text-white bg-purple-600 hover:bg-purple-700 shadow-md"><i class="fa-solid fa-book-open mr-2"></i>วิธีใช้งานเว็บ</button>
+              <div class="grid grid-cols-3 gap-3 flex-1 rounded-2xl border border-purple-200 bg-white dark:bg-slate-800 px-3 py-3 text-center" aria-label="สถิติของร้าน">
+                <div><div class="text-[10px] text-slate-500">🛒 กดสั่งซื้อ เว็บ + LINE</div><strong id="shopStatPurchase" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
+                <div><div class="text-[10px] text-slate-500">👥 ผู้เข้าชมเว็บไซต์</div><strong id="shopStatVisitors" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
+                <div><div class="text-[10px] text-slate-500">📦 ส่งสำเร็จ (ชิ้น)</div><strong id="shopStatSold" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
+              </div>
+            </section>
             <div>
                 <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">หมวดหมู่สินค้าทั้งหมด</h3>
                 <div class="flex items-center gap-2">
@@ -339,6 +358,21 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
             </div>
         </div>
+
+        <!-- V4.10: Guide page. Two text cards per row, gallery below all text. -->
+        <section id="viewStoreGuide" class="hidden space-y-5">
+          <div class="rounded-3xl p-6 bg-gradient-to-r from-violet-700 to-indigo-700 text-white shadow-xl">
+            <h2 id="storeGuideTitle" class="font-bold text-2xl text-white">วิธีใช้งานเว็บ</h2>
+            <p class="mt-1 text-xs text-purple-100">ขั้นตอนสั่งซื้อสินค้าและรับบริการผ่านเว็บไซต์หรือ LINE OA</p>
+          </div>
+          <h3 class="font-bold text-purple-700 dark:text-purple-300">ขั้นตอนการใช้งาน</h3>
+          <div id="storeGuideSteps" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          <section class="border border-purple-200 rounded-3xl p-5 bg-white dark:bg-slate-800 space-y-3">
+            <h3 class="font-bold text-purple-700 dark:text-purple-300">🖼️ รูปตัวอย่างการใช้งาน</h3>
+            <p class="text-xs text-slate-500">คลิกรูปเพื่อขยายดูขนาดเต็ม</p>
+            <div id="storeGuideGallery" class="space-y-4"></div>
+          </section>
+        </section>
 
         <!-- VIEW 2: APP DETAIL -->
         <div id="viewAppDetail" class="hidden space-y-6">
@@ -449,6 +483,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <button onclick="switchAdminTab('settings-store')" id="adminTabBtn-settings-store" class="px-4 py-2 text-xs font-bold rounded-xl transition">⚙️ ตั้งค่าร้าน / แบนเนอร์ / ป๊อปอัป</button>
                 <button onclick="switchAdminTab('floating-decorations')" id="adminTabBtn-floating-decorations" class="px-4 py-2 text-xs font-bold rounded-xl transition">✨ รูปลอย / สติกเกอร์</button>
                 <button onclick="switchAdminTab('website-integrations')" id="adminTabBtn-website-integrations" class="px-4 py-2 text-xs font-bold rounded-xl transition">🧩 เว็บสำเร็จรูป & การเชื่อมต่อ</button>
+                <button onclick="switchAdminTab('store-guide')" id="adminTabBtn-store-guide" class="px-4 py-2 text-xs font-bold rounded-xl transition">📖 วิธีใช้งานเว็บ</button>
                 <button onclick="switchAdminTab('website-theme')" id="adminTabBtn-website-theme" class="px-4 py-2 text-xs font-bold rounded-xl transition">🎨 สีเว็บ / ตัวอักษร / การ์ด</button>
             </div>
 
@@ -820,6 +855,21 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
             </div>
 
+            <!-- V4.10 GUIDE ADMIN editor -->
+            <section id="adminTab-store-guide" class="hidden space-y-4 max-w-3xl">
+              <div class="rounded-3xl bg-white dark:bg-slate-800 border border-purple-200 p-5 space-y-4">
+                <h3 class="font-bold text-lg text-purple-700 dark:text-purple-300">📖 จัดการวิธีใช้งานเว็บ</h3>
+                <p class="text-xs text-slate-500">แก้ข้อความ 4 ขั้นตอน (แสดงแถวละ 2 ข้อ) และแนบภาพตัวอย่างขนาดใหญ่ด้านล่าง สูงสุด 8 รูป บันทึกไว้ที่ D1 ใช้ได้ทุกอุปกรณ์</p>
+                <label class="block text-xs font-bold">หัวข้อหน้า<input id="guideAdminTitle" maxlength="100" class="w-full border rounded-xl px-3 py-2 mt-1 dark:bg-slate-900" value="วิธีใช้งานเว็บ"></label>
+                <div id="guideAdminSteps" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                <div class="border-t pt-4 space-y-3">
+                  <div class="flex items-center justify-between gap-2"><h4 class="font-bold">🖼️ รูปตัวอย่างการใช้งาน (สูงสุด 8 รูป)</h4><button type="button" onclick="guideAddGalleryItem()" class="bg-indigo-600 text-white rounded-lg px-3 py-2 text-xs">+ เพิ่มรูป</button></div>
+                  <div id="guideAdminGallery" class="space-y-3"></div>
+                </div>
+                <p id="guideAdminStatus" class="text-xs text-slate-500"></p>
+                <button type="button" onclick="saveStoreGuideAdmin()" class="rounded-xl bg-emerald-600 text-white px-5 py-3 font-bold">💾 บันทึกคู่มือลง D1</button>
+              </div>
+            </section>
             <!-- TAB: WEBSITE THEME -->
             <div id="adminTab-website-theme" class="hidden space-y-6 max-w-3xl">
               <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm space-y-4">
@@ -1190,6 +1240,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <textarea id="reviewTextInput" required rows="3" placeholder="ความประทับใจ การบริการ สินค้าจัดส่งไว..." class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900"></textarea>
                 </div>
 
+                <label class="block font-bold">แนบรูปรีวิว (ไม่บังคับ, ไม่เกิน 5 MB)
+                    <input id="reviewImageInput" type="file" accept="image/png,image/jpeg,image/webp" class="block w-full mt-1 text-xs">
+                </label>
+                <p class="text-[10px] text-slate-500">รูปรีวิวจะเก็บไว้จนกว่าแอดมินจะลบรีวิว ไม่มีช่องเลือกวันหมดอายุ</p>
                 <button type="submit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition">
                     โพสต์รีวิว
                 </button>
@@ -2203,9 +2257,113 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             copyToClipboard(appState.bankAccounts.slipNote || 'ซื้อขายร้านละมุด');
         }
 
+        // V4.10 shared guide and storefront statistics; client records only voluntary checkout actions.
+        const guideDefaults = {title:'วิธีใช้งานเว็บ',steps:[
+          {title:'1. เช็คสถานะร้าน',text:'ตรวจสถานะเปิดร้านและประกาศก่อนสั่งซื้อ'},
+          {title:'2. กดเลือกสินค้า',text:'เลือกหมวดหมู่ แอป และแพ็กเกจ ตรวจราคาและรายละเอียด'},
+          {title:'3. ชำระเงินหรือทัก LINE',text:'ชำระผ่านเว็บไซต์หรือกดสั่งซื้อผ่าน LINE OA'},
+          {title:'4. ตรวจสถานะและรับสินค้า',text:'เก็บเลขออเดอร์เพื่อตรวจสถานะและรับสินค้า'}
+        ],gallery:[]};
+        let guideAdminDraft=null;
+        async function loadShopStats(){
+          try {const data=await centralRequest('/store-stats');
+            for(const [id,key] of [['shopStatPurchase','purchaseInterest'],['shopStatVisitors','visitors'],['shopStatSold','soldUnits']]){
+              const el=document.getElementById(id);if(el)el.textContent=Number(data[key]||0).toLocaleString('th-TH');
+            }
+          } catch(e){console.warn('Store statistics:',e.message);}
+        }
+        async function markShopPurchaseInterest(channel){
+          try {
+            let visitorId=localStorage.getItem('wanderer_interest_visitor');
+            if(!/^[0-9a-f-]{36}$/i.test(visitorId||'')){visitorId=crypto.randomUUID();localStorage.setItem('wanderer_interest_visitor',visitorId);}
+            await centralRequest('/store-interest','POST',{visitorId,channel});await loadShopStats();
+          }catch(e){console.warn('Interest recording:',e.message);}
+        }
+        async function loadStoreGuidePublic(){
+          const stepsRoot=document.getElementById('storeGuideSteps'),galleryRoot=document.getElementById('storeGuideGallery');
+          if(!stepsRoot||!galleryRoot)return;
+          try{
+            const data=await centralRequest('/store-guide');const g={...guideDefaults,...(data.guide||{})};
+            document.getElementById('storeGuideTitle').textContent=g.title||guideDefaults.title;
+            stepsRoot.replaceChildren();galleryRoot.replaceChildren();
+            for(const step of (g.steps||guideDefaults.steps)){
+              const card=document.createElement('article');card.className='rounded-2xl border border-purple-200 bg-white dark:bg-slate-800 p-5 min-h-32';
+              const h=document.createElement('h4');h.className='font-bold text-purple-700 dark:text-purple-300';h.textContent=step.title||'';
+              const p=document.createElement('p');p.className='text-sm text-slate-600 dark:text-slate-300 whitespace-pre-line mt-2';p.textContent=step.text||'';
+              card.append(h,p);stepsRoot.append(card);
+            }
+            const gallery=Array.isArray(g.gallery)?g.gallery:[];
+            if(!gallery.length){galleryRoot.textContent='ยังไม่มีรูปตัวอย่าง แอดมินสามารถเพิ่มได้ในแท็บ 📖 วิธีใช้งานเว็บ';return;}
+            for(const item of gallery){
+              if(!/^https:\/\//i.test(String(item.imageUrl||'')))continue;
+              const wrap=document.createElement('div');wrap.className='space-y-2';
+              const title=document.createElement('h4');title.className='font-bold text-sm';title.textContent=item.title||'รูปตัวอย่าง';
+              const image=document.createElement('img');image.src=item.imageUrl;image.alt=item.title||'ตัวอย่างการใช้งาน';
+              image.loading='lazy';image.className='w-full h-auto max-h-[900px] object-contain rounded-xl border cursor-zoom-in';
+              image.onclick=()=>openFullImageViewer(image.src);
+              wrap.append(title,image);galleryRoot.append(wrap);
+            }
+          }catch(e){stepsRoot.textContent='ไม่สามารถโหลดคู่มือ: '+e.message;}
+        }
+        async function loadStoreGuideAdmin(){
+          const status=document.getElementById('guideAdminStatus');if(status)status.textContent='กำลังโหลดคู่มือจาก D1...';
+          try{const response=await centralRequest('/store-guide');const g=response.guide||guideDefaults;
+            guideAdminDraft={title:g.title||guideDefaults.title,steps:(Array.isArray(g.steps)&&g.steps.length===4?g.steps:guideDefaults.steps).map(x=>({title:x.title||'',text:x.text||''})),gallery:(g.gallery||[]).map(x=>({title:x.title||'',imageUrl:x.imageUrl||''}))};
+            document.getElementById('guideAdminTitle').value=guideAdminDraft.title;
+            renderGuideAdminInputs();if(status)status.textContent='โหลดคู่มือสำเร็จ';
+          }catch(e){if(status)status.textContent='โหลดคู่มือไม่สำเร็จ: '+e.message;}
+        }
+        function renderGuideAdminInputs(){
+          if(!guideAdminDraft)return;
+          const steps=document.getElementById('guideAdminSteps'),gallery=document.getElementById('guideAdminGallery');steps.replaceChildren();gallery.replaceChildren();
+          guideAdminDraft.steps.forEach((item,i)=>{
+            const wrap=document.createElement('div');wrap.className='border rounded-xl p-3 space-y-2';
+            const h=document.createElement('input');h.value=item.title;h.maxLength=100;h.placeholder='หัวข้อขั้นตอน';h.className='w-full border rounded-lg p-2 dark:bg-slate-900';h.oninput=()=>item.title=h.value;
+            const text=document.createElement('textarea');text.value=item.text;text.maxLength=1000;text.rows=4;text.placeholder='ข้อความอธิบาย';text.className='w-full border rounded-lg p-2 text-xs dark:bg-slate-900';text.oninput=()=>item.text=text.value;
+            const label=document.createElement('b');label.textContent='ขั้นตอนที่ '+(i+1);label.className='text-xs';wrap.append(label,h,text);steps.append(wrap);
+          });
+          guideAdminDraft.gallery.forEach((item,i)=>{
+            const row=document.createElement('div');row.className='p-3 border rounded-xl space-y-2';
+            const title=document.createElement('input');title.value=item.title;title.maxLength=100;title.placeholder='ชื่อรูป เช่น วิธีใช้รหัสสะสมแต้ม';title.className='w-full border rounded-lg p-2 text-sm dark:bg-slate-900';title.oninput=()=>item.title=title.value;
+            const url=document.createElement('input');url.value=item.imageUrl;url.placeholder='ลิงก์รูป HTTPS หรืออัปโหลดด้านล่าง';url.className='w-full border rounded-lg p-2 text-xs dark:bg-slate-900';url.oninput=()=>item.imageUrl=url.value;
+            const file=document.createElement('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.className='w-full text-xs';
+            const status=document.createElement('span');status.className='text-xs text-slate-500';
+            file.onchange=async()=>{if(!file.files?.[0])return;status.textContent='กำลังบีบอัดและอัปโหลด...';file.disabled=true;
+              try{const blob=await guideCompressImage(file.files[0]);const fd=new FormData();fd.append('image',blob,'guide.jpg');
+                const headers={Authorization:'Bearer '+(sessionStorage.getItem('wanderer_admin_session')||'')};
+                const res=await fetch(CENTRAL_API_URL+'/admin/guide-image',{method:'POST',headers,body:fd});const data=await res.json();
+                if(!res.ok||data.error)throw Error(data.error||'อัปโหลดไม่สำเร็จ');item.imageUrl=data.imageUrl;url.value=item.imageUrl;status.textContent='อัปโหลดสำเร็จ';
+              }catch(e){status.textContent='อัปโหลดไม่สำเร็จ: '+e.message;}finally{file.disabled=false;file.value='';}
+            };
+            const del=document.createElement('button');del.type='button';del.className='text-xs rounded-lg bg-red-50 text-red-700 px-3 py-2';del.textContent='ลบรูปออกจากคู่มือ';del.onclick=()=>{guideAdminDraft.gallery.splice(i,1);renderGuideAdminInputs();};
+            row.append(title,url,file,status,del);gallery.append(row);
+          });
+        }
+        function guideAddGalleryItem(){if(!guideAdminDraft)return;if(guideAdminDraft.gallery.length>=8){showToast('แนบได้ไม่เกิน 8 รูป');return;}
+          guideAdminDraft.gallery.push({title:'รูปตัวอย่าง '+(guideAdminDraft.gallery.length+1),imageUrl:''});renderGuideAdminInputs();}
+        async function guideCompressImage(file){
+          if(file.size>5*1024*1024)throw Error('ไฟล์ต้นฉบับต้องไม่เกิน 5 MB');
+          const bitmap=await createImageBitmap(file);let maxSide=1400,quality=.82;
+          for(let i=0;i<9;i++){
+            const ratio=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(bitmap.width*ratio));c.height=Math.max(1,Math.round(bitmap.height*ratio));c.getContext('2d').drawImage(bitmap,0,0,c.width,c.height);
+            const blob=await new Promise(resolve=>c.toBlob(resolve,'image/jpeg',quality));if(blob&&blob.size<=340000){bitmap.close();return blob;}
+            if(quality>.52)quality-=.09;else maxSide=Math.floor(maxSide*.8);
+          }
+          bitmap.close();throw Error('รูปยังใหญ่เกินไป กรุณาลดความละเอียดก่อนอัปโหลด');
+        }
+        async function saveStoreGuideAdmin(){
+          if(!guideAdminDraft)return;
+          const status=document.getElementById('guideAdminStatus');
+          try{const b={title:document.getElementById('guideAdminTitle').value.trim(),steps:guideAdminDraft.steps,gallery:guideAdminDraft.gallery};
+            if(b.gallery.some(x=>!x.title.trim()||!/^https:\/\//i.test(x.imageUrl)))throw Error('กรุณาใส่ชื่อและอัปโหลด/วาง URL HTTPS ของรูปตัวอย่างให้ครบ');
+            await centralRequest('/admin/store-guide','PUT',b);status.textContent='บันทึกคู่มือสำเร็จ ทุกอุปกรณ์จะเห็นข้อมูลเดียวกัน';showToast('บันทึกคู่มือลง D1 สำเร็จ');
+          }catch(e){status.textContent='บันทึกไม่สำเร็จ: '+e.message;showToast(status.textContent);}
+        }
+
         // Navigation
         function navigateTo(view, param = null) {
             if(view !== 'website-services') closeWebsiteReadyPopup();
+            document.getElementById('viewStoreGuide')?.classList.add('hidden');
             document.getElementById('viewHome').classList.add('hidden');
             document.getElementById('viewAppDetail').classList.add('hidden');
             document.getElementById('viewWebsiteServices')?.classList.add('hidden');
@@ -2220,6 +2378,9 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 renderCategories();
                 renderApps();
                 renderWebsiteService();
+            } else if (view === 'store-guide') {
+                document.getElementById('viewStoreGuide').classList.remove('hidden');
+                loadStoreGuidePublic();
             } else if (view === 'website-services') {
                 document.getElementById('viewWebsiteServices').classList.remove('hidden');
                 document.getElementById('backButtonContainer').classList.remove('hidden');
@@ -2373,24 +2534,26 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             renderComboPromotions();
         }
 
-        function renderBestSellers() {
+        async function renderBestSellers() {
             const grid = document.getElementById('bestSellersGrid');
-            const topApps = appState.apps.filter(a => !a._websiteServiceId && !String(a.id).startsWith('app-websvc-') && isAppAvailableForDisplay(a)).slice(0, 3);
-
-            grid.innerHTML = topApps.map(a => `
-                <div onclick="navigateTo('app-detail', '${a.id}')" class="relative bg-gradient-to-r from-purple-900/10 to-indigo-900/10 dark:bg-slate-800 border border-purple-200 dark:border-slate-700 p-3.5 rounded-2xl flex items-center gap-3 cursor-pointer hover:shadow-md transition">
-                    <img src="${a.iconUrl}" class="w-12 h-12 rounded-xl object-cover shrink-0">
-                    <div class="overflow-hidden min-w-0">
-                        <div class="flex items-center gap-1.5 flex-wrap">
-                            <span class="text-[10px] font-bold text-red-500 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">🔥 ขายดี</span>
-                            <span class="text-[9px] font-bold text-slate-500 bg-white/80 dark:bg-slate-700 px-2 py-0.5 rounded-full">
-                                <i class="${getOsIcon(a.osType) === 'fa-android' ? 'fa-brands' : 'fa-solid'} ${getOsIcon(a.osType)} mr-0.5"></i>${getOsLabel(a.osType)}
-                            </span>
-                        </div>
-                        <h4 class="font-bold text-xs mt-1 truncate">${a.name}</h4>
-                    </div>
-                </div>
-            `).join('');
+            if (!grid) return;
+            grid.textContent = 'กำลังโหลดสินค้าขายดีจากออเดอร์ที่ส่งสำเร็จ...';
+            try {
+                const result = await centralRequest('/store-best-sellers');
+                const ranked = (result.apps || []).map(x => ({app:appState.apps.find(a => String(a.id)===String(x.appId)),units:Number(x.units||0)}))
+                  .filter(x=>x.app&&!x.app._websiteServiceId&&x.units>0).slice(0,3);
+                grid.replaceChildren();
+                if (!ranked.length) { grid.textContent='ยังไม่มีสินค้าที่ส่งสำเร็จใน 7 วันล่าสุด'; return; }
+                for(const {app,units} of ranked){
+                  const button=document.createElement('button');button.type='button';button.className='flex items-center gap-3 text-left border border-purple-200 rounded-2xl bg-white dark:bg-slate-800 p-3 hover:shadow-md';
+                  button.onclick=()=>navigateTo('app-detail',String(app.id));
+                  const img=document.createElement('img');img.src=app.iconUrl||'';img.alt='';img.className='w-12 h-12 rounded-xl object-cover';
+                  const info=document.createElement('div');info.className='min-w-0';
+                  const title=document.createElement('div');title.textContent=String(app.name||'');title.className='text-sm font-bold';
+                  const desc=document.createElement('div');desc.textContent=`🔥 ส่งสำเร็จ ${units.toLocaleString('th-TH')} ชิ้นใน 7 วัน`;desc.className='text-xs text-rose-600';
+                  info.append(title,desc);button.append(img,info);grid.append(button);
+                }
+            } catch(e){grid.textContent='ยังไม่สามารถโหลดอันดับขายดีได้: '+e.message;}
         }
 
         let centralReviews = [];
@@ -2423,6 +2586,12 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 }
             }
         }
+        function formatWandererReviewDate(value){
+          const raw=String(value||'').trim();if(!raw)return '';
+          const normalized=/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(raw)?raw.replace(' ','T')+'Z':raw;
+          const date=new Date(normalized);if(!Number.isFinite(date.getTime()))return raw;
+          return new Intl.DateTimeFormat('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(date);
+        }
         function renderReviews() {
             const box = document.getElementById('reviewsFloatingBox');
             const visible = [...centralReviews.filter(r => !r.hidden), ...appState.reviews.filter(r => !r.hidden && !centralReviews.some(c => c.id === r.id))];
@@ -2434,7 +2603,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         <span class="text-amber-400 font-bold">${'⭐'.repeat(Number(r.rating) || 0)}</span>
                     </div>
                     <p class="text-slate-600 dark:text-slate-300 text-[11px]">${escapeHtml(r.text || '')}</p>
-                    <span class="text-[9px] text-slate-400 block text-right">${r.date || ''}</span>
+                    ${/^https:\/\//i.test(r.imageUrl||'') ? `<button type="button" onclick="openFullImageViewer('${escapeHtml(r.imageUrl)}')" class="text-purple-600 text-xs underline">🖼️ ดูรูปรีวิว</button>` : ''}
+                    <span class="text-[9px] text-slate-400 block text-right">${formatWandererReviewDate(r.date)}</span>
                 </div>
             `).join('') : '<p class="text-xs text-slate-400 text-center py-8">ยังไม่มีรีวิวที่แสดงอยู่ในขณะนี้</p>';
         }
@@ -2757,6 +2927,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const orderId = makeOrderId('LINE');
             const lineOrder = { id: orderId, date: new Date().toLocaleString('th-TH'), items: itemsSnapshot, total, paymentMethod: 'LINE OA', source: 'LINE_OA', status: 'AWAITING_PAYMENT', deliveryData: '', customerRequirements: appState.pendingCustomerRequirements || {} };
             try { await persistCentralOrder(lineOrder); } catch(e){alert('ยังไม่ได้สร้างออเดอร์: '+e.message);return;}
+            markShopPurchaseInterest('line');
             appState.orders.unshift(lineOrder);
             showOrderAccessCode(lineOrder.id);
             rememberCustomerOrder(lineOrder.id);
@@ -2822,6 +2993,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 return;
             }
             if (appState.cart.length === 0) return alert('กรุณาเลือกสินค้าลงตะกร้าก่อนทำรายการ');
+            markShopPurchaseInterest('web');
             renderCustomerRequirements();
             closeCartDrawer();
             openPaymentModal();
@@ -3419,7 +3591,14 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             }
 
             try {
-                await centralRequest('/reviews', 'POST', {author: finalName, rating, text});
+                const photo=document.getElementById('reviewImageInput')?.files?.[0];
+                if(photo){
+                  const blob=await guideCompressImage(photo);const data=new FormData();
+                  data.append('author',finalName);data.append('rating',String(rating));data.append('text',text);data.append('image',blob,'review.jpg');
+                  const resp=await fetch(CENTRAL_API_URL+'/reviews',{method:'POST',body:data});const result=await resp.json();
+                  if(!resp.ok||result.error)throw Error(result.error||'ส่งรีวิวไม่สำเร็จ');
+                }else await centralRequest('/reviews','POST',{author:finalName,rating,text});
+                document.getElementById('reviewImageInput').value='';
                 document.getElementById('reviewTextInput').value = '';
                 await refreshPublicReviews();
                 closeAddReviewModal();
@@ -3574,7 +3753,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
           }catch(e){balance.textContent='ไม่สามารถโหลดแต้ม: '+e.message}
         }
         function switchAdminTab(tabName) {
-            const tabs = ['dashboard-orders', 'products', 'points', 'promotions', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations'];
+            const tabs = ['dashboard-orders', 'products', 'points', 'promotions', 'bank-accounts', 'form-templates', 'feedbacks', 'settings-store', 'website-integrations', 'website-theme', 'floating-decorations', 'store-guide'];
             tabs.forEach(t => {
                 document.getElementById(`adminTab-${t}`).classList.add('hidden');
                 const btn = document.getElementById(`adminTabBtn-${t}`);
@@ -3594,6 +3773,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
 
             else if (tabName === 'settings-store') { loadStoreSettingsForm(); renderShopIdentityAndStatus(); }
             else if (tabName === 'website-integrations') { loadWebsiteServiceForm(); loadIntegrationSettings(); }
+            else if (tabName === 'store-guide') loadStoreGuideAdmin();
             else if (tabName === 'website-theme') loadWebsiteThemeForm();
             else if (tabName === 'floating-decorations') { renderAdminFloatingDecorations(); loadFloatingDecorationDisplayControls(); }
         }
@@ -5292,7 +5472,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         <div>
                             <span class="font-bold ${r.hidden ? 'text-slate-400' : 'text-purple-600'}">${escapeHtml(r.author || '')} (${Number(r.rating)||0} ดาว)</span>
                             <p class="text-slate-600 dark:text-slate-300 text-xs mt-1">${escapeHtml(r.text || '')}</p>
-                            <span class="text-[9px] text-slate-400">${r.date || ''}</span>
+                            ${/^https:\/\//i.test(r.imageUrl||'') ? `<button type="button" onclick="openFullImageViewer('${escapeHtml(r.imageUrl)}')" class="text-purple-600 text-xs underline">🖼️ ดูรูปรีวิว</button>` : ''}
+                            <span class="text-[9px] text-slate-400">${formatWandererReviewDate(r.date)}</span>
                         </div>
                         <span class="text-[10px] px-2 py-1 rounded-full font-bold ${r.hidden ? 'bg-slate-200 text-slate-500' : 'bg-green-100 text-green-700'}">${r.hidden ? 'ซ่อนอยู่' : 'แสดงอยู่'}</span>
                     </div>
@@ -6231,6 +6412,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             renderCategories();
             renderApps();
             renderWebsiteService();
+            loadShopStats();
             updateCustomerMenu();
             restoreCustomerSession();
             const autoSync=document.getElementById('adminAutoSyncSheets'); if(autoSync)autoSync.checked=!!appState.settings?.autoSyncSheets;
