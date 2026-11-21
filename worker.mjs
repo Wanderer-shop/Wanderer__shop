@@ -10,6 +10,22 @@ const passwordHash=async(password,salt)=>hex(await crypto.subtle.deriveBits({nam
 const token=()=>crypto.randomUUID()+'.'+crypto.randomUUID();
 // 20 independent symbols from a 32-character alphabet = 100 bits of entropy.
 const pointsCode20=()=>{const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';const bytes=new Uint8Array(20);crypto.getRandomValues(bytes);return Array.from(bytes,b=>alphabet[b&31]).join('')};
+// Server-side media checks. Image objects use unpredictable capability keys; avoid indexing them publicly.
+const MEDIA_TYPES = {'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+const mediaKey=(kind,ext)=>kind+'/'+crypto.randomUUID()+'-'+crypto.randomUUID()+'.'+ext;
+const mediaUrl=(r,key)=>new URL('/media/'+key,new URL(r.url).origin).href;
+const checkMedia=(file,max)=>{
+  if(!(file instanceof File)||!MEDIA_TYPES[file.type]||file.size<=0||file.size>max)err('รูปต้องเป็น JPG, PNG, WebP หรือ GIF และมีขนาดไม่เกิน '+Math.round(max/1048576)+' MB',413);
+};
+// D1 BLOB storage: compressed photos only, never store the original 5 MB file.
+const saveD1Media=async(db,key,file,keepDays,orderId)=>{
+  const now=new Date(),expiresAt=keepDays===null?'9999-12-31T23:59:59.999Z':new Date(now.getTime()+keepDays*86400000).toISOString();
+  const bytes=await file.arrayBuffer();
+  if(bytes.byteLength>350000)err('รูปหลังบีบอัดยังใหญ่เกิน 350 KB กรุณาลดขนาดรูป',413);
+  await db.prepare('INSERT INTO shop_media(media_key,mime,bytes,order_id,created_at,expires_at) VALUES(?,?,?,?,?,?)')
+    .bind(key,file.type,bytes,orderId,now.toISOString(),expiresAt).run();
+  return expiresAt;
+};
 const safeCompare=(a,b)=>{if(typeof a!=='string'||typeof b!=='string'||a.length!==b.length)return false;let d=0;for(let i=0;i<a.length;i++)d|=a.charCodeAt(i)^b.charCodeAt(i);return d===0};
 class Shop {
  constructor(env){this.env=env;this.db=env.DB}
@@ -183,29 +199,119 @@ class Shop {
   async v2Issue(owner,type,cfg){const required=Number(cfg.thresholds?.[type]??(type==='game'?15:10));if(!Number.isInteger(required)||required<1||required>100)err('threshold invalid');for(let cycle=0;cycle<10;cycle++){const available=await this.db.prepare('SELECT id,remaining_points FROM points_v2_stamps WHERE owner_id=? AND type=? AND ticket_id IS NULL AND remaining_points>0 ORDER BY created_at,id LIMIT 200').bind(owner,type).all();let total=(available.results||[]).reduce((a,x)=>a+Number(x.remaining_points||0),0);if(total<required)return;const ticketId=crypto.randomUUID(),earned=new Date(),expires=new Date(earned);expires.setUTCMonth(expires.getUTCMonth()+2);let need=required;const updates=[];for(const x of available.results){if(!need)break;const before=Number(x.remaining_points);const used=Math.min(need,before);updates.push(this.db.prepare('UPDATE points_v2_stamps SET remaining_points=? WHERE id=? AND remaining_points=? AND ticket_id IS NULL').bind(before-used,x.id,before));need-=used}const done=await this.db.batch([...updates,this.db.prepare('INSERT INTO points_v2_tickets(id,owner_id,type,earned_at,expires_at,status) VALUES(?,?,?,?,?,?)').bind(ticketId,owner,type,earned.toISOString(),expires.toISOString(),'AVAILABLE')]);if(done.slice(0,-1).some(x=>x.meta?.changes!==1))throw Error('แต้มเปลี่ยนระหว่างออกสิทธิ์ กรุณาตรวจประวัติบัตร')}}
 
  async route(r){const u=new URL(r.url),p=u.pathname.replace(/\/$/,'')||'/',m=r.method;
+ // Public guide and storefront action stats (no admin access to private orders).
+ if(p==='/store-guide'&&m==='GET'){
+   const row=await this.db.prepare("SELECT value FROM shop_feature_config WHERE key='store_guide_v1'").first();
+   let guide=null;try{guide=row?JSON.parse(row.value):null}catch{}
+   return respond({guide:guide||{title:'วิธีใช้งานเว็บ',steps:[
+     {title:'1. เช็คสถานะร้าน',text:'ตรวจสถานะเปิดร้านและประกาศก่อนสั่งซื้อ',imageUrl:''},
+     {title:'2. กดเลือกสินค้า',text:'เลือกหมวดหมู่ แอป และแพ็กเกจ ตรวจราคาและรายละเอียด จากนั้นกดสั่งซื้อหรือเพิ่มลงตะกร้า',imageUrl:''},
+     {title:'3. ชำระเงินหรือทัก LINE',text:'เลือกชำระผ่านเว็บและแนบสลิป หรือกดสั่งผ่าน LINE OA',imageUrl:''},
+     {title:'4. ตรวจสถานะและรับสินค้า',text:'เก็บเลขออเดอร์เพื่อเช็คสถานะ และติดต่อร้านหากเกินเวลาส่งที่แจ้งไว้',imageUrl:''}
+   ]}});
+ }
+ if(p==='/admin/store-guide'&&m==='PUT'){
+   await this.admin(r);const b=await this.body(r);
+   if(typeof b.title!=='string'||b.title.length<1||b.title.length>100||!Array.isArray(b.steps)||b.steps.length!==4)err('ข้อมูลคู่มือไม่ถูกต้อง');
+   const steps=b.steps.map(s=>({title:String(s.title||'').trim(),text:String(s.text||'').trim()}));
+   if(steps.some(s=>!s.title||s.title.length>100||!s.text||s.text.length>1000))err('ข้อมูลขั้นตอนไม่ถูกต้อง');
+   if(!Array.isArray(b.gallery)||b.gallery.length>8)err('รูปตัวอย่างต้องไม่เกิน 8 รูป');
+   const gallery=b.gallery.map(s=>({title:String(s.title||'').trim(),imageUrl:String(s.imageUrl||'')}));
+   if(gallery.some(s=>!s.title||s.title.length>100||s.imageUrl.length>350||!/^https:\/\//i.test(s.imageUrl)))err('ชื่อรูปหรือ URL รูปตัวอย่างไม่ถูกต้อง');
+   await this.db.prepare("INSERT INTO shop_feature_config(key,value) VALUES('store_guide_v1',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=CURRENT_TIMESTAMP").bind(JSON.stringify({title:b.title.trim(),steps,gallery})).run();
+   return respond({success:true});
+ }
+ if(p==='/admin/guide-image'&&m==='POST'){
+   await this.admin(r);const fd=await r.formData(),file=fd.get('image');checkMedia(file,350000);
+   const key=mediaKey('guide',MEDIA_TYPES[file.type]);await saveD1Media(this.db,key,file,null,null);
+   return respond({imageUrl:mediaUrl(r,key)});
+ }
+ if(p==='/store-interest'&&m==='POST'){
+   const b=await this.body(r),visitorId=String(b.visitorId||''),channel=String(b.channel||'');
+   if(!/^[a-f0-9-]{36}$/i.test(visitorId)||!['web','line'].includes(channel))err('ข้อมูลไม่ถูกต้อง');
+   await this.db.prepare('INSERT OR IGNORE INTO shop_purchase_interest(visitor_id,channel) VALUES(?,?)').bind(visitorId,channel).run();
+   return respond({ok:true});
+ }
+ if(p==='/store-best-sellers'&&m==='GET'){
+   const rows=await this.db.prepare(`SELECT CAST(json_extract(item.value,'$.appId') AS TEXT) AS appId,
+     COALESCE(SUM(CASE WHEN CAST(COALESCE(json_extract(item.value,'$.qty'),json_extract(item.value,'$.quantity'),1) AS INTEGER) BETWEEN 1 AND 100
+      THEN CAST(COALESCE(json_extract(item.value,'$.qty'),json_extract(item.value,'$.quantity'),1) AS INTEGER) ELSE 1 END),0) AS units
+     FROM orders o JOIN json_each(o.payload,'$.items') AS item
+     WHERE julianday(o.created_at)>=julianday('now','-7 days')
+       AND json_extract(o.payload,'$.status') IN ('READY_FOR_DELIVERY','COMPLETED')
+       AND json_extract(item.value,'$.appId') IS NOT NULL
+     GROUP BY appId ORDER BY units DESC LIMIT 20`).all();
+   return respond({apps:(rows.results||[]).filter(x=>x.appId&&x.appId!=='promo-combo').map(x=>({appId:x.appId,units:Number(x.units||0)})),periodDays:7});
+ }
+ if(p==='/store-stats'&&m==='GET'){
+   // Count each browser once across WEB + LINE, even if it interacted with both channels.
+   const interest=await this.db.prepare('SELECT COUNT(DISTINCT visitor_id) AS n FROM shop_purchase_interest').first();
+   // Existing visitors table records browser-based visits across the storefront.
+   const visits=await this.db.prepare('SELECT COUNT(*) AS n FROM visitors').first();
+   // Only delivered/ready orders contribute to sold quantities. Never conflate clicks with sales.
+   const sold=await this.db.prepare(`SELECT COALESCE(SUM(CASE WHEN CAST(COALESCE(json_extract(item.value,'$.qty'),json_extract(item.value,'$.quantity'),1) AS INTEGER) BETWEEN 1 AND 100 THEN CAST(COALESCE(json_extract(item.value,'$.qty'),json_extract(item.value,'$.quantity'),1) AS INTEGER) ELSE 1 END),0) AS n FROM orders o JOIN json_each(o.payload,'$.items') item WHERE json_extract(o.payload,'$.status') IN ('READY_FOR_DELIVERY','COMPLETED')`).first();
+   return respond({purchaseInterest:Number(interest?.n||0),visitors:Number(visits?.n||0),soldUnits:Number(sold?.n||0),note:'Purchase actions and visits count browsers, not verified people; sold units use delivered orders.'});
+ }
  // Public reviews saved centrally; D1 migration is required before deployment.
  if(p==='/reviews'&&m==='GET'){
-   const rows=await this.db.prepare('SELECT id,author,rating,text,created_at FROM shop_reviews WHERE hidden=0 ORDER BY created_at DESC LIMIT 100').all();
-   return respond({reviews:(rows.results||[]).map(x=>({id:x.id,author:x.author,rating:x.rating,text:x.text,date:x.created_at,hidden:false}))});
+   const rows=await this.db.prepare('SELECT id,author,rating,text,image_key,created_at FROM shop_reviews WHERE hidden=0 ORDER BY created_at DESC LIMIT 100').all();
+   return respond({reviews:(rows.results||[]).map(x=>({id:x.id,author:x.author,rating:x.rating,text:x.text,date:x.created_at,hidden:false,imageUrl:x.image_key?mediaUrl(r,x.image_key):null}))});
  }
  if(p==='/reviews'&&m==='POST'){
-   const b=await this.body(r),author=String(b.author||'').trim(),bodyText=String(b.text||'').trim(),rating=Number(b.rating);
+   // Single multipart request avoids orphan public uploads. 5 MB review image maximum.
+   const ct=r.headers.get('Content-Type')||'';
+   let b,image=null;
+   if(ct.includes('multipart/form-data')){
+     const form=await r.formData();b={author:form.get('author'),text:form.get('text'),rating:form.get('rating'),keepDays:form.get('keepDays')};
+     image=form.get('image');if(!(image instanceof File)||!image.size)image=null;
+   }else b=await this.body(r);
+   const author=String(b.author||'').trim(),bodyText=String(b.text||'').trim(),rating=Number(b.rating);
    if(author.length<2||author.length>60||bodyText.length<4||bodyText.length>700||!Number.isInteger(rating)||rating<1||rating>5)err('ชื่อ รีวิว หรือคะแนนไม่ถูกต้อง');
+   let key=null;
+   if(image){
+     checkMedia(image,350000); // The browser reduces each original (<=5MB) to <=350 KB.
+     key=mediaKey('reviews',MEDIA_TYPES[image.type]);
+     // Review images are retained until the administrator deletes their review.
+     await saveD1Media(this.db,key,image,null,null);
+   }
    const id='db-'+crypto.randomUUID();
-   await this.db.prepare('INSERT INTO shop_reviews(id,author,rating,text) VALUES(?,?,?,?)').bind(id,author,rating,bodyText).run();
-   return respond({success:true,id},201);
+   try{await this.db.prepare('INSERT INTO shop_reviews(id,author,rating,text,image_key) VALUES(?,?,?,?,?)').bind(id,author,rating,bodyText,key).run()}
+   catch(e){if(key)await this.db.prepare('DELETE FROM shop_media WHERE media_key=?').bind(key).run().catch(()=>{});throw e}
+   return respond({success:true,id,imageUrl:key?mediaUrl(r,key):null},201);
  }
  if(p==='/admin/reviews'&&m==='GET'){
-   await this.admin(r);const rows=await this.db.prepare('SELECT id,author,rating,text,hidden,created_at FROM shop_reviews ORDER BY created_at DESC LIMIT 200').all();
-   return respond({reviews:(rows.results||[]).map(x=>({id:x.id,author:x.author,rating:x.rating,text:x.text,hidden:!!x.hidden,date:x.created_at}))});
+   await this.admin(r);const rows=await this.db.prepare('SELECT id,author,rating,text,hidden,image_key,created_at FROM shop_reviews ORDER BY created_at DESC LIMIT 200').all();
+   return respond({reviews:(rows.results||[]).map(x=>({id:x.id,author:x.author,rating:x.rating,text:x.text,hidden:!!x.hidden,date:x.created_at,imageUrl:x.image_key?mediaUrl(r,x.image_key):null}))});
  }
  if(p.startsWith('/admin/reviews/')&&(m==='PATCH'||m==='DELETE')){
    await this.admin(r);const id=decodeURIComponent(p.slice('/admin/reviews/'.length));
    if(!/^db-[a-f0-9-]{36}$/.test(id))err('Review ID invalid');
+   const oldReview=m==='DELETE'?await this.db.prepare('SELECT image_key FROM shop_reviews WHERE id=?').bind(id).first():null;
    const result=m==='PATCH'?await this.db.prepare('UPDATE shop_reviews SET hidden=CASE WHEN hidden=0 THEN 1 ELSE 0 END WHERE id=?').bind(id).run():await this.db.prepare('DELETE FROM shop_reviews WHERE id=?').bind(id).run();
+   if(result.meta?.changes&&oldReview?.image_key)await this.db.prepare('DELETE FROM shop_media WHERE media_key=?').bind(oldReview.image_key).run().catch(e=>console.error('Review media cleanup:',e));
    if(!result.meta?.changes)err('ไม่พบรีวิว',404);return respond({success:true});
  }
- if(p==='/health')return respond({ok:true,backend:'cloudflare-d1'});
+ if(p.startsWith('/media/')&&m==='GET'){
+   const key=decodeURIComponent(p.slice('/media/'.length));
+   if(!/^(delivery|reviews|guide)\/[a-f0-9-]{36}-[a-f0-9-]{36}\.(jpg|png|webp)$/.test(key))err('ไม่พบรูป',404);
+   const row=await this.db.prepare('SELECT mime, bytes, expires_at FROM shop_media WHERE media_key=?').bind(key).first();
+   if(!row || row.expires_at <= new Date().toISOString())err('รูปหมดอายุหรือถูกลบแล้ว',404);
+   const content = row.bytes instanceof ArrayBuffer ? row.bytes : new Uint8Array(row.bytes || []);
+   return new Response(content,{headers:{'Content-Type':row.mime,'X-Content-Type-Options':'nosniff','Cache-Control':'private,max-age=300','Cross-Origin-Resource-Policy':'cross-origin'}});
+ }
+ if(p==='/admin/media/delivery'&&m==='POST'){
+   await this.admin(r);
+   const form=await r.formData(),orderId=String(form.get('orderId')||''),file=form.get('file');
+   if(!/^[A-Za-z0-9_-]{1,36}$/.test(orderId))err('เลขออเดอร์ไม่ถูกต้อง',400);
+   const ord=await this.db.prepare('SELECT id FROM orders WHERE id=?').bind(orderId).first();if(!ord)err('ไม่พบออเดอร์',404);
+   checkMedia(file,350000);
+   const keepDays=Number(form.get('keepDays')||7);
+   if(![1,3,7,30].includes(keepDays))err('วันเก็บรูปต้องเป็น 1, 3, 7 หรือ 30 วัน');
+   const key=mediaKey('delivery',MEDIA_TYPES[file.type]);
+   const expiresAt=await saveD1Media(this.db,key,file,keepDays,orderId);
+   return respond({url:mediaUrl(r,key),expiresAt},201);
+ }
+ if(p==='/health')return respond({ok:true,backend:'cloudflare-d1',version:'v4.10-guide-gallery-weekly-sales-20261122',mediaStorage:'d1',reviewImages:true});
  if(p==='/auth/bootstrap'&&m==='POST'){if(!this.env.ADMIN_BOOTSTRAP_SECRET||!safeCompare(r.headers.get('X-Bootstrap-Secret'),this.env.ADMIN_BOOTSTRAP_SECRET))err('Unauthorized',403);const already=await this.db.prepare("SELECT id FROM users WHERE role='admin' LIMIT 1").first();if(already)err('มีบัญชีแอดมินแล้ว',409);return respond({user:await this.authCreate(await this.body(r),'admin')},201)}
  if(p==='/auth/register'&&m==='POST'){
     const b=await this.body(r);
@@ -296,16 +402,19 @@ class Shop {
       err('จำนวนแต้มเกินสิทธิ์ของออเดอร์ หรือไม่ตรงกับออเดอร์ LINE ที่บันทึกไว้',409);
     // Prevent issuing another active claim for the same order. Guest card binding occurs at redemption.
      const existingStamp=await this.db.prepare('SELECT id FROM points_v2_stamps WHERE order_id=?').bind(orderId).first();if(existingStamp)err('ออเดอร์นี้รับแต้มไปแล้ว',409);
-     const prior=await this.db.prepare('SELECT id FROM points_v2_links WHERE order_id=? AND used_at IS NULL AND expires_at>? LIMIT 1').bind(orderId,new Date().toISOString()).first();
-     if(prior)err('ออเดอร์นี้มีลิงก์ที่ยังไม่หมดอายุ โปรดรอหรือใช้ลิงก์เดิม',409);
-     const raw=pointsCode20();const expiry=new Date(Date.now()+15*60000).toISOString();
+     const priorRows=await this.db.prepare('SELECT id,used_at,expires_at FROM points_v2_links WHERE order_id=? ORDER BY expires_at DESC LIMIT 3').bind(orderId).all();
+     const previous=priorRows.results||[];
+     if(previous.some(x=>x.used_at))err('ออเดอร์นี้เคยใช้รหัสแล้ว',409);
+     if(previous.some(x=>x.expires_at>new Date().toISOString()))err('ยังมีรหัสรับแต้มที่ไม่หมดอายุ กรุณาใช้รหัสเดิม',409);
+     if(previous.length>=2)err('ออเดอร์นี้ออกโค้ดครบ 2 รอบแล้ว ไม่สามารถออกใหม่อีก',409);
+     const raw=pointsCode20();const expiry=new Date(Date.now()+24*60*60000).toISOString();
     const linkId=crypto.randomUUID();
     if(!['premium','game'].includes(requested))err('ฐานข้อมูลลิงก์เดิมยังรองรับเฉพาะบัตรแอพ/นิยายและเติมเกม ต้องขยายโครงสร้าง D1 ก่อนใช้บัตรประเภทใหม่',409);
     await this.db.batch([
       this.db.prepare('INSERT INTO points_v2_links(id,token_hash,order_id,guest_id,type,expires_at) VALUES(?,?,?,?,?,?)').bind(linkId,await hash(raw),orderId,cardId,requested,expiry),
       this.db.prepare('INSERT INTO points_v2_link_points(link_id,points) VALUES(?,?)').bind(linkId,requestedPoints)
     ]);
-    return respond({claimCode:raw,expiresAt:expiry,awaitingFulfillment:!this.eligiblePaidOrder(order),kind:order.userId?'member':'guest'});
+    return respond({claimCode:raw,expiresAt:expiry,issueRound:previous.length+1,awaitingFulfillment:!this.eligiblePaidOrder(order),kind:order.userId?'member':'guest'});
   }
   if(p==='/points/v2/claim'&&m==='POST'){
     const b=await this.body(r),code=String(b.claimCode||'').trim().toUpperCase();
@@ -457,7 +566,10 @@ class Shop {
    if(!saved.meta?.changes)err('ออเดอร์ถูกแก้ไขพร้อมกัน กรุณาลองใหม่',409);
    return respond({ok:true});
  }
- const match=p.match(/^\/orders\/([A-Za-z0-9_-]+)$/);if(match){const row=await this.db.prepare('SELECT payload FROM orders WHERE id=?').bind(match[1]).first();if(!row)err('ไม่พบออเดอร์',404);const o=JSON.parse(row.payload);if(m==='GET'){if(r.headers.get('Authorization')){await this.admin(r);const x=clean(o);delete x.token;return respond({order:x})}if(r.headers.get('X-Order-Token')!==o.token)err('ไม่มีสิทธิ์ดูออเดอร์',404);return respond({order:this.customerOrder(o)})}if(m==='PATCH'){await this.admin(r);const b=await this.body(r);if(b.revision!==o.revision)err('ออเดอร์ถูกเปลี่ยนแล้ว',409);if(!['AWAITING_PAYMENT','VERIFYING_SLIP','PENDING','PROCESSING','READY_FOR_DELIVERY','COMPLETED','CANCELLED'].includes(b.status))err('สถานะไม่ถูกต้อง');const next={...o,status:b.status,slipApprovedAt:(['READY_FOR_DELIVERY','COMPLETED'].includes(b.status)&&this.eligiblePaidOrder({...o,status:b.status}))?(o.slipApprovedAt||new Date().toISOString()):o.slipApprovedAt,deliveryData:String(b.deliveryData||''),pointsClaimLink:String(b.pointsClaimLink||'').trim().slice(0,1000),deliveryImages:b.deliveryImages||[],adminNote:String(b.adminNote||''),revision:crypto.randomUUID(),updatedAt:new Date().toISOString()};await this.db.prepare('UPDATE orders SET payload=? WHERE id=?').bind(JSON.stringify(next),o.id).run();/* Points are claimed with a 20-character code for both members and guests; no automatic award. */delete next.token;return respond({order:next})}}
+ const match=p.match(/^\/orders\/([A-Za-z0-9_-]+)$/);if(match){const row=await this.db.prepare('SELECT payload FROM orders WHERE id=?').bind(match[1]).first();if(!row)err('ไม่พบออเดอร์',404);const o=JSON.parse(row.payload);if(m==='GET'){if(r.headers.get('Authorization')){await this.admin(r);const x=clean(o);delete x.token;return respond({order:x})}if(r.headers.get('X-Order-Token')!==o.token)err('ไม่มีสิทธิ์ดูออเดอร์',404);return respond({order:this.customerOrder(o)})}if(m==='PATCH'){await this.admin(r);const b=await this.body(r);if(b.revision!==o.revision)err('ออเดอร์ถูกเปลี่ยนแล้ว',409);if(!['AWAITING_PAYMENT','VERIFYING_SLIP','PENDING','PROCESSING','READY_FOR_DELIVERY','COMPLETED','CANCELLED'].includes(b.status))err('สถานะไม่ถูกต้อง');const images=Array.isArray(b.deliveryImages)?b.deliveryImages:[];
+ if(images.length>8)err('แนบรูปส่งงานได้ไม่เกิน 8 รูป',400);
+ for(const img of images){const src=String(typeof img==='string'?img:img?.src||'');if(!src||src.length>500000||!(src.startsWith(new URL(r.url).origin+'/media/delivery/')||/^data:image\/(png|jpeg|webp);base64,/.test(src)||/^https:\/\//.test(src)))err('ลิงก์รูปส่งงานไม่ถูกต้อง',400)}
+ const next={...o,status:b.status,slipApprovedAt:(['READY_FOR_DELIVERY','COMPLETED'].includes(b.status)&&this.eligiblePaidOrder({...o,status:b.status}))?(o.slipApprovedAt||new Date().toISOString()):o.slipApprovedAt,deliveryData:String(b.deliveryData||''),pointsClaimLink:String(b.pointsClaimLink||'').trim().slice(0,1000),deliveryImages:images,adminNote:String(b.adminNote||''),revision:crypto.randomUUID(),updatedAt:new Date().toISOString()};await this.db.prepare('UPDATE orders SET payload=? WHERE id=?').bind(JSON.stringify(next),o.id).run();/* Points are claimed with a 20-character code for both members and guests; no automatic award. */delete next.token;return respond({order:next})}}
  err('Not found',404)
  }
 }
@@ -467,6 +579,11 @@ export default {
     ctx.waitUntil((async () => {
       const featureConfig = await new Shop(env).pointsConfig();
       await env.DB.prepare("UPDATE points_v2_tickets SET status='EXPIRED' WHERE status='AVAILABLE' AND expires_at<=?").bind(new Date().toISOString()).run();
+      // Delete only expired rows in small daily batches; preserve orders/reviews metadata.
+      try{
+        const cleanup=await env.DB.prepare('DELETE FROM shop_media WHERE media_key IN (SELECT media_key FROM shop_media WHERE expires_at<=? ORDER BY expires_at LIMIT 300)').bind(new Date().toISOString()).run();
+        console.log('D1 media expired cleanup',cleanup.meta?.changes||0);
+      }catch(mediaError){console.error('D1 media cleanup failed',mediaError)}
       if (!featureConfig.slipAutoDelete) return;
       const olderThan = new Date(Date.now() - featureConfig.slipRetentionDays * 86400000).toISOString();
       let removed=0;
@@ -520,7 +637,7 @@ export default {
       const path = new URL(r.url).pathname;
 
       if (
-        ['/auth/login', '/auth/register', '/orders', '/points/v2/guest/create', '/points/v2/guest', '/points/v2/claim', '/reviews'].includes(path) &&
+        ['/auth/login', '/auth/register', '/orders', '/points/v2/guest/create', '/points/v2/guest', '/points/v2/claim', '/reviews', '/store-interest'].includes(path) &&
         r.method === 'POST' &&
         env.RATE_LIMITER
       ) {
