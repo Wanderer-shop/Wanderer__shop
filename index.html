@@ -133,6 +133,7 @@ body .border-purple-100, body .border-indigo-100, body .border-slate-200 { borde
 body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 { background-color:var(--ws-button); }
 .theme-edit-control:disabled { opacity:.7; cursor:not-allowed; }
 </style>
+    <meta name="wanderer-guide-build" content="GUIDE_BACK_ABOVE_HEADER_V413_20261122">
 </head>
 <body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
     <div id="wandererFloatingDecorations" aria-label="ของตกแต่งหน้าร้าน"></div>
@@ -361,6 +362,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
         <!-- V4.10: Guide page. Two text cards per row, gallery below all text. -->
         <section id="viewStoreGuide" class="hidden space-y-5">
+          <!-- GUIDE_BACK_ABOVE_HEADER_V413_20261122: visible button ABOVE purple header, matches supplied reference -->
+          <div class="flex justify-start" style="display:flex!important;justify-content:flex-start!important;margin-bottom:14px">
+            <button id="guideBackButtonV413" type="button" onclick="navigateTo('home')" aria-label="ย้อนกลับหน้าสินค้า" style="display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:8px;background:#fff;color:#334155;border:1px solid #e5e7eb;border-radius:16px;padding:13px 20px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.04)"><span aria-hidden="true">←</span> ย้อนกลับ</button>
+          </div>
           <div class="rounded-3xl p-6 bg-gradient-to-r from-violet-700 to-indigo-700 text-white shadow-xl">
             <h2 id="storeGuideTitle" class="font-bold text-2xl text-white">วิธีใช้งานเว็บ</h2>
             <p class="mt-1 text-xs text-purple-100">ขั้นตอนสั่งซื้อสินค้าและรับบริการผ่านเว็บไซต์หรือ LINE OA</p>
@@ -2380,6 +2385,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 renderWebsiteService();
             } else if (view === 'store-guide') {
                 document.getElementById('viewStoreGuide').classList.remove('hidden');
+                // Guide has its own always-visible back button inside viewStoreGuide.
                 loadStoreGuidePublic();
             } else if (view === 'website-services') {
                 document.getElementById('viewWebsiteServices').classList.remove('hidden');
@@ -6462,4 +6468,3 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEntryPo
 </script>
 </body>
 </html>
-
