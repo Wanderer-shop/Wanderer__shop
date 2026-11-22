@@ -58,18 +58,14 @@
             100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
         }
         .review-scroll-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            animation: floatScroll 18s linear infinite;
+            display:flex;
+            flex-direction:column;
+            gap:1rem;
+            animation:none !important;
+            transform:none !important;
         }
-        .review-scroll-container:hover {
-            animation-play-state: paused;
-        }
-        @keyframes floatScroll {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-50%); }
-        }
+        #reviewsScrollViewport { overflow-y:auto; overscroll-behavior:contain; scrollbar-width:thin; scrollbar-color:#c4b5fd transparent; }
+        #reviewsScrollViewport:focus-visible { outline:2px solid #8b5cf6; outline-offset:2px; }
         .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.3); border-radius: 10px; }
@@ -134,7 +130,9 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 .theme-edit-control:disabled { opacity:.7; cursor:not-allowed; }
 </style>
     <meta name="wanderer-guide-build" content="GUIDE_BACK_ABOVE_HEADER_V413_20261122">
+    <!-- WANDERER_POINTS_CODE_24H_V416_20261122 -->
 </head>
+<!-- WANDERER_V421_SCROLL_PROFIT_DAILY_20261122 -->
 <body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
     <div id="wandererFloatingDecorations" aria-label="ของตกแต่งหน้าร้าน"></div>
 
@@ -354,7 +352,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     </div>
                 </div>
 
-                <div class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-purple-100 dark:border-slate-700 shadow-sm h-64 overflow-hidden relative">
+                <div id="reviewsScrollViewport" tabindex="0" aria-label="รายการรีวิว เลื่อนขึ้นลงเพื่อดู" class="bg-white dark:bg-slate-800 rounded-3xl p-5 border border-purple-100 dark:border-slate-700 shadow-sm h-64 overflow-y-auto relative">
                     <div id="reviewsFloatingBox" class="review-scroll-container"></div>
                 </div>
             </div>
@@ -445,7 +443,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
               <button onclick="v2NewGuest()" class="bg-purple-600 text-white rounded-lg px-3 py-2 text-sm">สร้างบัตรสะสมแต้ม</button>
               <label class="block text-sm">เลขออเดอร์ / ชื่อแอค (ชื่อเรียกบัตร)<input id="v2GuestAlias" maxlength="80" class="w-full border rounded-lg p-2" placeholder="เช่น ORD-20261101-12345 หรือ ชื่อแอค"></label><input id="v2GuestCard" type="hidden"><p class="text-xs text-slate-500">ชื่อเรียกบัตรใช้สำหรับแสดงผลเท่านั้น ไม่ใช้แทนหลักฐานความเป็นเจ้าของ</p>
               <input id="v2GuestSecret" type="hidden">
-              <label class="block text-sm">รหัสรับแต้ม 20 ตัวอักษร (ภายใน 24ชม.)<input id="v2ClaimCode" class="w-full border rounded-lg p-2" placeholder="เช่น ABCDEFGHJKLMNPQRST2" maxlength="20" autocapitalize="characters"></label>
+              <label class="block text-sm">รหัสรับแต้ม 20 ตัวอักษร (ภายใน 24 ชั่วโมง)<input id="v2ClaimCode" class="w-full border rounded-lg p-2" placeholder="เช่น ABCDEFGHJKLMNPQRST2" maxlength="20" autocapitalize="characters"></label>
               <div class="flex gap-2 flex-wrap"><button onclick="v2GuestLoad()" class="bg-slate-700 text-white px-3 py-2 rounded-lg text-sm">ดูบัตร</button><button onclick="v2GuestClaim()" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-sm">รับแต้มครั้งเดียว</button></div>
               <p id="v2GuestNotice" class="text-xs text-amber-600"></p><div id="v2GuestView"></div>
             </section>
@@ -494,10 +492,16 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             <!-- TAB 1: DASHBOARD & ORDERS -->
             <div id="adminTab-dashboard-orders" class="space-y-6">
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-4">
                     <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs text-slate-400 font-medium">ยอดขายรวม</span>
                         <h3 id="statTotalSales" class="text-2xl font-black text-purple-600 mt-1">฿0</h3>
+                    </div>
+                    <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm">
+                        <span class="text-xs text-slate-400 font-medium">กำไร (ออเดอร์ขายแล้ว)</span>
+                        <h3 id="statTotalProfit" class="text-2xl font-black text-emerald-600 mt-1">—</h3>
+                        <p id="statProfitNote" class="text-[10px] text-slate-400 mt-1">รอโหลดต้นทุนจาก D1</p>
+                        <button type="button" onclick="wsImportCosts()" class="mt-2 text-[10px] underline text-indigo-600">นำเข้าต้นทุนจากชีต</button><button type="button" onclick="wsPublishProfitNow()" class="block mt-1 text-[10px] underline text-emerald-600">ทดสอบสรุปกำไรวันนี้ลงชีต</button>
                     </div>
                     <div class="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm">
                         <span class="text-xs text-slate-400 font-medium">ออเดอร์ทั้งหมด</span>
@@ -585,7 +589,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                   <p class="font-bold mb-2">กติกาที่ใช้กับลูกค้า: สะสมจากสลิปที่อนุมัติแล้ว +1 แต้ม / 1 ออเดอร์</p>
                   <div class="grid sm:grid-cols-2 gap-2"><div class="rounded-lg bg-white dark:bg-slate-800 p-3">⭐ แอพพรีเมี่ยม + เติมนิยาย <b>ครบ <span id="v2ThresholdInfoPremium">10</span> แต้ม</b> → เลือกได้ 1 รางวัล</div><div class="rounded-lg bg-white dark:bg-slate-800 p-3">🎮 เติมเกม <b>ครบ <span id="v2ThresholdInfoGame">15</span> แต้ม</b> → เลือกได้ 1 รางวัล</div></div>
                   <p class="text-xs mt-2">ยังไม่ครบไม่หมดอายุ · ครบแล้วใช้สิทธิ์ภายใน 2 เดือน</p>
-                  <button type="button" onclick="document.getElementById('v2ClaimAdminPanel').scrollIntoView({behavior:'smooth',block:'center'})" class="mt-3 px-3 py-2 rounded-lg bg-indigo-600 text-white font-semibold">🔗 ไปที่สร้างลิงก์รับแต้ม 24ชม.</button>
+                  <button type="button" onclick="document.getElementById('v2ClaimAdminPanel').scrollIntoView({behavior:'smooth',block:'center'})" class="mt-3 px-3 py-2 rounded-lg bg-indigo-600 text-white font-semibold">🔗 ไปที่สร้างลิงก์รับแต้ม 24 ชั่วโมง</button>
                 </div>
                 <label class="flex gap-2 text-sm"><input id="v2Enabled" type="checkbox"> เปิดแจกแต้มจริงหลังตรวจสอบระบบแล้ว</label>
                 <p class="text-xs text-amber-600">เกณฑ์แลกรางวัลกำหนดได้ด้านล่าง และแต้มที่ได้ต่อออเดอร์กำหนดแยกตามหมวด — อนุมัติสลิปก่อนรับแต้ม / สิทธิ์แลกได้ภายใน 2 เดือน / แต้มที่ยังไม่ครบไม่หมดอายุ / ออเดอร์ผสมประเภทไม่นับอัตโนมัติ</p>
@@ -607,8 +611,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <button type="button" onclick="v2Save()" class="bg-emerald-600 text-white rounded-xl px-5 py-3 font-bold">บันทึกบัตรและรางวัลลง D1</button>
                </div>
                <div id="v2ClaimAdminPanel" class="bg-white dark:bg-slate-800 border-2 border-indigo-300 rounded-2xl p-5 space-y-3">
-                <h4 class="font-bold">🔑 รหัสรับแต้มสำหรับทุกออเดอร์ (สมาชิก / ไม่สมัคร · 24ชม. · ครั้งเดียว)</h4>
-                <p class="text-xs">ออกลิงก์ได้เมื่อมีเลขออเดอร์ในระบบ ไม่ต้องรอสถานะส่งสินค้า แต่ลูกค้าจะรับแต้มได้หลังยืนยันชำระเงินและส่งสินค้าแล้วเท่านั้น (ลิงก์หมดอายุ 24ชม.) · LINE ที่ขายผ่านแชทโดยไม่มีออเดอร์ต้องลงทะเบียนก่อน</p>
+                <h4 class="font-bold">🔑 รหัสรับแต้มสำหรับทุกออเดอร์ (สมาชิก / ไม่สมัคร · 24 ชั่วโมง · ครั้งเดียว)</h4>
+                <p class="text-xs">ออกลิงก์ได้เมื่อมีเลขออเดอร์ในระบบ ไม่ต้องรอสถานะส่งสินค้า แต่ลูกค้าจะรับแต้มได้หลังยืนยันชำระเงินและส่งสินค้าแล้วเท่านั้น (ลิงก์หมดอายุ 24 ชั่วโมง) · LINE ที่ขายผ่านแชทโดยไม่มีออเดอร์ต้องลงทะเบียนก่อน</p>
                 <label for="v2OrderChannel" class="block text-sm font-semibold">ช่องทางสั่งซื้อ</label>
                 <select id="v2OrderChannel" onchange="v2OrderChannelChanged()" class="border rounded-lg p-2 w-full dark:bg-slate-800"><option value="WEB">🌐 เว็บไซต์</option><option value="LINE">💚 LINE</option></select>
                 <p id="v2ChannelHelp" class="text-xs text-slate-500">ออเดอร์เว็บไซต์ต้องมีสถานะส่งสินค้าเสร็จแล้ว (READY_FOR_DELIVERY หรือ COMPLETED)</p>
@@ -628,7 +632,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                   <button type="button" onclick="v2RegisterLineOrder()" class="block mt-2 px-4 py-2 bg-amber-600 text-white rounded-lg font-bold">บันทึกออเดอร์ LINE (ไม่ออกลิงก์ทันที)</button>
                 </details>
                 <p class="text-xs text-indigo-700 font-bold">Orders Channel v4.2 TEST — หนึ่งออเดอร์รับแต้มได้ครั้งเดียว</p>
-                <button type="button" onclick="v2IssueLink()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">สร้างรหัสรับแต้ม 20 ตัว (24ชม.)</button>
+                <button type="button" onclick="v2IssueLink()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg">สร้างรหัสรับแต้ม 20 ตัว (24 ชั่วโมง)</button>
                 <button type="button" onclick="navigator.clipboard.writeText((document.getElementById('v2IssuedCode').value.match(/รหัสรับแต้ม: ([A-Z2-9]{20})/)||[])[1]||'').then(()=>showToast('คัดลอกรหัสแล้ว')).catch(()=>showToast('คัดลอกไม่สำเร็จ'))" class="px-3 py-2 bg-slate-700 text-white rounded-lg text-xs">คัดลอกรหัส</button>
                 <textarea id="v2IssuedCode" readonly rows="3" class="border p-2 w-full rounded-lg" placeholder="รหัสรับแต้ม 20 ตัวอักษรจะปรากฏที่นี่"></textarea>
                </div>
@@ -1245,10 +1249,21 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <textarea id="reviewTextInput" required rows="3" placeholder="ความประทับใจ การบริการ สินค้าจัดส่งไว..." class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900"></textarea>
                 </div>
 
-                <label class="block font-bold">แนบรูปรีวิว (ไม่บังคับ, ไม่เกิน 5 MB)
-                    <input id="reviewImageInput" type="file" accept="image/png,image/jpeg,image/webp" class="block w-full mt-1 text-xs">
-                </label>
-                <p class="text-[10px] text-slate-500">รูปรีวิวจะเก็บไว้จนกว่าแอดมินจะลบรีวิว ไม่มีช่องเลือกวันหมดอายุ</p>
+                <!-- WANDERER_REVIEW_FOUR_VISIBLE_UPLOADS_V419_20261122 -->
+            <!-- WANDERER_V420_STATS_REVIEW_SYNC_20261122 -->
+                <fieldset class="rounded-xl border border-purple-200 dark:border-purple-800 p-3 space-y-2">
+                    <legend class="font-bold px-1">🖼 แนบรูปรีวิว (สูงสุด 4 รูป)</legend>
+                    <p class="text-[11px] text-slate-500">เลือกได้ทีละช่อง สูงสุดช่องละ 1 รูป · ต้นฉบับไม่เกิน 6 MB/รูป · ระบบจะย่อให้อัตโนมัติก่อนส่ง</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="block text-[11px] font-semibold">รูปที่ 1 <input id="reviewImageInput1" type="file" accept="image/png,image/jpeg,image/webp" onchange="reviewUpdateSelectedImages()" class="block w-full mt-1 text-[10px]" /></label>
+                        <label class="block text-[11px] font-semibold">รูปที่ 2 <input id="reviewImageInput2" type="file" accept="image/png,image/jpeg,image/webp" onchange="reviewUpdateSelectedImages()" class="block w-full mt-1 text-[10px]" /></label>
+                        <label class="block text-[11px] font-semibold">รูปที่ 3 <input id="reviewImageInput3" type="file" accept="image/png,image/jpeg,image/webp" onchange="reviewUpdateSelectedImages()" class="block w-full mt-1 text-[10px]" /></label>
+                        <label class="block text-[11px] font-semibold">รูปที่ 4 <input id="reviewImageInput4" type="file" accept="image/png,image/jpeg,image/webp" onchange="reviewUpdateSelectedImages()" class="block w-full mt-1 text-[10px]" /></label>
+                    </div>
+                    <div id="reviewSelectedImages" class="text-[11px] text-slate-500" aria-live="polite">ยังไม่ได้เลือกรูป</div>
+                    <div id="reviewSelectedPreviews" class="grid grid-cols-4 gap-2" aria-label="ตัวอย่างรูปที่เลือก"></div>
+                </fieldset>
+                <p class="text-[10px] text-slate-500">เลือกได้ 1–4 รูปต่อรีวิว · บีบอัดอัตโนมัติก่อนส่งเพื่อประหยัดพื้นที่ · รูปรีวิวจะเก็บไว้จนกว่าแอดมินจะลบรีวิว</p>
                 <button type="submit" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md transition">
                     โพสต์รีวิว
                 </button>
@@ -1406,7 +1421,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <textarea id="adminDeliveryDataTextArea" rows="6" placeholder="กรอกข้อมูลรหัส Gift Code / Link Invite / Email & Pass..." class="w-full p-3 text-xs rounded-2xl border border-slate-200 dark:border-slate-700 dark:bg-slate-900 font-mono focus:ring-2 focus:ring-purple-400 focus:outline-none"></textarea>
             </div>
             <div class="space-y-2 p-3 rounded-xl border border-violet-200 bg-violet-50/50 dark:bg-slate-900">
-                <label for="adminPointsClaimLink" class="block text-xs font-bold text-violet-700">⭐ รหัสสะสมแต้ม 20 ตัวสำหรับส่งให้ลูกค้า (24ชม. / ครั้งเดียว)</label>
+                <label for="adminPointsClaimLink" class="block text-xs font-bold text-violet-700">⭐ รหัสสะสมแต้ม 20 ตัวสำหรับส่งให้ลูกค้า (24 ชั่วโมง / ครั้งเดียว)</label>
                 <textarea id="adminPointsClaimLink" rows="2" class="w-full rounded-lg border p-2 text-xs dark:bg-slate-800" placeholder="วางรหัส 20 ตัวอักษรจากแท็บสะสมแต้มที่นี่"></textarea>
                 <p class="text-[11px] text-slate-600">สร้างลิงก์จากเลขออเดอร์เดิมแล้ววางที่นี่ ลูกค้าจะกดรับแต้มได้หลังออเดอร์ผ่านสถานะส่งสินค้าแล้วเท่านั้น</p>
                 <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('adminPointsClaimLink').value).then(()=>showToast('คัดลอกรหัสแล้ว')).catch(()=>showToast('คัดลอกไม่สำเร็จ'))" class="px-3 py-2 rounded-lg bg-violet-600 text-white text-xs">คัดลอกรหัสรับแต้ม</button>
@@ -2271,11 +2286,19 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         ],gallery:[]};
         let guideAdminDraft=null;
         async function loadShopStats(){
-          try {const data=await centralRequest('/store-stats');
-            for(const [id,key] of [['shopStatPurchase','soldOrders'],['shopStatVisitors','visitors'],['shopStatSold','availablePackages']]){
-              const el=document.getElementById(id);if(el)el.textContent=Number(data[key]||0).toLocaleString('th-TH');
+          const fields=[['shopStatPurchase','soldOrders'],['shopStatVisitors','visitors'],['shopStatSold','availablePackages']];
+          try {
+            const data=await centralRequest('/store-stats');
+            if(fields.some(([,key])=>!Number.isFinite(Number(data[key])) || data[key]===undefined || data[key]===null)) {
+              throw Error('Worker ยังส่งฟิลด์สถิติรุ่นเก่า กรุณา Deploy Worker v4.20');
             }
-          } catch(e){console.warn('Store statistics:',e.message);}
+            for(const [id,key] of fields){
+              const el=document.getElementById(id);if(el){el.textContent=Number(data[key]).toLocaleString('th-TH');el.removeAttribute('title');}
+            }
+          } catch(e){
+            console.error('Store statistics:',e);
+            for(const [id] of fields){const el=document.getElementById(id);if(el){el.textContent='—';el.title='โหลดสถิติไม่สำเร็จ: '+e.message;}}
+          }
         }
         async function markShopPurchaseInterest(channel){
           try {
@@ -2598,6 +2621,98 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
           const date=new Date(normalized);if(!Number.isFinite(date.getTime()))return raw;
           return new Intl.DateTimeFormat('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(date);
         }
+        // WANDERER_REVIEW_CLICK_TO_SHOW_V418_20261122
+        // Review images stay hidden until the customer explicitly opens the gallery.
+        const reviewCarouselImages = new Map();
+        function reviewImageList(review){
+            const urls = Array.isArray(review.imageUrls) ? review.imageUrls : [review.imageUrl];
+            return urls.filter(url => /^https:\/\//i.test(String(url||''))).slice(0,4);
+        }
+        function reviewGalleryHtml(review, scope){
+            const photos=reviewImageList(review);
+            if(!photos.length)return '';
+            const key=scope+'-'+String(review.id).replace(/[^a-zA-Z0-9_-]/g,'');
+            reviewCarouselImages.set(key,photos);
+            return `<div class="mt-2" data-review-container="${key}">
+                <button type="button" onclick="reviewToggleGallery('${key}')" aria-expanded="false" class="review-gallery-toggle inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-purple-200 bg-white dark:bg-slate-800 text-purple-600 dark:text-purple-300 text-xs font-semibold hover:bg-purple-50 dark:hover:bg-slate-700 transition-colors">🖼 ดูรูปรีวิว (${photos.length} รูป)</button>
+                <div class="review-gallery-panel hidden mt-2" data-review-gallery="${key}" data-review-index="0">
+                    <div class="relative rounded-xl overflow-hidden border border-purple-100 bg-white dark:bg-slate-800">
+                        <button type="button" class="block w-full" onclick="reviewOpenGallery('${key}')" aria-label="ดูรูปรีวิวขนาดเต็ม">
+                            <img class="review-gallery-photo w-full h-40 object-contain" loading="lazy" alt="รูปรีวิว 1 จาก ${photos.length}">
+                        </button>
+                        ${photos.length>1?`<button type="button" onclick="reviewMoveGallery('${key}',-1)" aria-label="รูปก่อนหน้า" class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 text-slate-800 w-8 h-8 shadow-md font-bold">❮</button>
+                        <button type="button" onclick="reviewMoveGallery('${key}',1)" aria-label="รูปถัดไป" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 text-slate-800 w-8 h-8 shadow-md font-bold">❯</button>
+                        <span class="review-gallery-count absolute bottom-2 right-2 px-2 py-1 bg-black/65 text-white rounded-full text-[10px]">1 / ${photos.length}</span>`:''}
+                    </div>
+                </div>
+            </div>`;
+        }
+        function reviewToggleGallery(key){
+            const container=[...document.querySelectorAll('[data-review-container]')].find(el=>el.dataset.reviewContainer===key);
+            const urls=reviewCarouselImages.get(key);
+            if(!container||!urls?.length)return;
+            const panel=container.querySelector('.review-gallery-panel');
+            const toggle=container.querySelector('.review-gallery-toggle');
+            if(!panel||!toggle)return;
+            const willOpen=panel.classList.contains('hidden');
+            panel.classList.toggle('hidden',!willOpen);
+            toggle.setAttribute('aria-expanded',String(willOpen));
+            toggle.textContent=willOpen?`✕ ซ่อนรูปรีวิว (${urls.length} รูป)`:`🖼 ดูรูปรีวิว (${urls.length} รูป)`;
+            if(willOpen){
+                const index=Number(panel.dataset.reviewIndex||0);
+                const img=panel.querySelector('.review-gallery-photo');
+                if(img&&!img.getAttribute('src'))img.src=urls[index]||urls[0];
+            }
+        }
+        function reviewMoveGallery(key,delta){
+            const gallery=[...document.querySelectorAll('[data-review-gallery]')].find(el=>el.dataset.reviewGallery===key);
+            const urls=reviewCarouselImages.get(key);if(!gallery||!urls?.length)return;
+            const next=(Number(gallery.dataset.reviewIndex||0)+delta+urls.length)%urls.length;
+            gallery.dataset.reviewIndex=String(next);
+            const img=gallery.querySelector('.review-gallery-photo');img.src=urls[next];img.alt=`รูปรีวิว ${next+1} จาก ${urls.length}`;
+            const counter=gallery.querySelector('.review-gallery-count');if(counter)counter.textContent=`${next+1} / ${urls.length}`;
+        }
+        function reviewOpenGallery(key){
+            const gallery=[...document.querySelectorAll('[data-review-gallery]')].find(el=>el.dataset.reviewGallery===key);
+            const urls=reviewCarouselImages.get(key);if(!urls?.length)return;
+            openFullImageViewer(urls[Number(gallery?.dataset.reviewIndex||0)]||urls[0]);
+        }
+        function reviewSelectedFiles(){
+            return [1,2,3,4].map(i=>document.getElementById('reviewImageInput'+i)?.files?.[0]).filter(Boolean);
+        }
+        function reviewUpdateSelectedImages(){
+            const note=document.getElementById('reviewSelectedImages');
+            const preview=document.getElementById('reviewSelectedPreviews');
+            const files=reviewSelectedFiles();if(!note||!preview)return;
+            for(const img of preview.querySelectorAll('img[data-object-url]'))URL.revokeObjectURL(img.dataset.objectUrl);
+            preview.replaceChildren();
+            const bad=files.some(f=>f.size>6*1024*1024||!['image/jpeg','image/png','image/webp'].includes(f.type));
+            note.className='text-[11px] '+(bad?'text-red-600':'text-slate-500');
+            note.textContent=bad?'เลือกรูป JPG/PNG/WebP ที่มีขนาดไม่เกิน 6 MB ต่อรูป':
+                files.length?`เลือกแล้ว ${files.length}/4 รูป`:'ยังไม่ได้เลือกรูป';
+            for(const file of files){
+                const image=document.createElement('img');const url=URL.createObjectURL(file);
+                image.src=url;image.dataset.objectUrl=url;image.alt='รูปตัวอย่าง '+file.name;
+                image.className='w-full h-16 object-cover rounded-lg border border-purple-200';
+                preview.appendChild(image);
+            }
+        }
+        async function reviewCompressImage(file){
+            if(file.size>6*1024*1024)throw Error('รูปต้นฉบับแต่ละรูปต้องไม่เกิน 6 MB');
+            if(!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('รองรับเฉพาะ JPG, PNG และ WebP');
+            const bitmap=await createImageBitmap(file);let maxSide=1400,quality=.82;
+            try{
+                for(let i=0;i<12;i++){
+                    const ratio=Math.min(1,maxSide/Math.max(bitmap.width,bitmap.height));const canvas=document.createElement('canvas');
+                    canvas.width=Math.max(1,Math.round(bitmap.width*ratio));canvas.height=Math.max(1,Math.round(bitmap.height*ratio));
+                    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+                    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));
+                    if(blob&&blob.size<=340000)return blob;
+                    if(quality>.48)quality-=.08;else maxSide=Math.max(400,Math.round(maxSide*.78));
+                }
+                throw Error('รูปบีบอัดแล้วยังใหญ่เกินไป กรุณาลดขนาดก่อนอัปโหลด');
+            }finally{bitmap.close();}
+        }
         function renderReviews() {
             const box = document.getElementById('reviewsFloatingBox');
             const visible = [...centralReviews.filter(r => !r.hidden), ...appState.reviews.filter(r => !r.hidden && !centralReviews.some(c => c.id === r.id))];
@@ -2609,7 +2724,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         <span class="text-amber-400 font-bold">${'⭐'.repeat(Number(r.rating) || 0)}</span>
                     </div>
                     <p class="text-slate-600 dark:text-slate-300 text-[11px]">${escapeHtml(r.text || '')}</p>
-                    ${/^https:\/\//i.test(r.imageUrl||'') ? `<button type="button" onclick="openFullImageViewer('${escapeHtml(r.imageUrl)}')" class="text-purple-600 text-xs underline">🖼️ ดูรูปรีวิว</button>` : ''}
+                    ${reviewGalleryHtml(r,'public')}
                     <span class="text-[9px] text-slate-400 block text-right">${formatWandererReviewDate(r.date)}</span>
                 </div>
             `).join('') : '<p class="text-xs text-slate-400 text-center py-8">ยังไม่มีรีวิวที่แสดงอยู่ในขณะนี้</p>';
@@ -3489,7 +3604,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     <p><strong>วันที่:</strong> ${ord.date}</p>
                     <p><strong>รายการ:</strong> ${ord.items.map(i => i.name).join(', ')}</p>
                     <p><strong>ราคารวม:</strong> ฿${ord.total}</p>
-                    ${ord.pointsClaimLink ? `<div class="p-3 rounded-xl bg-violet-50 border border-violet-200 text-xs"><p class="font-bold">⭐ รหัสรับแต้ม (24ชม. / ครั้งเดียว)</p><p class="break-all font-mono">${escapeHtml(ord.pointsClaimLink)}</p></div>` : ''}
+                    ${ord.pointsClaimLink ? `<div class="p-3 rounded-xl bg-violet-50 border border-violet-200 text-xs"><p class="font-bold">⭐ รหัสรับแต้ม (24 ชั่วโมง / ครั้งเดียว)</p><p class="break-all font-mono">${escapeHtml(ord.pointsClaimLink)}</p></div>` : ''}
                     ${ord.deliveryData ? `
                         <div class="p-3 bg-white dark:bg-slate-800 rounded-xl border border-purple-200">
                             <span class="font-bold text-purple-600 block mb-1">🎁 ข้อมูลสินค้าดิจิทัลที่คุณได้รับ:</span>
@@ -3581,6 +3696,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         function openCurrentPackagePreview(){const url=String(window.currentPackagePreviewUrl||'').trim();if(/^https?:\/\//i.test(url)){window.open(url,'_blank','noopener,noreferrer');}else{showToast('รายการนี้ยังไม่ได้กำหนด URL ตัวอย่าง');}}
         function closePkgDetailModal() { document.getElementById('pkgDetailModal').classList.add('hidden'); }
 
+        // WANDERER_REVIEWS_FOUR_IMAGES_V417_20261122
         // Customer Reviews & Feedback Submission
         function openAddReviewModal() { document.getElementById('addReviewModal').classList.remove('hidden'); }
         function closeAddReviewModal() { document.getElementById('addReviewModal').classList.add('hidden'); }
@@ -3597,14 +3713,24 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             }
 
             try {
-                const photo=document.getElementById('reviewImageInput')?.files?.[0];
-                if(photo){
-                  const blob=await guideCompressImage(photo);const data=new FormData();
-                  data.append('author',finalName);data.append('rating',String(rating));data.append('text',text);data.append('image',blob,'review.jpg');
+                const photos=reviewSelectedFiles();
+                if(photos.length>4)throw Error('แนบรูปรีวิวได้สูงสุด 4 รูป');
+                if(photos.some(f=>f.size>6*1024*1024))throw Error('รูปต้นฉบับต้องไม่เกิน 6 MB ต่อรูป');
+                if(photos.length){
+                  // Avoid silently submitting photo reviews to an older one-image Worker.
+                  const healthResponse=await fetch(CENTRAL_API_URL+'/health',{cache:'no-store'});
+                  if(!healthResponse.ok)throw Error('เชื่อมต่อ Worker สำหรับแนบรูปไม่ได้');
+                  const health=await healthResponse.json();
+                  if(health.reviewMultiImage!==true)throw Error('Worker ยังเป็นรุ่นเก่า ไม่รองรับรูปรีวิว 4 รูป กรุณาติดตั้ง Worker v4.20 ก่อนโพสต์');
+                  const data=new FormData();data.append('author',finalName);data.append('rating',String(rating));data.append('text',text);
+                  for(let i=0;i<photos.length;i++){
+                    const blob=await reviewCompressImage(photos[i]);data.append('images[]',blob,`review-${i+1}.jpg`);
+                  }
                   const resp=await fetch(CENTRAL_API_URL+'/reviews',{method:'POST',body:data});const result=await resp.json();
                   if(!resp.ok||result.error)throw Error(result.error||'ส่งรีวิวไม่สำเร็จ');
                 }else await centralRequest('/reviews','POST',{author:finalName,rating,text});
-                document.getElementById('reviewImageInput').value='';
+                [1,2,3,4].forEach(i=>{const el=document.getElementById('reviewImageInput'+i);if(el)el.value='';});
+                reviewUpdateSelectedImages();
                 document.getElementById('reviewTextInput').value = '';
                 await refreshPublicReviews();
                 closeAddReviewModal();
@@ -3689,7 +3815,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         function v2OrderChannelChanged(){const channel=document.getElementById('v2OrderChannel')?.value||'WEB';const line=channel==='LINE';document.getElementById('v2LineRegistration')?.classList.toggle('hidden',!line);const hint=document.getElementById('v2ChannelHelp');if(hint)hint.textContent=line?'LINE: ใช้เลข LINE- จากรายการออเดอร์ที่ส่งสินค้าแล้วได้ทันที; ส่วนที่ลงทะเบียนด้านล่างใช้เฉพาะรายการขายในแชทที่ไม่มีในระบบ':'เว็บไซต์: ใช้ออเดอร์จริงในระบบ โดยต้องมีสถานะ READY_FOR_DELIVERY หรือ COMPLETED; ไม่ต้องตรวจไฟล์รูปสลิปอีกครั้ง';}
         async function v2SaveSlipPolicy(){try{const out=await centralRequest('/admin/points/v2');const config=out.config;config.slipAutoDelete=!!document.getElementById('v2Delete').checked;config.slipRetentionDays=Number(document.getElementById('v2Days').value);if(!Number.isInteger(config.slipRetentionDays)||config.slipRetentionDays<1||config.slipRetentionDays>365)throw Error('จำนวนวันต้องอยู่ในช่วง 1–365');await centralRequest('/admin/points/v2','PUT',{config});showToast('บันทึกนโยบายสลิปสำเร็จ');}catch(e){showToast('บันทึกนโยบายสลิปไม่สำเร็จ: '+e.message)}}
         async function v2RegisterLineOrder(){try{const orderId=document.getElementById('v2OrderId').value.trim(),cardType=document.getElementById('v2LinkCardType').value,points=Number(document.getElementById('v2LinkPoints').value);if(!/^LINE-[0-9]{8}-[0-9]{6}$/.test(orderId))throw Error('กรอกเลข LINE-YYYYMMDD-XXXXXX สำหรับรายการขายผ่านแชทที่ยังไม่มีในระบบ');if(document.getElementById('v2OrderChannel').value!=='LINE')throw Error('กรุณาเลือกช่องทาง LINE ก่อน');if(!confirm('ตรวจยอดชำระและส่งรหัสแล้วจริงสำหรับ '+orderId+' ? การลงทะเบียนเลขเดิมซ้ำจะทำไม่ได้'))return;const r=await centralRequest('/admin/points/v2/line-orders','POST',{orderId,cardType,points,confirmPaid:document.getElementById('v2LinePaid').checked,confirmDelivered:document.getElementById('v2LineDelivered').checked});showToast('บันทึกออเดอร์ LINE สำเร็จแล้ว สามารถกดสร้างลิงก์ได้');document.getElementById('v2LinePaid').checked=false;document.getElementById('v2LineDelivered').checked=false}catch(e){showToast('บันทึก LINE ไม่สำเร็จ: '+e.message)}}
-        async function v2IssueLink(){try{const out=await centralRequest('/admin/points/v2/links','POST',{orderId:document.getElementById('v2OrderId').value.trim(),source:document.getElementById('v2OrderChannel').value,cardType:document.getElementById('v2LinkCardType').value,points:Number(document.getElementById('v2LinkPoints').value)});document.getElementById('v2IssuedCode').value='รหัสรับแต้ม: '+out.claimCode+'\nใช้ได้ภายใน 24ชม. / ครั้งเดียว\nหมดอายุ: '+new Date(out.expiresAt).toLocaleString('th-TH')+'\nให้ลูกค้าใส่รหัสใน '+(out.kind==='member'?'โปรไฟล์สมาชิก':'หน้าบัตรสะสม (ไม่สมัคร)');showToast('สร้างรหัส 20 ตัวอักษรสำเร็จ; จะแจกแต้มได้หลังยืนยันชำระเงินและส่งสินค้า')}catch(e){showToast(e.message)}}
+        async function v2IssueLink(){try{const out=await centralRequest('/admin/points/v2/links','POST',{orderId:document.getElementById('v2OrderId').value.trim(),source:document.getElementById('v2OrderChannel').value,cardType:document.getElementById('v2LinkCardType').value,points:Number(document.getElementById('v2LinkPoints').value)});document.getElementById('v2IssuedCode').value='รหัสรับแต้ม: '+out.claimCode+'\nใช้ได้ภายใน 24 ชั่วโมง / ครั้งเดียว\nหมดอายุ: '+new Date(out.expiresAt).toLocaleString('th-TH')+'\nให้ลูกค้าใส่รหัสใน '+(out.kind==='member'?'โปรไฟล์สมาชิก':'หน้าบัตรสะสม (ไม่สมัคร)');showToast('สร้างรหัส 20 ตัวอักษรสำเร็จ; จะแจกแต้มได้หลังยืนยันชำระเงินและส่งสินค้า')}catch(e){showToast(e.message)}}
         async function v2LoadTickets(){try{const out=await centralRequest('/admin/points/v2/tickets');const root=document.getElementById('v2AdminTickets');root.replaceChildren();(out.tickets||[]).forEach(t=>{const row=v2Node('div','border p-2 rounded-lg flex flex-wrap gap-2',t.owner_id+' · '+t.reward_name);const btn=v2Node('button','bg-emerald-600 text-white px-2 rounded-lg','จัดส่งแล้ว');btn.onclick=async()=>{try{await centralRequest('/admin/points/v2/tickets','PATCH',{id:t.id});v2LoadTickets()}catch(e){showToast(e.message)}};row.append(btn);root.append(row)});if(!out.tickets?.length)root.textContent='ไม่มีคำขอค้าง'}catch(e){showToast(e.message)}}
         function v2RenderMember(data,target,ticketTarget,guest){const main=document.getElementById(target);main.replaceChildren();const types=data.config.cardTypes||[{id:'premium',name:'⭐ แอพพรีเมี่ยม'},{id:'game',name:'🎮 เติมเกม'}];const chooser=v2Node('div','flex flex-wrap gap-2 mb-3');const body=v2Node('div','space-y-3');main.append(chooser,body);const showCard=(type)=>{body.replaceChildren();body.append(v2CardPreview(type,data.progress,data.config));const reward=v2Node('div','p-3 border rounded-xl bg-purple-50 dark:bg-slate-900 space-y-1');reward.append(v2Node('p','font-bold text-sm','🎁 ของรางวัลเมื่อสะสมครบ '+(data.config.thresholds?.[type]??10)+' แต้ม (เลือกแลก 1 อย่าง)'));const rewardGroups=(data.config.rewardGroups||[]).filter(g=>g.active&&(g.type===type||g.type==='both'));rewardGroups.forEach(g=>{reward.append(v2Node('p','text-xs font-bold',g.name));(g.options||[]).forEach(opt=>reward.append(v2Node('p','text-xs','• '+opt)))});if(!rewardGroups.length)reward.append(v2Node('p','text-xs','ยังไม่มีรางวัลที่เปิดใช้สำหรับบัตรนี้'));body.append(reward)};types.forEach((c,i)=>{const btn=v2Node('button','px-3 py-2 rounded-xl border text-xs font-bold bg-violet-50 dark:bg-slate-800',c.name||c.id);btn.onclick=()=>{[...chooser.children].forEach(b=>b.classList.remove('ring-2','ring-violet-500'));btn.classList.add('ring-2','ring-violet-500');showCard(c.id)};chooser.append(btn)});if(chooser.firstChild)chooser.firstChild.click();const out=document.getElementById(ticketTarget);out.replaceChildren();(data.tickets||[]).forEach(t=>{const card=v2Node('div','p-2 border rounded-lg space-y-1');card.append(v2Node('div','font-bold text-sm',(data.config.cardTypes||[]).find(x=>x.id===t.type)?.name||t.type));card.append(v2Node('p','text-xs','สถานะ: '+t.status+' · หมดอายุ: '+new Date(t.expires_at).toLocaleDateString('th-TH')));if(t.status==='AVAILABLE'&&new Date(t.expires_at)>new Date()){const select=v2Node('select','border p-2 rounded-lg w-full');const choices=[];data.config.rewardGroups.filter(g=>g.active&&(g.type===t.type||g.type==='both')).forEach(g=>g.options.forEach(opt=>{choices.push({groupId:g.id,name:opt});select.add(new Option(g.name+' — '+opt,String(choices.length-1)))}));const btn=v2Node('button','bg-purple-600 text-white rounded-lg p-2 mt-2','ยืนยันเลือก 1 รางวัล');btn.disabled=!choices.length;btn.onclick=async()=>{if(!confirm('ใช้สิทธิ์นี้เพื่อแลก '+choices[Number(select.value)]?.name+'?'))return;try{const ch=choices[Number(select.value)];await centralRequest('/points/v2/redeem','POST',{ticketId:t.id,groupId:ch.groupId,choice:ch.name,...(guest?{cardId:document.getElementById('v2GuestCard').value.trim(),secret:document.getElementById('v2GuestSecret').value.trim()}: {})},undefined,guest?undefined:customerSessionToken());showToast('ส่งคำขอแลกแล้ว');guest?v2GuestLoad():v2LoadMember()}catch(e){showToast(e.message)}};card.append(select,btn)}out.append(card)});if(!data.tickets?.length)out.textContent='ยังไม่มีสิทธิ์แลกรางวัล'}
         async function v2LoadMember(){try{const r=await centralRequest('/points/v2/me','GET',undefined,undefined,customerSessionToken());v2RenderMember(r,'v2MemberCards','v2MemberTickets',false)}catch(e){document.getElementById('v2MemberCards').textContent='โหลดแต้มสะสมไม่สำเร็จ: '+e.message+' (ตรวจ Worker logs และโครงสร้าง D1)'}}
@@ -3705,7 +3831,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const code=hashValue.get('claim');if(!code)return;
             const field=document.getElementById('v2ClaimCode');if(!field)return;
             field.value=code;
-            document.getElementById('v2GuestNotice').textContent='พบลิงก์รับแต้ม กรุณาใช้บัตรที่สร้างบนอุปกรณ์นี้ แล้วกดรับแต้มภายใน 24ชม.';
+            document.getElementById('v2GuestNotice').textContent='พบลิงก์รับแต้ม กรุณาใช้บัตรที่สร้างบนอุปกรณ์นี้ แล้วกดรับแต้มภายใน 24 ชั่วโมง';
             navigateTo('points-guest');field.scrollIntoView({behavior:'smooth',block:'center'});
             history.replaceState(null,'',location.pathname+location.search); // avoid replaying claim token from address bar
           }catch(e){console.warn('claim link format',e)}
@@ -3796,16 +3922,40 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 : 0;
         }
 
+        async function wsPublishProfitNow(){
+            if(!confirm('เขียนสรุปกำไรของวันนี้ลงแท็บสรุปกำไรรายวัน (กดซ้ำจะอัปเดตแถวเดิม) หรือไม่?'))return;
+            try{const r=await centralRequest('/admin/profit-report','POST',{});showToast('สรุปกำไรวันที่ '+r.date+' ลงชีตแล้ว');}
+            catch(e){showToast('สรุปกำไรไม่สำเร็จ: '+String(e.message||e));}
+        }
+        async function wsImportCosts(){
+            if(!confirm('นำเข้าต้นทุนจากคอลัมน์ J ใน 6 แท็บสินค้าเข้า D1? ไม่แก้ราคา/สินค้า/ออเดอร์'))return;
+            try{const r=await centralRequest('/admin/costs/import','POST',{});showToast(`นำเข้าต้นทุน ${r.updated} แพ็กเกจแล้ว`);await loadAdminProfitSummary();}
+            catch(e){showToast('นำเข้าต้นทุนไม่สำเร็จ: '+String(e.message||e));}
+        }
+        let wsProfitRequestPending=false;
+        async function loadAdminProfitSummary(){
+            if(wsProfitRequestPending || !sessionStorage.getItem('wanderer_admin_session'))return;
+            wsProfitRequestPending=true;
+            try{
+                const res=await centralRequest('/admin/profit-summary');
+                const el=document.getElementById('statTotalProfit'), note=document.getElementById('statProfitNote');
+                if(el)el.textContent=res.missingCostItems ? '—' : '฿'+Number(res.profit||0).toLocaleString('th-TH',{maximumFractionDigits:2});
+                if(note)note.textContent=res.missingCostItems ? `ขาดต้นทุน ${res.missingCostItems} รายการ · อย่าใช้เป็นกำไรสุทธิ` : `รายได้ ฿${Number(res.revenue||0).toLocaleString('th-TH')} · ต้นทุน ฿${Number(res.cost||0).toLocaleString('th-TH')}`;
+            }catch(e){const note=document.getElementById('statProfitNote');if(note)note.textContent='โหลดกำไรไม่สำเร็จ: '+String(e.message||e).slice(0,100);}
+            finally{wsProfitRequestPending=false;}
+        }
+
         function renderAdminOrdersTable() {
             const filterStatus = document.getElementById('adminOrderFilterStatus').value;
             const searchQ = document.getElementById('adminOrderSearchInput').value.toLowerCase();
             const tbody = document.getElementById('adminOrdersTableBody');
 
             const totalSales = appState.orders
-                .filter(o => o.status === 'READY_FOR_DELIVERY')
+                .filter(o => ['READY_FOR_DELIVERY','COMPLETED'].includes(o.status))
                 .reduce((sum, o) => sum + getOrderTotal(o), 0);
 
             document.getElementById('statTotalSales').innerText = `฿${totalSales.toLocaleString('th-TH', { maximumFractionDigits: 2 })}`;
+            loadAdminProfitSummary().catch(e=>console.warn('Profit summary:',e));
             document.getElementById('statTotalOrders').innerText = appState.orders.length;
             document.getElementById('statPendingOrders').innerText = appState.orders.filter(o => o.status === 'VERIFYING_SLIP').length;
 
@@ -5478,7 +5628,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         <div>
                             <span class="font-bold ${r.hidden ? 'text-slate-400' : 'text-purple-600'}">${escapeHtml(r.author || '')} (${Number(r.rating)||0} ดาว)</span>
                             <p class="text-slate-600 dark:text-slate-300 text-xs mt-1">${escapeHtml(r.text || '')}</p>
-                            ${/^https:\/\//i.test(r.imageUrl||'') ? `<button type="button" onclick="openFullImageViewer('${escapeHtml(r.imageUrl)}')" class="text-purple-600 text-xs underline">🖼️ ดูรูปรีวิว</button>` : ''}
+                            ${reviewGalleryHtml(r,'admin')}
                             <span class="text-[9px] text-slate-400">${formatWandererReviewDate(r.date)}</span>
                         </div>
                         <span class="text-[10px] px-2 py-1 rounded-full font-bold ${r.hidden ? 'bg-slate-200 text-slate-500' : 'bg-green-100 text-green-700'}">${r.hidden ? 'ซ่อนอยู่' : 'แสดงอยู่'}</span>
