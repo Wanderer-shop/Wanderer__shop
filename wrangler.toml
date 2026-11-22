@@ -22,4 +22,4 @@ enabled = true
 head_sampling_rate = 1
 # Delete only order receipt images older than 3 days; retain order records.
 [triggers]
-crons = ["15 18 * * *"]
+crons = ["59 16 * * *"]
