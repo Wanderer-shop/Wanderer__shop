@@ -257,13 +257,13 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 </div>
             </div>
 
-            <!-- WANDERER_GUIDE_STATS_UI_V410_FIXED_20261122 -->
+            <!-- WANDERER_FULFILLED_ORDERS_AVAILABLE_PACKAGES_V415_20261122 -->
             <section id="shopGuideStatsBar" class="flex flex-col sm:flex-row gap-3 items-stretch mb-5">
               <button type="button" onclick="navigateTo('store-guide')" class="shrink-0 rounded-2xl px-5 py-3 font-bold text-sm text-white bg-purple-600 hover:bg-purple-700 shadow-md"><i class="fa-solid fa-book-open mr-2"></i>วิธีใช้งานเว็บ</button>
               <div class="grid grid-cols-3 gap-3 flex-1 rounded-2xl border border-purple-200 bg-white dark:bg-slate-800 px-3 py-3 text-center" aria-label="สถิติของร้าน">
-                <div><div class="text-[10px] text-slate-500">🛒 กดสั่งซื้อ เว็บ + LINE</div><strong id="shopStatPurchase" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
+                <div><div class="text-[10px] text-slate-500">🛒 ออเดอร์ที่ขายแล้ว (เว็บ + LINE)</div><strong id="shopStatPurchase" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
                 <div><div class="text-[10px] text-slate-500">👥 ผู้เข้าชมเว็บไซต์</div><strong id="shopStatVisitors" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
-                <div><div class="text-[10px] text-slate-500">📦 ส่งสำเร็จ (ชิ้น)</div><strong id="shopStatSold" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
+                <div><div class="text-[10px] text-slate-500">📦 สินค้าพร้อมขาย (แพ็กเกจ)</div><strong id="shopStatSold" class="text-lg text-purple-700 dark:text-purple-300">—</strong></div>
               </div>
             </section>
             <div>
@@ -2262,7 +2262,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             copyToClipboard(appState.bankAccounts.slipNote || 'ซื้อขายร้านละมุด');
         }
 
-        // V4.10 shared guide and storefront statistics; client records only voluntary checkout actions.
+        // V4.14 shared guide and statistics; order totals come from persisted D1 order IDs.
         const guideDefaults = {title:'วิธีใช้งานเว็บ',steps:[
           {title:'1. เช็คสถานะร้าน',text:'ตรวจสถานะเปิดร้านและประกาศก่อนสั่งซื้อ'},
           {title:'2. กดเลือกสินค้า',text:'เลือกหมวดหมู่ แอป และแพ็กเกจ ตรวจราคาและรายละเอียด'},
@@ -2272,7 +2272,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         let guideAdminDraft=null;
         async function loadShopStats(){
           try {const data=await centralRequest('/store-stats');
-            for(const [id,key] of [['shopStatPurchase','purchaseInterest'],['shopStatVisitors','visitors'],['shopStatSold','soldUnits']]){
+            for(const [id,key] of [['shopStatPurchase','soldOrders'],['shopStatVisitors','visitors'],['shopStatSold','availablePackages']]){
               const el=document.getElementById(id);if(el)el.textContent=Number(data[key]||0).toLocaleString('th-TH');
             }
           } catch(e){console.warn('Store statistics:',e.message);}
@@ -2933,7 +2933,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const orderId = makeOrderId('LINE');
             const lineOrder = { id: orderId, date: new Date().toLocaleString('th-TH'), items: itemsSnapshot, total, paymentMethod: 'LINE OA', source: 'LINE_OA', status: 'AWAITING_PAYMENT', deliveryData: '', customerRequirements: appState.pendingCustomerRequirements || {} };
             try { await persistCentralOrder(lineOrder); } catch(e){alert('ยังไม่ได้สร้างออเดอร์: '+e.message);return;}
-            markShopPurchaseInterest('line');
+            loadShopStats().catch(()=>{});
             appState.orders.unshift(lineOrder);
             showOrderAccessCode(lineOrder.id);
             rememberCustomerOrder(lineOrder.id);
@@ -2999,7 +2999,6 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 return;
             }
             if (appState.cart.length === 0) return alert('กรุณาเลือกสินค้าลงตะกร้าก่อนทำรายการ');
-            markShopPurchaseInterest('web');
             renderCustomerRequirements();
             closeCartDrawer();
             openPaymentModal();
@@ -3392,6 +3391,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 };
 
                 try { await persistCentralOrder(newOrder); } catch(err){alert('ยังไม่ได้สร้างออเดอร์ กรุณาลองใหม่: '+err.message);return;}
+                loadShopStats().catch(()=>{});
                 appState.orders.unshift(newOrder);
                 showOrderAccessCode(newOrder.id);
                 rememberCustomerOrder(newOrder.id);
@@ -6468,3 +6468,4 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEntryPo
 </script>
 </body>
 </html>
+
