@@ -1,4 +1,4 @@
-﻿name = "wanderer-central-test"
+name = "wanderer-central-test"
 main = "worker.mjs"
 compatibility_date = "2026-10-16"
 [vars]
@@ -23,4 +23,3 @@ head_sampling_rate = 1
 # Delete only order receipt images older than 3 days; retain order records.
 [triggers]
 crons = ["15 18 * * *"]
-
