@@ -1510,6 +1510,10 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <label class="block font-medium mb-1">Icon Class (FontAwesome):</label>
                     <input type="text" id="catIconInput" value="fa-box" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
+                <label class="flex items-start gap-3 p-3 rounded-xl border border-purple-200 bg-purple-50 dark:bg-slate-900 text-xs cursor-pointer">
+                    <input type="checkbox" id="catShowPackageImages" class="mt-0.5 accent-purple-600">
+                    <span><strong>แสดงรูปภาพในการ์ดแพ็กเกจ</strong><br><span class="text-slate-500">ค่าเริ่มต้นเปิดเฉพาะหมวดแอพ Android; หมวดใหม่เลือกเปิดหรือปิดได้</span></span>
+                </label>
                 <div>
                     <label class="block font-medium mb-1">📝 รายละเอียดหมวดหมู่:</label>
                     <textarea id="catDescInput" rows="3" placeholder="ข้อความอธิบายหมวดหมู่นี้..." class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900"></textarea>
@@ -1582,9 +1586,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <input type="number" id="pkgPriceInput" placeholder="100" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
-                    <label class="block font-medium mb-1">URL รูปภาพแพ็กเกจ (HTTPS):</label>
-                    <input type="url" id="pkgImageUrlInput" placeholder="https://example.com/game-cover.webp" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
-                    <p class="text-[10px] text-slate-500 mt-1">ถ้าเว้นว่างจะแสดงรูปของแอปแทน รูปเดิมที่มีอยู่ยังคงใช้ได้</p>
+                    <label class="block font-medium mb-1">ลิงก์รูปภาพแพ็กเกจ (HTTP / HTTPS):</label>
+                    <input type="text" inputmode="url" id="pkgImageUrlInput" placeholder="วางลิงก์รูปโดยตรง เช่น example.com/picture.jpg" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <p class="text-[10px] text-slate-500 mt-1">รับลิงก์ http://, https:// หรือชื่อโดเมนปกติ (ระบบเติม https:// ให้) ต้องเป็นลิงก์ที่เปิดแล้วเห็นรูปจริง ไม่ใช่หน้าค้นหา Google Images • ใช้ได้เฉพาะหมวดที่เปิดแสดงรูป • เว็บ HTTPS อาจไม่แสดงรูปจาก HTTP ที่ไม่ปลอดภัย</p>
+                    <button type="button" onclick="previewPackageImageV425()" class="mt-2 rounded-lg border border-purple-300 text-purple-700 px-3 py-1.5 text-[11px] font-bold">🔎 ทดสอบลิงก์รูป</button>
+                    <div id="pkgImagePreviewV425" class="mt-2 text-[11px] text-slate-500" aria-live="polite"></div>
                 </div>
                 <div>
                     <label class="block font-medium mb-1">รายละเอียดแพ็กเกจ:</label>
@@ -2775,6 +2781,55 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             el.classList.remove('hidden');
             el.innerHTML=`<div class="flex flex-wrap items-center gap-2 justify-between"><strong class="font-extrabold text-purple-700 dark:text-purple-200">✉️ เวลาส่งเมลของหมวดนี้</strong><span class="rounded-full px-3 py-1 text-xs font-bold ${open?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-800'}">${open?'● อยู่ในเวลาส่งเมล':'● นอกเวลาส่งเมล'}</span></div><div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs"><span>🕙 เปิดส่งเมล: <b>${start} น.</b></span><span>🕛 ปิดส่งเมล: <b>${end} น.</b></span></div><p class="mt-1 text-[11px] text-slate-500">เวลาไทย • นอกเวลาอาจต้องรอส่งเมลในรอบถัดไป สามารถสั่งซื้อได้ตามปกติ</p>`;
         }
+        // WANDERER_V425_CATEGORY_IMAGE_TOGGLE_AND_HTTP_LINKS
+        // V4.25: Existing Android category remains enabled without rewriting D1 records.
+        function categoryShowsPackageImagesV425(cat) {
+            return !!cat && (typeof cat.showPackageImages === 'boolean' ? cat.showPackageImages : /android/i.test(String(cat.name || '')));
+        }
+        // Accept HTTP, HTTPS, //host, or a bare website domain (auto-add https).
+        // Search result pages are NOT image URLs. Google imgres?imgurl=direct-image is supported.
+        function normalizePackageImageUrlV425(raw) {
+            let value=String(raw||'').trim();
+            if(!value)return '';
+            try {
+                if(value.startsWith('//'))value='https:'+value;
+                if(!/^[a-z][a-z0-9+.-]*:\/\//i.test(value) && /^[\w.-]+\.[a-z]{2,}(?:[/:?#]|$)/i.test(value))value='https://'+value;
+                const u=new URL(value);
+                if(!['http:','https:'].includes(u.protocol)||u.username||u.password)return '';
+                if((u.hostname==='google.com'||u.hostname.endsWith('.google.com')) && u.pathname.startsWith('/imgres')){
+                    const inner=u.searchParams.get('imgurl');
+                    if(inner)return normalizePackageImageUrlV425(inner);
+                }
+                return u.href;
+            } catch {return '';}
+        }
+        function isSearchPageImageUrlV425(value) {
+            try {const u=new URL(value);const host=u.hostname.toLowerCase();
+                return ((host==='google.com'||host.endsWith('.google.com')) && (/^\/(search|imghp)/.test(u.pathname)||u.pathname==='/imgres')) ||
+                  ((host==='bing.com'||host.endsWith('.bing.com')) && u.pathname.startsWith('/images/search'));
+            }catch{return false;}
+        }
+        function previewPackageImageV425() {
+            const target=document.getElementById('pkgImagePreviewV425');
+            const raw=document.getElementById('pkgImageUrlInput')?.value||'';
+            if(!target)return;
+            const src=normalizePackageImageUrlV425(raw);
+            target.replaceChildren();
+            if(!raw.trim()){target.textContent='ยังไม่ได้ใส่ลิงก์รูป';return;}
+            if(!src||isSearchPageImageUrlV425(src)){target.textContent='ลิงก์นี้ไม่ใช่ไฟล์รูปที่เปิดได้โดยตรง กรุณาคัดลอกที่อยู่รูปภาพ';return;}
+            const img=document.createElement('img');img.alt='ตัวอย่างรูปแพ็กเกจ';img.referrerPolicy='no-referrer';
+            img.style.cssText='width:100px;height:100px;object-fit:contain;border:1px solid #ddd;border-radius:12px;background:white';
+            const msg=document.createElement('p');msg.textContent='กำลังตรวจรูป…';msg.style.marginTop='4px';
+            img.onload=()=>{msg.textContent='✓ เปิดรูปได้ในเบราว์เซอร์นี้';};
+            img.onerror=()=>{msg.textContent='ไม่สามารถโหลดรูปได้: อาจเป็นลิงก์ค้นหา ลิงก์หมดอายุ เว็บไซต์กันการฝังรูป หรือ HTTP ถูกบล็อก';img.style.display='none';};
+            img.src=src;target.append(img,msg);
+        }
+        function packageCardImageHtmlV425(pkg,app,cat,esc) {
+            if(!categoryShowsPackageImagesV425(cat))return '';
+            const src=normalizePackageImageUrlV425(pkg.imageUrl)||normalizePackageImageUrlV425(app.iconUrl);
+            if(!src||isSearchPageImageUrlV425(src))return '';
+            return `<div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl border border-purple-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden flex items-center justify-center"><img loading="lazy" referrerpolicy="no-referrer" src="${esc(src)}" alt="รูป ${esc(pkg.name)}" class="w-full h-full object-contain" onerror="this.onerror=null;this.parentElement.style.display='none'"></div>`;
+        }
         function renderAppDetailPage(appId) {
             const app = appState.apps.find(a => a.id === appId);
             if (!app) return;
@@ -2826,9 +2881,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                         ${groupItems.map(pkg => `
                             <div class="min-w-0 bg-slate-50 dark:bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-between gap-3">
                                 <div class="flex gap-3 items-start min-w-0">
-                                    <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl border border-purple-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden flex items-center justify-center">
-                                        ${/^https:\/\//i.test(String(pkg.imageUrl || app.iconUrl || '')) ? `<img loading="lazy" referrerpolicy="no-referrer" src="${escapeHtml(pkg.imageUrl || app.iconUrl)}" alt="รูป ${escapeHtml(pkg.name)}" class="w-full h-full object-contain" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none" class="text-3xl">🎮</span>` : '<span class="text-3xl">🎮</span>'}
-                                    </div>
+                                    ${packageCardImageHtmlV425(pkg,app,cat,escapeHtml)}
                                     <div class="flex-1 min-w-0">
                                     <div class="flex justify-between items-start gap-2">
                                         <h4 class="font-bold text-sm text-slate-800 dark:text-white break-words">${escapeHtml(pkg.name)}</h4>
@@ -4400,6 +4453,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('catNameInput').value = '';
             document.getElementById('catIconInput').value = 'fa-box';
             document.getElementById('catDescInput').value = '';
+            document.getElementById('catShowPackageImages').checked = false; // New categories default off.
             document.getElementById('modalCategory').classList.remove('hidden');
         }
         function openEditCategoryModal(id) {
@@ -4409,6 +4463,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('catNameInput').value = cat.name;
             document.getElementById('catIconInput').value = cat.icon;
             document.getElementById('catDescInput').value = cat.description;
+            document.getElementById('catShowPackageImages').checked = categoryShowsPackageImagesV425(cat);
             document.getElementById('modalCategory').classList.remove('hidden');
         }
         function closeModalCategory() { document.getElementById('modalCategory').classList.add('hidden'); }
@@ -4503,13 +4558,14 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const name = document.getElementById('catNameInput').value.trim();
             const icon = document.getElementById('catIconInput').value;
             const desc = document.getElementById('catDescInput').value;
+            const showPackageImages = document.getElementById('catShowPackageImages').checked;
             if (!name) return alert('กรุณาระบุชื่อหมวดหมู่');
             await commitCatalogEdit('หมวดหมู่', () => {
                 if (currentEditingCatId) {
                     const cat=appState.categories.find(c=>c.id===currentEditingCatId);
                     if (!cat) throw Error('ไม่พบหมวดหมู่');
-                    Object.assign(cat,{name,icon,description:desc});
-                } else appState.categories.push({id:'cat-'+Date.now(),name,icon,description:desc});
+                    Object.assign(cat,{name,icon,description:desc,showPackageImages});
+                } else appState.categories.push({id:'cat-'+Date.now(),name,icon,description:desc,showPackageImages});
             },closeModalCategory);
         }
         async function deleteCategory(id) {
@@ -4801,8 +4857,10 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const name = document.getElementById('pkgNameInput').value.trim();
             const price = parseFloat(document.getElementById('pkgPriceInput').value) || 0;
             const desc = document.getElementById('pkgDescInput').value.trim();
-            const pkgImageUrl = document.getElementById('pkgImageUrlInput').value.trim();
-            if (pkgImageUrl && !/^https:\/\//i.test(pkgImageUrl)) return alert('รูปแพ็กเกจต้องเป็น URL https:// เท่านั้น');
+            const rawImageUrl = document.getElementById('pkgImageUrlInput').value.trim();
+            const pkgImageUrl = normalizePackageImageUrlV425(rawImageUrl);
+            if (rawImageUrl && !pkgImageUrl) return alert('ลิงก์รูปไม่ถูกต้อง กรุณาใช้ลิงก์ http:// หรือ https:// หรือชื่อโดเมนที่เปิดได้');
+            if (pkgImageUrl && isSearchPageImageUrlV425(pkgImageUrl)) return alert('ลิงก์นี้เป็นหน้าค้นหารูป ไม่ใช่ลิงก์รูปภาพโดยตรง กรุณาเปิดรูปจริงแล้วเลือก “คัดลอกที่อยู่รูปภาพ”');
             const inStock = document.getElementById('pkgStatusSelect').value === 'IN_STOCK';
             const templateId = document.getElementById('pkgRequirementTemplateSelect').value;
 
