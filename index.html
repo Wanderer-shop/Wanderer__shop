@@ -402,6 +402,8 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 <h3 class="text-md font-bold mb-3 flex items-center gap-2">
                     <i class="fa-solid fa-list-check text-purple-500"></i> เลือกแพ็กเกจสินค้า
                 </h3>
+                <!-- V4.24: public email fulfillment hours are display-only; admin settings control the schedule. -->
+                <div id="emailDeliveryHoursPublic" class="hidden rounded-2xl border border-purple-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 dark:from-slate-800 dark:to-purple-950 px-4 py-3 text-sm" aria-live="polite"></div>
                 <div class="flex gap-2 items-center"><input id="customerPackageSearch" type="search" oninput="renderCustomerPackageSearch()" placeholder="ค้นหาแพ็กเกจ / กลุ่มแพ็กเกจ / ราคา..." class="w-full px-4 py-2.5 rounded-xl border dark:bg-slate-900 text-sm" aria-label="ค้นหาแพ็กเกจ"><button type="button" onclick="document.getElementById('customerPackageSearch').value='';renderCustomerPackageSearch()" class="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-700 text-sm">ล้าง</button></div><div id="customerPackageSearchCount" class="text-xs text-slate-500" aria-live="polite"></div>
                 <div id="packagesListGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
             </div>
@@ -923,6 +925,17 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 
             <!-- TAB 6: STORE SETTINGS -->
             <div id="adminTab-settings-store" class="hidden space-y-6 max-w-3xl">
+                <!-- V4.24: configure email delivery hours here, not on customer page. -->
+                <section class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm space-y-3">
+                    <h3 class="font-bold text-purple-700 dark:text-purple-300 border-b pb-2">✉️ ตั้งเวลาเปิด / ปิดส่งเมล (หมวดแอพ Android)</h3>
+                    <label class="flex gap-2 items-center text-sm font-medium"><input type="checkbox" id="adminEmailHoursEnabled" class="accent-purple-600"> เปิดแสดงเวลาส่งเมลให้ลูกค้า</label>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label class="text-xs font-bold">เวลาเปิดส่งเมล<input type="time" id="adminEmailHoursStart" value="10:00" class="block w-full mt-1 px-3 py-2 rounded-xl border dark:bg-slate-900"></label>
+                        <label class="text-xs font-bold">เวลาปิดส่งเมล<input type="time" id="adminEmailHoursEnd" value="00:00" class="block w-full mt-1 px-3 py-2 rounded-xl border dark:bg-slate-900"></label>
+                    </div>
+                    <p class="text-[11px] text-slate-500">ใช้เวลาไทย (Asia/Bangkok) และรองรับเวลาข้ามเที่ยงคืน เช่น 10:00–00:00 น. ตารางเวลานี้ใช้แสดงช่วงจัดส่งเมล ไม่ได้ปิดรับคำสั่งซื้ออัตโนมัติ</p>
+                    <p class="text-[11px] text-purple-600">กดปุ่ม “บันทึกการตั้งค่า” ที่ท้ายแท็บนี้ เพื่อบันทึกลง D1</p>
+                </section>
                 <div class="bg-white dark:bg-slate-800 p-6 rounded-3xl border border-purple-100 dark:border-slate-700 shadow-sm space-y-4">
                     <h3 class="font-bold text-md text-purple-600 border-b pb-2 flex items-center gap-2">
                         <i class="fa-solid fa-clock"></i> ตั้งค่าระบบสถานะเปิด/ปิดร้านค้า
@@ -1569,6 +1582,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <input type="number" id="pkgPriceInput" placeholder="100" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
                 </div>
                 <div>
+                    <label class="block font-medium mb-1">URL รูปภาพแพ็กเกจ (HTTPS):</label>
+                    <input type="url" id="pkgImageUrlInput" placeholder="https://example.com/game-cover.webp" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900">
+                    <p class="text-[10px] text-slate-500 mt-1">ถ้าเว้นว่างจะแสดงรูปของแอปแทน รูปเดิมที่มีอยู่ยังคงใช้ได้</p>
+                </div>
+                <div>
                     <label class="block font-medium mb-1">รายละเอียดแพ็กเกจ:</label>
                     <textarea id="pkgDescInput" rows="2" class="w-full px-3 py-2 border rounded-xl dark:bg-slate-900"></textarea>
                 </div>
@@ -1931,6 +1949,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 autoSchedule: true,
                 startTime: '10:30',
                 endTime: '00:30',
+                emailDeliveryHours: { enabled: false, start: '10:00', end: '00:00' },
                 heroTitle: 'บริการเติมเกม ซื้อแอปพรีเมียม และเติมเหรียญนิยาย',
                 heroDesc: 'สะดวก รวดเร็ว ปลอดภัย 100% พร้อมระบบจัดส่งอัตโนมัติ ดูแลตลอด 24 ชั่วโมง',
                 heroBannerImg: 'https://cdn.imagetourls.com/uploads/tyImg/ftya2W3c.jpg',
@@ -2730,6 +2749,32 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             `).join('') : '<p class="text-xs text-slate-400 text-center py-8">ยังไม่มีรีวิวที่แสดงอยู่ในขณะนี้</p>';
         }
 
+        // V4.24: schedule display, Bangkok time, no order enforcement.
+        function currentBangkokMinutesV424() {
+            const parts = new Intl.DateTimeFormat('en-GB', {timeZone:'Asia/Bangkok', hour:'2-digit', minute:'2-digit', hourCycle:'h23'}).formatToParts(new Date());
+            const h = Number(parts.find(x=>x.type==='hour')?.value || 0);
+            const m = Number(parts.find(x=>x.type==='minute')?.value || 0);
+            return h*60+m;
+        }
+        function isEmailDeliveryOpenV424(start, end) {
+            const parse = v => {const m=/^(\d{2}):(\d{2})$/.exec(String(v||''));return m ? Number(m[1])*60+Number(m[2]):null;};
+            const a=parse(start),b=parse(end),now=currentBangkokMinutesV424();
+            if(a===null||b===null)return false;
+            if(a===b)return true; // equal values mean 24-hour service
+            return a<b ? (now>=a && now<b) : (now>=a || now<b);
+        }
+        function renderEmailDeliveryHoursV424(cat) {
+            const el=document.getElementById('emailDeliveryHoursPublic');
+            if(!el)return;
+            const cfg=appState.settings?.emailDeliveryHours || {};
+            // Show only on Android category, not on unrelated product tabs.
+            if(!cfg.enabled || !/android/i.test(String(cat?.name || ''))){el.classList.add('hidden');el.innerHTML='';return;}
+            const start=/^\d{2}:\d{2}$/.test(cfg.start||'')?cfg.start:'10:00';
+            const end=/^\d{2}:\d{2}$/.test(cfg.end||'')?cfg.end:'00:00';
+            const open=isEmailDeliveryOpenV424(start,end);
+            el.classList.remove('hidden');
+            el.innerHTML=`<div class="flex flex-wrap items-center gap-2 justify-between"><strong class="font-extrabold text-purple-700 dark:text-purple-200">✉️ เวลาส่งเมลของหมวดนี้</strong><span class="rounded-full px-3 py-1 text-xs font-bold ${open?'bg-emerald-100 text-emerald-700':'bg-amber-100 text-amber-800'}">${open?'● อยู่ในเวลาส่งเมล':'● นอกเวลาส่งเมล'}</span></div><div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs"><span>🕙 เปิดส่งเมล: <b>${start} น.</b></span><span>🕛 ปิดส่งเมล: <b>${end} น.</b></span></div><p class="mt-1 text-[11px] text-slate-500">เวลาไทย • นอกเวลาอาจต้องรอส่งเมลในรอบถัดไป สามารถสั่งซื้อได้ตามปกติ</p>`;
+        }
         function renderAppDetailPage(appId) {
             const app = appState.apps.find(a => a.id === appId);
             if (!app) return;
@@ -2740,6 +2785,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
 
             const cat = appState.categories.find(c => c.id === app.categoryId);
             document.getElementById('appDetailCategoryTag').innerText = cat ? cat.name : 'ทั่วไป';
+            renderEmailDeliveryHoursV424(cat);
 
             const packages = appState.packages.filter(p => p.appId === appId && isPackageAvailableForPurchase(p));
             const term = String(document.getElementById('customerPackageSearch')?.value || '').trim().toLocaleLowerCase('th');
@@ -2779,14 +2825,19 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         ${groupItems.map(pkg => `
                             <div class="min-w-0 bg-slate-50 dark:bg-slate-900/60 p-3 sm:p-4 rounded-xl border border-slate-100 dark:border-slate-700 flex flex-col justify-between gap-3">
-                                <div>
-                                    <div class="flex justify-between items-start gap-3">
+                                <div class="flex gap-3 items-start min-w-0">
+                                    <div class="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl border border-purple-100 dark:border-slate-700 bg-white dark:bg-slate-800 overflow-hidden flex items-center justify-center">
+                                        ${/^https:\/\//i.test(String(pkg.imageUrl || app.iconUrl || '')) ? `<img loading="lazy" referrerpolicy="no-referrer" src="${escapeHtml(pkg.imageUrl || app.iconUrl)}" alt="รูป ${escapeHtml(pkg.name)}" class="w-full h-full object-contain" onerror="this.style.display='none';this.nextElementSibling.style.display='block'"><span style="display:none" class="text-3xl">🎮</span>` : '<span class="text-3xl">🎮</span>'}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start gap-2">
                                         <h4 class="font-bold text-sm text-slate-800 dark:text-white break-words">${escapeHtml(pkg.name)}</h4>
                                         <span class="text-base sm:text-lg font-black text-pink-500 whitespace-nowrap">฿${escapeHtml(pkg.price)}</span>
                                     </div>
                                     ${pkg.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 whitespace-pre-line mt-2">${escapeHtml(pkg.description)}</p>` : ''}
                                     <div class="mt-2 text-[10px] font-bold ${!isPackageAvailableForPurchase(pkg) ? 'text-red-500' : 'text-emerald-600 dark:text-emerald-400'}">
                                         <i class="fa-solid ${!isPackageAvailableForPurchase(pkg) ? 'fa-circle-xmark' : 'fa-circle-check'} mr-1"></i>${!isPackageAvailableForPurchase(pkg) ? 'ไม่พร้อมส่ง' : 'พร้อมส่ง'}
+                                    </div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-2">
@@ -4716,6 +4767,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('pkgNameInput').value = '';
             document.getElementById('pkgPriceInput').value = '';
             document.getElementById('pkgDescInput').value = '';
+            document.getElementById('pkgImageUrlInput').value = '';
             document.getElementById('pkgStatusSelect').value = 'IN_STOCK';
             populatePackageRequirementTemplateSelect('crt-none');
             document.getElementById('modalPackage').classList.remove('hidden');
@@ -4731,6 +4783,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             document.getElementById('pkgNameInput').value = pkg.name || '';
             document.getElementById('pkgPriceInput').value = pkg.price ?? 0;
             document.getElementById('pkgDescInput').value = pkg.description || '';
+            document.getElementById('pkgImageUrlInput').value = pkg.imageUrl || '';
             ensureCustomerRequirementTemplates();
 
             const selected = pkg.customerRequirementTemplateId
@@ -4748,6 +4801,8 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const name = document.getElementById('pkgNameInput').value.trim();
             const price = parseFloat(document.getElementById('pkgPriceInput').value) || 0;
             const desc = document.getElementById('pkgDescInput').value.trim();
+            const pkgImageUrl = document.getElementById('pkgImageUrlInput').value.trim();
+            if (pkgImageUrl && !/^https:\/\//i.test(pkgImageUrl)) return alert('รูปแพ็กเกจต้องเป็น URL https:// เท่านั้น');
             const inStock = document.getElementById('pkgStatusSelect').value === 'IN_STOCK';
             const templateId = document.getElementById('pkgRequirementTemplateSelect').value;
 
@@ -4776,6 +4831,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     pkg.name = name;
                     pkg.price = price;
                     pkg.description = desc;
+                    pkg.imageUrl = pkgImageUrl;
                     pkg.inStock = inStock;
                     pkg.status = inStock ? 'IN_STOCK' : 'OUT_OF_STOCK';
                     pkg.stockStatus = pkg.status;
@@ -4793,6 +4849,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     name,
                     price,
                     description: desc,
+                    imageUrl: pkgImageUrl,
                     inStock,
                     status: inStock ? 'IN_STOCK' : 'OUT_OF_STOCK',
                     stockStatus: inStock ? 'IN_STOCK' : 'OUT_OF_STOCK',
@@ -5267,6 +5324,10 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         function loadStoreSettingsForm() {
             const s = appState.settings || defaultState.settings;
             document.getElementById('adminInputShopName').value = s.shopName || '';
+            const emailHours=s.emailDeliveryHours || {};
+            document.getElementById('adminEmailHoursEnabled').checked = emailHours.enabled === true;
+            document.getElementById('adminEmailHoursStart').value = emailHours.start || '10:00';
+            document.getElementById('adminEmailHoursEnd').value = emailHours.end || '00:00';
             document.getElementById('adminManualStatusSelect').value = s.manualStatus || 'ONLINE';
             document.getElementById('adminAutoScheduleEnableToggle').checked = !!s.autoSchedule;
             document.getElementById('adminScheduleStartTime').value = s.startTime || '10:30';
@@ -5295,6 +5356,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             appState.settings = {
                 ...previous,
                 shopName: document.getElementById('adminInputShopName').value.trim() || 'WANDERER SHOP',
+                emailDeliveryHours: {enabled:document.getElementById('adminEmailHoursEnabled').checked, start:document.getElementById('adminEmailHoursStart').value || '10:00', end:document.getElementById('adminEmailHoursEnd').value || '00:00'},
                 manualStatus: document.getElementById('adminManualStatusSelect').value,
                 autoSchedule: document.getElementById('adminAutoScheduleEnableToggle').checked,
                 startTime: document.getElementById('adminScheduleStartTime').value || '00:00',
@@ -6594,6 +6656,13 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         });
 
         setInterval(renderShopIdentityAndStatus, 30000);
+        setInterval(() => {
+            const panel = document.getElementById('viewAppDetail');
+            if(!panel || panel.classList.contains('hidden'))return;
+            const appId = document.getElementById('packagesListGrid')?.dataset.appId;
+            const app = (appState.apps||[]).find(x=>String(x.id)===String(appId));
+            if(app) renderEmailDeliveryHoursV424((appState.categories||[]).find(c=>String(c.id)===String(app.categoryId)));
+        }, 60000);
     </script>
 
     <div id="decorationPopupPreview" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="decorationPopupPreviewName">
@@ -6618,4 +6687,3 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEntryPo
 </script>
 </body>
 </html>
-
