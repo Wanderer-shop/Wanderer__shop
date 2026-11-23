@@ -131,6 +131,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
 </style>
     <meta name="wanderer-guide-build" content="GUIDE_BACK_ABOVE_HEADER_V413_20261122">
     <!-- WANDERER_POINTS_CODE_24H_V416_20261122 -->
+<!-- WANDERER_V427_SHEET_PACKAGE_ID_RECONCILE -->
 </head>
 <!-- WANDERER_V421_SCROLL_PROFIT_DAILY_20261122 -->
 <body class="bg-pastel-bgLight dark:bg-pastel-bgDark text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
@@ -850,7 +851,7 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                     <div class="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3"><label class="hidden"><input id="adminAutoSyncSheets" type="checkbox" disabled></label><label class="hidden text-xs">ทุก <select id="adminAutoSyncMinutes" onchange="setAutoSyncMinutes(this.value)" class="border rounded-lg p-1 dark:bg-slate-900"><option value="5">5</option><option value="15" selected>15</option><option value="30">30</option><option value="60">60</option></select> นาที</label><button type="button" onclick="exportStoreBackup()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">สำรองข้อมูล JSON</button><label class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold cursor-pointer">กู้คืน JSON<input type="file" accept="application/json,.json" class="hidden" onchange="importStoreBackup(this)"></label><button type="button" onclick="showSystemHistory()" class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs font-bold">ดูประวัติระบบ</button></div>
                     <div id="sheetImportPreviewPanel" class="hidden border border-indigo-200 rounded-xl p-3 space-y-3 text-xs bg-indigo-50 dark:bg-slate-900">
   <div class="flex flex-wrap items-center justify-between gap-2"><p class="font-bold">รายการที่แตกต่างระหว่าง Google Sheets กับ D1 (ยังไม่บันทึก)</p><span class="inline-block rounded-lg bg-indigo-700 px-2 py-1 text-white font-bold">Sheets Import Safe Skip v2.2 • 2026-11-02</span></div>
-  <p id="sheetImportPreviewSummary" class="whitespace-pre-line"></p>
+  <p class="text-amber-700 font-bold">⚠️ การเปลี่ยน ID จะปรับรหัสแพ็กเกจใน D1 และการอ้างอิงโปรโมชั่น ออเดอร์เดิมยังเก็บรหัสที่ซื้อ ณ ตอนนั้น ตรวจ Preview ก่อนยืนยันทุกครั้ง</p><p id="sheetImportPreviewSummary" class="whitespace-pre-line"></p>
   <div class="flex flex-wrap items-center gap-2 rounded-xl border-2 border-indigo-400 bg-white dark:bg-slate-800 p-3"><label for="sheetImportCategory" class="font-bold">📂 เลือกหมวดหมู่ที่ตรวจและนำเข้า:</label><select id="sheetImportCategory" onchange="sheetSelectedIds.clear();renderSheetsImportChoices()" class="rounded-lg border p-2 dark:bg-slate-800"><option value="">ทุกหมวดหมู่</option></select><label for="sheetImportBatchSize">ขนาดชุด:</label><select id="sheetImportBatchSize" class="rounded-lg border p-2 dark:bg-slate-800"><option value="25">25</option><option value="50">50</option><option value="100" selected>100</option></select></div>
   <div class="flex flex-wrap items-center gap-2"><input id="sheetImportFilter" type="search" oninput="renderSheetsImportChoices()" placeholder="ค้นหา ID / ชื่อแอป / ราคา..." class="min-w-0 flex-1 px-3 py-2 border rounded-lg dark:bg-slate-800"><span id="sheetImportSelectedCount" class="text-slate-600 dark:text-slate-300">เลือก 0 รายการ</span></div>
   <p class="text-amber-700">เลือกหมวดแล้วกดนำเข้าทั้งหมวด: ระบบจะบันทึกเป็นชุดไม่เกิน 100 รายการ โดยตรวจชีตและ Revision ใหม่ทุกชุด หากพบข้อผิดพลาดจะหยุดทันที</p>
@@ -1775,6 +1776,26 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
         }
 
         async function persistCentralOrder(order) {
+            // Re-read D1 before creating an order; stale package IDs must never be submitted.
+            const refreshed = await loadSharedStoreState();
+            if (!refreshed) throw new Error('ตรวจสอบสินค้าในฐานข้อมูลกลางไม่ได้ กรุณาลองใหม่');
+            const byId = new Map((appState.packages || []).map(p => [String(p.id), p]));
+            const normalizedItems = [];
+            let changed = false;
+            for (const item of (order.items || [])) {
+                const id = String(item.id || '');
+                if (item.promotionType === 'combo' || id.startsWith('promo-combo-') || id.startsWith('pkg-websvc-') || item.productType === 'website-service') {
+                    normalizedItems.push(item); continue;
+                }
+                const current = byId.get(id);
+                if (!current || !isPackageAvailableForPurchase(current)) {
+                    throw new Error('ID สินค้าเปลี่ยนหรือสินค้าไม่พร้อมขาย (' + id + ') กรุณาลบรายการเก่าในตะกร้าแล้วเลือกใหม่');
+                }
+                if (Number(current.price) !== Number(item.price)) changed = true;
+                normalizedItems.push({...current, qty:getCartQuantity(item)});
+            }
+            if (changed) throw new Error('ราคาสินค้าเปลี่ยน กรุณาเปิดตะกร้าแล้วตรวจสอบยอดใหม่ก่อนสั่ง');
+            order.items = normalizedItems;
             const fingerprint=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify({items:order.items,total:order.total,paymentMethod:order.paymentMethod,source:order.source,requirements:order.customerRequirements,slip:order.slipImg})))),b=>b.toString(16).padStart(2,'0')).join('');
             let pending;try{pending=JSON.parse(sessionStorage.getItem('wanderer_pending_order')||'null');}catch{}
             if(pending?.fingerprint===fingerprint)order.id=pending.id;
@@ -1859,6 +1880,11 @@ body button.bg-purple-600, body button.bg-indigo-600, body button.bg-violet-600 
                 // Load them only from protected tables after order-level authorization is implemented.
 
                 removeKnownStaleCatalogRecords(appState);
+                // Drop or strictly remap any old IDs that were saved in this browser's cart.
+                const cartSync = reconcileCartWithCurrentCatalog();
+                if (cartSync.removed || cartSync.remapped) {
+                    showToast(`ตะกร้าอัปเดตตามสินค้าใน D1: เปลี่ยน ID ${cartSync.remapped} รายการ, ลบรายการที่ไม่มี/ไม่พร้อมขาย ${cartSync.removed} รายการ`);
+                }
                 sharedStateLastUpdatedAt = data.updated_at || cloud.updatedAt || null;
                 // Private order data stays out of the public catalog cache.
                 saveLocalCatalogCache();
@@ -2911,6 +2937,48 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         }
 
         // Cart Logic
+        // WANDERER_V428_STALE_CART_ID_RECONCILE
+        // V4.28: The browser cart may retain an old package ID after a Sheets -> D1 ID migration.
+        // Reconcile only against a successfully fetched D1 catalog, never against stale local cache.
+        function reconcileCartWithCurrentCatalog() {
+            if (!Array.isArray(appState.cart) || !Array.isArray(appState.packages)) return {changed:false, removed:0, remapped:0};
+            const current = new Map(appState.packages.map(p => [String(p.id), p]));
+            const result = [];
+            let changed = false, removed = 0, remapped = 0;
+            for (const item of appState.cart) {
+                if (!item || !item.id) continue;
+                const id = String(item.id);
+                // Promotions and standalone website services have their own identifiers.
+                if (item.promotionType === 'combo' || id.startsWith('promo-combo-') || id.startsWith('pkg-websvc-') || item.productType === 'website-service') {
+                    result.push(item); continue;
+                }
+                let pkg = current.get(id);
+                if (!pkg) {
+                    // A rename is safe only with a single *exact* product identity match.
+                    // Never guess from name alone or remap to the first similar product.
+                    const matches = appState.packages.filter(p =>
+                        String(p.appId || '') === String(item.appId || '') &&
+                        String(p.name || '').trim() === String(item.name || '').trim() &&
+                        String(p.groupName || '').trim() === String(item.groupName || '').trim() &&
+                        Number(p.price) === Number(item.price));
+                    if (matches.length === 1) { pkg = matches[0]; remapped++; }
+                }
+                if (!pkg || !isPackageAvailableForPurchase(pkg)) {
+                    removed++; changed = true; continue;
+                }
+                const qty = getCartQuantity(item);
+                if (String(pkg.id) !== id || Number(pkg.price) !== Number(item.price)) changed = true;
+                result.push({...pkg, qty});
+            }
+            appState.cart = result;
+            normalizeCart();
+            if (changed) {
+                saveState();
+                updateCartBadge();
+            }
+            return {changed, removed, remapped};
+        }
+
         function normalizeCart() {
             const source = Array.isArray(appState.cart) ? appState.cart : [];
             const merged = [];
@@ -4900,8 +4968,19 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     pkg.loginMethods = loginOptionsSnapshot.map(o => o.key);
                 }
             } else {
+                // Request the next unused ID from the current Sheets test copy.
+                // Do not write the package if ID reservation cannot be verified.
+                let generatedId;
+                try {
+                    const nextId=await centralRequest('/admin/catalog/next-package-id?appId='+encodeURIComponent(appId),'GET');
+                    generatedId=String(nextId.id||'');
+                    if(!generatedId||appState.packages.some(p=>String(p.id)===generatedId))throw new Error('ID ซ้ำหรือว่าง');
+                } catch(e){
+                    alert('ออก ID ต่อจากชีตไม่สำเร็จ: '+e.message+'\nกรุณาตรวจการเชื่อม Sheets ก่อนสร้างแพ็กเกจใหม่');
+                    return;
+                }
                 appState.packages.push({
-                    id: 'pkg-' + Date.now(),
+                    id: generatedId,
                     appId,
                     groupName: groupName || 'ทั่วไป',
                     name,
@@ -6513,7 +6592,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             const r=pendingSheetPreview;if(!r)return;
             const filter=String(document.getElementById('sheetImportFilter')?.value||'').trim().toLowerCase();
             const all=sheetCategoryChanges(r);
-            const list=all.filter(x=>(x.id+' '+x.appName+' '+Object.keys(x.fields).join(' ')).toLowerCase().includes(filter));
+            const list=all.filter(x=>(x.id+' '+(x.previousId||'')+' '+x.appName+' '+Object.keys(x.fields).join(' ')).toLowerCase().includes(filter));
             const root=document.getElementById('sheetImportPreviewRows');root.replaceChildren();
             const count=document.createElement('p');count.textContent=`หมวดที่เลือก: ${all.length} รายการเปลี่ยน · ผลค้นหา ${list.length} · แสดงตัวอย่าง ${Math.min(list.length,100)} รายการ`;root.appendChild(count);
             for(const x of list.slice(0,100)){
@@ -6526,7 +6605,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                     updateSheetsImportSelection();
                 });
                 const details=document.createElement('div');details.className='min-w-0';
-                const title=document.createElement('b');title.textContent=`${x.id} — ${x.appName} (${x.category||'-'})`;details.appendChild(title);
+                const title=document.createElement('b');title.textContent=`${x.kind==='new'?'🆕 เพิ่มแพ็กเกจ':x.kind==='id_changed'?'🔄 เปลี่ยน ID '+x.previousId+' → '+x.id:'✏️ แก้ไข'} — ${x.id} — ${x.appName} (${x.category||'-'})`;details.appendChild(title);
                 for(const [key,d] of Object.entries(x.fields)){
                     if(key==='inStock'||key==='status')continue;
                     const line=document.createElement('div');line.className='break-words';line.textContent=`${key}: ${String(d.from).slice(0,120)} → ${String(d.to).slice(0,120)}`;details.appendChild(line);
@@ -6556,7 +6635,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
                 const all=document.createElement('option');all.value='';all.textContent='ทุกหมวดหมู่';cat.appendChild(all);
                 for(const name of cats){const option=document.createElement('option');option.value=name;option.textContent=name;cat.appendChild(option)}
                 const summary=document.getElementById('sheetImportPreviewSummary');
-                summary.textContent=`ตรวจ ${r.checked} แถว · พบรายการเปลี่ยน ${r.changes.length} · แถวที่ข้าม ${r.ignoredCount||0}`+(r.ignored?.length?'\nรายการที่ตรวจไม่ตรง: '+r.ignored.slice(0,5).join(' / '):'')+'\nอ่านชีตเวลา: '+(r.readAt||'-')+'\nตัวอย่างจากชีต: '+(r.sheetSamples||[]).slice(0,3).map(x=>x.tab+'/'+x.appName+'/'+x.id+' ราคา '+x.price).join(' ; ');
+                summary.textContent=`ตรวจ ${r.checked} แถว · เปลี่ยนข้อมูล ${(r.changes||[]).filter(x=>!x.kind||x.kind==='update').length} · เปลี่ยน ID ${(r.changes||[]).filter(x=>x.kind==='id_changed').length} · เพิ่มใหม่ ${(r.changes||[]).filter(x=>x.kind==='new').length} · แถวที่ข้าม ${r.ignoredCount||0}`+(r.ignored?.length?'\nรายการที่ตรวจไม่ตรง: '+r.ignored.slice(0,5).join(' / '):'')+'\nอ่านชีตเวลา: '+(r.readAt||'-')+'\nตัวอย่างจากชีต: '+(r.sheetSamples||[]).slice(0,3).map(x=>x.tab+'/'+x.appName+'/'+x.id+' ราคา '+x.price).join(' ; ');
                 document.getElementById('sheetImportFilter').value='';
                 document.getElementById('sheetImportBatchProgress').textContent='';
                 document.getElementById('sheetImportPreviewPanel').classList.remove('hidden');
@@ -6566,7 +6645,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
         async function confirmSheetsImportSafe(){
             const r=pendingSheetPreview;const approved=[...sheetSelectedIds];
             if(sheetBatchRunning||!r||!approved.length||approved.length>100)return;
-            if(!confirm(`${r.ignoredCount?'คำเตือน: ข้าม '+r.ignoredCount+' รายการที่ข้อมูลไม่ถูกต้อง\n':''}ยืนยันนำเข้าการเปลี่ยนแปลง ${approved.length} แพ็กเกจลง D1? ทุกฟิลด์ที่เปลี่ยนในแพ็กเกจที่เลือกจะอัปเดต`))return;
+            if(!confirm(`${r.ignoredCount?'คำเตือน: ข้าม '+r.ignoredCount+' รายการที่ข้อมูลไม่ถูกต้อง\n':''}ยืนยันนำเข้า ${approved.length} แพ็กเกจลง D1? รวมทั้งการเปลี่ยน ID และเพิ่มแพ็กเกจใหม่ (ถ้าเลือก) ตรวจรายการให้ครบก่อนยืนยัน`))return;
             const btn=document.getElementById('sheetImportConfirmBtn');btn.disabled=true;
             try{
                 const result=await centralRequest('/catalog/import-confirm','POST',{expectedRevision:r.revision,previewDigest:r.previewDigest,approvedIds:approved});
@@ -6583,7 +6662,7 @@ if (!sessionStorage.getItem('wanderer_admin_session')) {
             if(!selected.length)return;
             const batchSize=Number(document.getElementById('sheetImportBatchSize').value)||100;
             const name=cat||'ทุกหมวดหมู่';
-            if(!confirm(`${first.ignoredCount?'คำเตือน: ข้าม '+first.ignoredCount+' รายการที่ข้อมูลไม่ถูกต้อง\n':''}ยืนยันนำเข้า ${selected.length} รายการที่เปลี่ยนใน ${name} ลง D1?\nแบ่งครั้งละไม่เกิน ${batchSize} รายการ ตรวจ Google Sheets ใหม่ทุกชุด และอัปเดตทุกฟิลด์ที่ต่างกันของแพ็กเกจที่นำเข้า`))return;
+            if(!confirm(`${first.ignoredCount?'คำเตือน: ข้าม '+first.ignoredCount+' รายการที่ข้อมูลไม่ถูกต้อง\n':''}ยืนยันนำเข้า ${selected.length} รายการใน ${name} ลง D1? รวมการเปลี่ยน ID / เพิ่มใหม่ด้วยหากรายการนั้นถูกเลือก\nแบ่งครั้งละไม่เกิน ${batchSize} รายการ ตรวจ Google Sheets ใหม่ทุกชุด และอัปเดตทุกฟิลด์ที่ต่างกันของแพ็กเกจที่นำเข้า`))return;
             const allowedIds=new Set(selected.map(x=>String(x.id)));
             sheetBatchRunning=true;sheetBatchStopRequested=false;
             const stop=document.getElementById('sheetImportStopBtn');stop.classList.remove('hidden');
@@ -6745,3 +6824,4 @@ document.addEventListener('keydown',function(e){if(e.key==='Escape')closeEntryPo
 </script>
 </body>
 </html>
+
